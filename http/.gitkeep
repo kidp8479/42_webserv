@@ -1,7 +1,7 @@
 # This folder contains HTTP request/response structures and related constants.
 # Example files to create here :
 #
-# Request.hpp / Request.cpp => represents a parsed HTTP request with fields such as : method, path, headers, # body, query_string
+# Request.hpp / Request.cpp => represents a parsed HTTP request with fields such as : method, path, headers, boddy, query_string
 #
 # Response.hpp / Response.cpp => represents an HTTP response to build and send with fields such as status_code, headers, body
 #
