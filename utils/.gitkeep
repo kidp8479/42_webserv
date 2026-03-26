@@ -1,0 +1,4 @@
+# This folder contains shared utility functions used across the project.
+# Example files to create here :
+#
+# utils.hpp / utils.cpp => generic helpers used everywhere ex: custom trim, split, toLower, intToString etc

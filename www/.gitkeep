@@ -1,0 +1,8 @@
+# This folder contains the static files served by the server.
+# Example structure :
+#
+# index.html => default page served at /
+# errors/
+#   404.html => custom 404 error page
+#   500.html => custom 500 error page
+# uploads/   => folder where uploaded files are stored

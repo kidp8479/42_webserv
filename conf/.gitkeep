@@ -1,0 +1,5 @@
+# This folder contains configuration files for the server.
+# Example files to create here :
+#
+# default.conf => default configuration loaded when no argument is passed to ./webserv 
+# defines at least one server block with basic routes for testing

@@ -1,0 +1,8 @@
+# This folder contains the request handlers, one per HTTP method + CGI.
+# Example files to create here :
+#
+# IHandler.hpp => interface for all handlers implement handle
+# GetHandler.hpp / .cpp => handles GET requests (serve static files)
+# PostHandler.hpp / .cpp => handles POST requests (file upload)
+# DeleteHandler.hpp / .cpp => handles DELETE requests (file deletion)
+# CgiHandler.hpp / .cpp => handles CGI requests (fork + pipe + execve)

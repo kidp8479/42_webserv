@@ -1,0 +1,5 @@
+# This folder contains the core network logic.
+# Example files to create here :
+#
+# Server.hpp / Server.cpp => main server class handles socket, bind, listen, poll event loop owns all listening sockets and client connections
+# Client.hpp / Client.cpp => represents a connected client holds client socket fd, current request state

@@ -1,0 +1,7 @@
+# This folder contains everything related to configuration file parsing.
+# Example files to create here :
+#
+# Config.hpp / Config.cpp => top level config object (holds all servers)
+# ServerConfig.hpp / .cpp => represents one server block
+# LocationConfig.hpp / .cpp => represents one location block
+# ConfigParser.hpp / ConfigParser.cpp => reads the .conf file and fills the objects above

@@ -1,0 +1,32 @@
+# ─── Base ─────────────────────────────────────────────────────────────────────
+# Based on Google C++ Style
+
+BasedOnStyle: Google
+
+# ─── Indentation ──────────────────────────────────────────────────────────────
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -4
+
+# ─── Line length ──────────────────────────────────────────────────────────────
+ColumnLimit: 80
+
+# ─── Braces ───────────────────────────────────────────────────────────────────
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+
+# ─── Pointers & references ────────────────────────────────────────────────────
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# ─── Spaces ───────────────────────────────────────────────────────────────────
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceAfterCStyleCast: false
+
+# ─── Includes ─────────────────────────────────────────────────────────────────
+SortIncludes: true
+IncludeBlocks: Regroup

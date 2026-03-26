@@ -1,0 +1,9 @@
+# This folder contains test programs and scripts.
+# Example files to create here :
+#
+# test_config.cpp => program to test the config parser give it a .conf file, print what was parsed
+#                    run independently from the main server
+# test_request.cpp => program to test the HTTP request parser give it raw HTTP strings, check parsed output
+# test_server.py => python script (subject suggests it) to send HTTP requests to the server and check responses automatically
+# diana's test framework => see if we can integrate it to project
+# other tests => be creative :D
