@@ -6,7 +6,7 @@
 
 #define NO_REDIRECT -1
 
-class Location {
+class LocationConfig {
 private:
     std::string path_;
     std::vector<std::string> methods_;
@@ -19,10 +19,10 @@ private:
     std::string return_url_;
 
 public:
-    Location();
-    Location(const Location& copy);
-    Location& operator=(const Location& other);
-    ~Location();
+    LocationConfig();
+    LocationConfig(const LocationConfig& copy);
+    LocationConfig& operator=(const LocationConfig& other);
+    ~LocationConfig();
 
     // getters
     const std::string& getPath() const;
