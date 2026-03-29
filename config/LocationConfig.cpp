@@ -13,7 +13,7 @@ LocationConfig::LocationConfig(const LocationConfig& copy)
       index_(copy.index_),
       directory_listing_(copy.directory_listing_),
       upload_path_(copy.upload_path_),
-      cgi_extensions_(copy.cgi_extensions_),
+      cgi_interpreters_(copy.cgi_interpreters_),
       return_code_(copy.return_code_),
       return_url_(copy.return_url_) {
 }
@@ -26,7 +26,7 @@ LocationConfig& LocationConfig::operator=(const LocationConfig& other) {
         index_ = other.index_;
         directory_listing_ = other.directory_listing_;
         upload_path_ = other.upload_path_;
-        cgi_extensions_ = other.cgi_extensions_;
+        cgi_interpreters_ = other.cgi_interpreters_;
         return_code_ = other.return_code_;
         return_url_ = other.return_url_;
     }
@@ -61,8 +61,9 @@ const std::string& LocationConfig::getUploadPath() const {
     return this->upload_path_;
 }
 
-const std::vector<std::string>& LocationConfig::getCgiExtensions() const {
-    return this->cgi_extensions_;
+const std::map<std::string, std::string>& LocationConfig::getCgiInterpreters()
+    const {
+    return this->cgi_interpreters_;
 }
 
 int LocationConfig::getReturnCode() const {
@@ -98,9 +99,9 @@ void LocationConfig::setUploadPath(const std::string& upload_path) {
     this->upload_path_ = upload_path;
 }
 
-void LocationConfig::setCgiExtensions(
-    const std::vector<std::string>& cgi_extensions) {
-    this->cgi_extensions_ = cgi_extensions;
+void LocationConfig::addCgiInterpreter(const std::string& extension,
+                                       const std::string& binary) {
+    this->cgi_interpreters_[extension] = binary;
 }
 
 void LocationConfig::setReturnCode(int return_code) {

@@ -1,6 +1,7 @@
 #ifndef LOCATION_CONFIG_HPP
 #define LOCATION_CONFIG_HPP
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -14,8 +15,10 @@ private:
     std::string index_;
     bool directory_listing_;
     std::string upload_path_;
-    std::vector<std::string> cgi_extensions_;
-    int return_code_;  // NO_REDIRECT (-1) if no return directive is set
+    std::map<std::string, std::string>
+        cgi_interpreters_;  // extension -> binary (ex: ".php" ->
+                            // "/usr/bin/php-cgi")
+    int return_code_;       // NO_REDIRECT (-1) if no return directive is set
     std::string return_url_;
 
 public:
@@ -31,7 +34,7 @@ public:
     const std::string& getIndex() const;
     bool getDirectoryListing() const;
     const std::string& getUploadPath() const;
-    const std::vector<std::string>& getCgiExtensions() const;
+    const std::map<std::string, std::string>& getCgiInterpreters() const;
     int getReturnCode() const;
     const std::string& getReturnUrl() const;
 
@@ -42,7 +45,8 @@ public:
     void setIndex(const std::string& index);
     void setDirectoryListing(bool directory_listing);
     void setUploadPath(const std::string& upload_path);
-    void setCgiExtensions(const std::vector<std::string>& cgi_extensions);
+    // cgi .php /usr/bin/php-cgi; (one entry at a time)
+    void addCgiInterpreter(const std::string& ext, const std::string& binary);
     void setReturnCode(int return_code);
     void setReturnUrl(const std::string& return_url);
 };
