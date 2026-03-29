@@ -3,10 +3,14 @@
 Config::Config() {
 }
 
-Config::Config(const Config& copy) {
+Config::Config(const Config& copy) : server_block_(copy.server_block_) {
 }
 
 Config& Config::operator=(const Config& other) {
+    if (this != &other) {
+        server_block_ = other.server_block_;
+    }
+    return *this;
 }
 
 Config::~Config() {
@@ -14,8 +18,10 @@ Config::~Config() {
 
 // getter
 const std::vector<ServerConfig>& Config::getServerBlock() const {
+    return this->server_block_;
 }
 
 // add
 void Config::addServerBlock(const ServerConfig& server_block) {
+    this->server_block_.push_back(server_block);
 }
