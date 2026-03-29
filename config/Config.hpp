@@ -16,6 +16,7 @@ public:
     ~Config();
 
     const std::vector<ServerConfig>& getServerBlock() const;
+    // server { ... } (one block at a time)
     void addServerBlock(const ServerConfig& server_block);
 };
 
