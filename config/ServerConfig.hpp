@@ -7,6 +7,9 @@
 
 #include "LocationConfig.hpp"
 
+#define PORT_NOT_SET -1
+#define DEFAULT_MAX_BODY_SIZE 1048576  // 1MB
+
 class ServerConfig {
 private:
     std::string host_;
