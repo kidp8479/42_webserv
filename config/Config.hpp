@@ -16,7 +16,7 @@ public:
     ~Config();
 
     const std::vector<ServerConfig>& getServerBlock() const;
-    void addServerBlock(const ServerConfig& server);
+    void addServerBlock(const ServerConfig& server_block);
 };
 
 #endif
