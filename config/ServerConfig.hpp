@@ -35,7 +35,8 @@ public:
     void setHost(const std::string& host);
     void setPort(int port);
     void setMaxBodySize(size_t max_body_size);
-    // error_page 404 /errors/404.html; (one entry at a time)
+    // add method and not a setter here - ex: error_page 404 /errors/404.html;
+    // (one entry at a time)
     void addErrorPage(int code, const std::string& path);
     // location /upload { ... } (one block at a time)
     void addLocationBlock(const LocationConfig& location);
