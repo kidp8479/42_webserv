@@ -15,10 +15,11 @@ private:
     std::string index_;
     bool directory_listing_;
     std::string upload_path_;
-    std::map<std::string, std::string>
-        cgi_interpreters_;  // extension -> binary (ex: ".php" ->
-                            // "/usr/bin/php-cgi")
-    int return_code_;       // NO_REDIRECT (-1) if no return directive is set
+
+    // extension -> binary
+    // (ex: ".php" -> "/usr/bin/php-cgi")
+    std::map<std::string, std::string> cgi_interpreters_;
+    int return_code_;  // NO_REDIRECT (-1) if no return directive is set
     std::string return_url_;
 
 public:
