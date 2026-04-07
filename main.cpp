@@ -1,8 +1,8 @@
-// hello, I'm a main palceholder, I do absolutely nothing for now :)
+#include "config/ConfigTokenizer.hpp"
 
 int main(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
+    // std::string path = (argc > 1) ? argv[1] : "conf/default.conf";
+    // ConfigTokenizer tokenizer(path);
 
     return 0;
 }
