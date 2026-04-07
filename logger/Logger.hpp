@@ -52,7 +52,7 @@ public:
     void setLogFile(const std::string& filename);
 
 private:
-    // prevents anyone from instantianting a logger object
+    // prevents anyone from instantiating a logger object
     // only the logger class itself is allowed to do that
     // through Logger& get()
     Logger() : threshold_(NONE), use_file_(false) {

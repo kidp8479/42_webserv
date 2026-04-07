@@ -6,6 +6,7 @@
 #include <cstring>
 #include <ctime>
 #include <fstream>
+#include <cctype>
 
 /*****************************************************************************
  *                                  LOGGER                                   *
@@ -128,7 +129,7 @@ static bool ensureLogDirectory(const std::string& dir) {
     // about it, returns 0 if path exists
     if (stat(dir.c_str(), &dir_info) == 0) {
         // use macro S_IFDIR to check if it's a directory
-        if (dir_info.st_mode & S_IFDIR)
+        if (S_ISDIR(dir_info.st_mode))
             return (true);
         else
             return (false);
@@ -155,11 +156,21 @@ void Logger::setLogFile(const std::string& filename) {
     }
     std::string full_path = dir + "/" + filename;
 
+	// close existing file if open
+	if (file_.is_open())
+	{
+		file_.close();
+		file_.clear();
+	}
+	//reset state before attempting to open
+	use_file_ = false;
+	//open new file
     file_.open(full_path.c_str(), std::ios::out | std::ios::trunc);
-    if (file_.is_open())
+    //set state only if success
+	if (file_.is_open())
         use_file_ = true;
     else
-        std::cerr << "Failed to open log file\n";
+        std::cerr << "Failed to open log file: " << full_path << "\n";
 }
 
 /*****************************************************************************
@@ -199,8 +210,8 @@ LogLine::~LogLine() {
 bool initLogger(const std::string& level_str) {
     Logger::LogLevel level = Logger::stringToLevel(level_str);
     if (level == Logger::INVALID) {
-        std::cout << red("Error. invalid log level\n");
-        std::cout << cyn("log levels: debug info warning error\n");
+        std::cerr << red("Error. invalid log level\n");
+        std::cerr << cyn("log levels: debug info warning error\n");
         return (false);
     }
     Logger::get().setThreshold(level);

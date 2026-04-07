@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv) {
     if (argc < 2 || argc > 3) {
-        std::cout << "usage: ./webserv [config] [log level]\n";
+        std::cout << "usage: ./webserv <config file> [log level]\n";
         return 1;
     }
 
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     LOG_DEBUG() << "test log debug";
     LOG_INFO() << "test log info";
     LOG_WARNING() << "test log warning";
-    LOG_ERROR() << "test log warning";
+    LOG_ERROR() << "test log error";
 
     return 0;
 }
