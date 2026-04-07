@@ -25,6 +25,10 @@
 #define BR_CYN "\033[1;36m"
 #define BR_WHT "\033[1;37m"
 
+# define BLD "\033[1m"
+# define ITL "\033[3m"
+# define ULN "\033[4m"
+
 #define RESET "\033[0m"
 
 /* =========================
@@ -79,6 +83,16 @@ inline std::string brCyn(const std::string& msg) {
 }
 inline std::string brWht(const std::string& msg) {
     return std::string(BR_WHT) + msg + RESET;
+}
+
+inline std::string bld(const std::string& msg) {
+    return std::string(BLD) + msg + RESET;
+}
+inline std::string itl(const std::string& msg) {
+    return std::string(ITL) + msg + RESET;
+}
+inline std::string uln(const std::string& msg) {
+    return std::string(ULN) + msg + RESET;
 }
 
 #endif
