@@ -9,6 +9,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
 SRCS = main.cpp \
        config/Config.cpp \
+	   config/ConfigTokenizer.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
 

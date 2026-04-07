@@ -1,6 +1,9 @@
 #ifndef CONFIG_TOKENIZER_HPP
 #define CONFIG_TOKENIZER_HPP
 
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -18,7 +21,7 @@ private:
     ConfigTokenizer& operator=(const ConfigTokenizer& other);
 
     void validateFile();
-    void tokenize();
+    // void tokenize();
 
 public:
     /* no real default constructor because I'm not creating "useless surface"
