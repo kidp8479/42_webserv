@@ -3,10 +3,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <cctype>
 #include <cstring>
 #include <ctime>
 #include <fstream>
-#include <cctype>
 
 /*****************************************************************************
  *                                  LOGGER                                   *
@@ -53,10 +53,10 @@ void Logger::flush(const std::string& prefix, const std::string& message,
         "[" + Logger::getTimeStamp() + "] " + prefix + message;
 
     // print to console
-	if (level == ERROR)
-		std::cerr << log_line << std::endl;
-	else
-	    std::cout << log_line << std::endl;
+    if (level == ERROR)
+        std::cerr << log_line << std::endl;
+    else
+        std::cout << log_line << std::endl;
 
     // print to file
     if (use_file_) {
@@ -156,18 +156,17 @@ void Logger::setLogFile(const std::string& filename) {
     }
     std::string full_path = dir + "/" + filename;
 
-	// close existing file if open
-	if (file_.is_open())
-	{
-		file_.close();
-		file_.clear();
-	}
-	//reset state before attempting to open
-	use_file_ = false;
-	//open new file
+    // close existing file if open
+    if (file_.is_open()) {
+        file_.close();
+        file_.clear();
+    }
+    // reset state before attempting to open
+    use_file_ = false;
+    // open new file
     file_.open(full_path.c_str(), std::ios::out | std::ios::trunc);
-    //set state only if success
-	if (file_.is_open())
+    // set state only if success
+    if (file_.is_open())
         use_file_ = true;
     else
         std::cerr << "Failed to open log file: " << full_path << "\n";
