@@ -8,6 +8,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 # ─── Sources ────────────────────────────────────────────────────────────────── 
 
 SRCS = main.cpp \
+	   logger/Logger.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
 
