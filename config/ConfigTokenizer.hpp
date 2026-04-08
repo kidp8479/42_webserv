@@ -1,6 +1,11 @@
 #ifndef CONFIG_TOKENIZER_HPP
 #define CONFIG_TOKENIZER_HPP
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <cerrno>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -23,6 +28,11 @@ private:
     ConfigTokenizer& operator=(const ConfigTokenizer& other);
 
     void validateFile();
+    void checkPathExists();
+    void checkReadable();
+    void checkExtension();
+    void checkNotEmpty();
+
     // void tokenize();
 
 public:
