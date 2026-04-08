@@ -15,9 +15,12 @@ const std::vector<Token>& ConfigTokenizer::getTokenList() const {
 
 void ConfigTokenizer::validateFile() {
     std::ifstream config_file(file_path_.c_str());
+
     if (config_file.is_open()) {
-        std::cout << "Config: file opened successfully!" << std::endl;
+        LOG_INFO() << "Config: " << file_path_ << " opened successfully!";
     } else {
-        throw std::runtime_error("Config: could not open config file");
+        LOG_ERROR() << "Config: could not open file: " << file_path_;
+        throw std::runtime_error("Config: could not open config file" +
+                                 file_path_);
     }
 }

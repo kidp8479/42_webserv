@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "../logger/Logger.hpp"
+
 struct Token {
     std::string value;
     int line;
