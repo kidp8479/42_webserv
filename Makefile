@@ -3,9 +3,13 @@
 NAME = webserv
 
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -MMD -MP
 
-# ─── Sources ────────────────────────────────────────────────────────────────── 
+# ─── Directories ──────────────────────────────────────────────────────────────
+
+OBJ_DIR = obj
+
+# ─── Sources ──────────────────────────────────────────────────────────────────
 
 SRCS = main.cpp \
        config/Config.cpp \
@@ -14,7 +18,8 @@ SRCS = main.cpp \
        config/LocationConfig.cpp \
 	   logger/Logger.cpp \
 
-OBJS = $(SRCS:.cpp=.o)
+OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
+DEPS = $(OBJS:.o=.d)
 
 # ─── Rules ────────────────────────────────────────────────────────────────────
 
@@ -23,11 +28,14 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
 
-%.o: %.cpp
+$(OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+-include $(DEPS)
+
 clean:
-	rm -f $(OBJS)
+	rm -rf $(OBJ_DIR)
 
 fclean: clean
 	rm -f $(NAME)
