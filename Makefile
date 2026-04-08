@@ -12,6 +12,7 @@ SRCS = main.cpp \
 	   config/ConfigTokenizer.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
+	   logger/Logger.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
 
