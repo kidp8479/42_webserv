@@ -2,7 +2,7 @@
  * @brief Unit tests for ConfigTokenizer using Google Test Framework.
  *
  * Test structure:
- *   TEST(GroupName, TestName)
+ * TEST(GroupName, TestName)
  *  - GroupName => logical test group unit name - usually name of the tested
  * class - 1 name = 1 test suite
  *  - TestName => describes the specific case.
@@ -23,9 +23,8 @@
  *
  * use ASSERT type macro when you want to stop the test suite on any failure
  * ASSERT_THROW(expr, type) same as EXPECT_THROW but STOPS the test on failure
- * ASSERT_NO_THROW(expr) same as EXPECT_NO_THROW but STOPS the test on
- * failure ASSERT_EQ(a, b) same as EXPECT_EQ but STOPS the test on
- * failure
+ * ASSERT_NO_THROW(expr) same as EXPECT_NO_THROW but STOPS the test on failure
+ * ASSERT_EQ(a, b) same as EXPECT_EQ but STOPS the test on failure
  *
  * note: there are plenty of other macros
  *
