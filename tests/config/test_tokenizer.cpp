@@ -4,16 +4,30 @@
  * Test structure:
  *   TEST(GroupName, TestName)
  *  - GroupName => logical test group unit name - usually name of the tested
- * class -  1 name = 1 test suite
+ * class - 1 name = 1 test suite
  *  - TestName => describes the specific case.
  *
  * Key macros:
- *   EXPECT_THROW(expr, ExceptionType) passes if expr throws ExceptionType
- *   EXPECT_NO_THROW(expr) passes if expr throws nothing
- *   EXPECT_EQ(a, b) passes if a == b
- *   EXPECT_TRUE(expr) passes if expr is true
- *   EXPECT_FALSE(expr) passes if expr is false
- *   note: there are plenty of other macros
+ * EXPECT_THROW(expr, ExceptionType) passes if expr throws ExceptionType
+ * EXPECT_NO_THROW(expr) passes if expr throws nothing
+ * EXPECT_EQ(a, b) passes if a == b
+ * EXPECT_TRUE(expr) passes if expr is true
+ * EXPECT_FALSE(expr) passes if expr is false
+ * EXPECT_NE(a, b)          passes if a != b
+ * EXPECT_GT(a, b)          passes if a > b
+ * EXPECT_GE(a, b)          passes if a >= b
+ * EXPECT_LT(a, b)          passes if a < b
+ * EXPECT_LE(a, b)          passes if a <= b
+ * EXPECT_STREQ(a, b)       passes if C strings are equal (strcmp == 0)
+ * EXPECT_STRNE(a, b)       passes if C strings are not equal
+ *
+ * use ASSERT type macro when you want to stop the test suite on any failure
+ * ASSERT_THROW(expr, type) same as EXPECT_THROW but STOPS the test on failure
+ * ASSERT_NO_THROW(expr)    same as EXPECT_NO_THROW but STOPS the test on
+ * failure ASSERT_EQ(a, b)          same as EXPECT_EQ but STOPS the test on
+ * failure
+ *
+ * note: there are plenty of other macros
  *
  * To build and run from the test\ Makefile: cd tests && make && ./run_tests
  */
