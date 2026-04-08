@@ -36,8 +36,6 @@ private:
     // void tokenize();
 
 public:
-    /* no real default constructor because I'm not creating "useless surface"
-     * where a default constructor has no sense here */
     ConfigTokenizer(const std::string& file_path);
     ~ConfigTokenizer();
     // getter
