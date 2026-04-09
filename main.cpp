@@ -2,6 +2,8 @@
 
 #include "config/ConfigParser.hpp"
 #include "logger/Logger.hpp"
+#include "config/Config.hpp"
+#include "server/Server.hpp"
 
 int main(int argc, char** argv) {
     if (argc > 3) {
@@ -10,7 +12,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    std::string level = (argc == 3) ? argv[2] : "INFO";
+ std::string level = (argc == 3) ? argv[2] : "INFO";
 
     if (!initLogger(level))
         return EXIT_FAILURE;
@@ -24,6 +26,21 @@ int main(int argc, char** argv) {
     } catch (const std::exception& e) {
         return EXIT_FAILURE;
     }
+*/
+	Config config;
+	
+	// create one server block
+	ServerConfig server_conf;
+	server_conf.setPort(8080);
+
+	// add to config
+	config.addServerBlock(server_conf);
+
+	Server server(config);
+	if (!server.start())
+		return (EXIT_FAILURE);
 
     return EXIT_SUCCESS;
 }
+
+

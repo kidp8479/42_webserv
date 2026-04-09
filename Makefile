@@ -18,6 +18,7 @@ SRCS = main.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
 	   logger/Logger.cpp \
+	   server/Server.cpp \
 
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS = $(OBJS:.o=.d)
