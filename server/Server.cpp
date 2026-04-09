@@ -94,3 +94,9 @@ void	Server::stop() {
 	}
 	sockets_.clear();
 }
+
+// getters
+const std::vector<int>& Server::getSockets() const {
+	return sockets_;
+}
+

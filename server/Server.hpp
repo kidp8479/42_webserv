@@ -20,6 +20,11 @@ public:
 
 	bool	start(); // bind, listen, enter main loop
 	void	stop(); // close sockets
+					//
+	const std::vector<int>& getSockets() const;
+
+    // Grant access to private members to the test fixture
+    friend class ServerTestFixture;
 };
 
 #endif
