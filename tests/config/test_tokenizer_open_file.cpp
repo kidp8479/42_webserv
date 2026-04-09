@@ -51,7 +51,7 @@ TEST(ConfigTokenizer_CheckPathExists, ThrowsOnPathIsADirectory) {
 }
 
 TEST(ConfigTokenizer_CheckPathExists, NoThrowOnRightPath) {
-    EXPECT_NO_THROW(ConfigTokenizer("../conf/default.conf"));
+    EXPECT_NO_THROW(ConfigTokenizer("../../conf/default.conf"));
 }
 
 /* tests for checkPathExists()
@@ -90,7 +90,7 @@ TEST_F(ConfigTokenizerCreateFileNoPerms, ThrowsOnNoPermissions) {
 }
 
 TEST(ConfigTokenizer_CheckReadable, NoThrowOnSaneFile) {
-    EXPECT_NO_THROW(ConfigTokenizer("../conf/default.conf"));
+    EXPECT_NO_THROW(ConfigTokenizer("../../conf/default.conf"));
 }
 
 // TODO
@@ -101,6 +101,27 @@ TEST(ConfigTokenizer_CheckReadable, NoThrowOnSaneFile) {
 [FAIL] => "." is in last position, nothing after
 [FAIL] => extension after dot is not "conf"
 [PASS] => extension is ".conf" at the right place */
+
+TEST(ConfigTokenizer_CheckExtensions, ThrowsOnFileHasNoDot) {
+    EXPECT_THROW(ConfigTokenizer("config/test_files/has_not_dot_conf"), std::runtime_error);
+}
+
+TEST(ConfigTokenizer_CheckExtensions, ThrowsOnDotFirstChar) {
+    EXPECT_THROW(ConfigTokenizer("config/test_files/.dot_first_char.conf"), std::runtime_error);
+}
+
+TEST(ConfigTokenizer_CheckExtensions, ThrowsOnDotLastChar) {
+    EXPECT_THROW(ConfigTokenizer("config/test_files/dot_last_char.conf."), std::runtime_error);
+}
+
+TEST(ConfigTokenizer_CheckExtensions, ThrowsWrongExtension) {
+    EXPECT_THROW(ConfigTokenizer("config/test_files/wrong_extension.py"), std::runtime_error);
+}
+
+TEST(ConfigTokenizer_CheckExtensions, NoThrowOnSaneFile) {
+    EXPECT_NO_THROW(ConfigTokenizer("../../conf/default.conf"));
+}
+
 
 /* tests for checkNotEmpty() */
 // [FAIL] => file is empty (peek() returns EOF immediately)
