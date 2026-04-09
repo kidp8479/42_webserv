@@ -64,20 +64,30 @@ void ConfigTokenizer::checkReadable() {
 }
 
 // this function handle checks for file extension
+// [FAIL] => multiple dots in filename (ex: test.py.conf, conf.conf.conf)
 // [FAIL] => no "." in name
-// [FAIL] => "." is the first char (hidden file)
-// [FAIL] => "." is in last position, nothing after
+// [FAIL] => "." is the first char (hidden file like .conf)
+// [FAIL] => "." is in last position, nothing after (ex: file.)
 // [FAIL] => extension after dot is not "conf"
 // [PASS] => extension is ".conf" at the right place
 void ConfigTokenizer::checkExtension() {
-    std::string::size_type dot_position = file_path_.rfind('.');
+    std::string::size_type slash_pos = file_path_.rfind('/');
+    std::string filename = (slash_pos != std::string::npos)
+                               ? file_path_.substr(slash_pos + 1)
+                               : file_path_;
 
-    if (dot_position == std::string::npos || dot_position == 0 ||
-        dot_position >= file_path_.length() - 1) {
+    if (std::count(filename.begin(), filename.end(), '.') != 1) {
+        LOG_ERROR() << "Config: filename must have exactly one dot";
+        throw std::runtime_error("Config: filename must have exactly one dot");
+    }
+
+    std::string::size_type dot_position = filename.rfind('.');
+
+    if (dot_position == 0 || dot_position >= filename.length() - 1) {
         LOG_ERROR() << "Config: no valid extension found";
         throw std::runtime_error("Config: no valid extension found");
     }
-    std::string extension = file_path_.substr(dot_position + 1);
+    std::string extension = filename.substr(dot_position + 1);
     if (extension != "conf") {
         LOG_ERROR() << "Config: wrong file extension";
         throw std::runtime_error("Config: wrong file extension");
