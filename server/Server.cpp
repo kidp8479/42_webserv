@@ -130,8 +130,10 @@ bool Server::start() {
 		for (size_t i = 0; i < servers.size(); i++) {
 			int port = servers[i].getPort();
 
-			if (port == PORT_NOT_SET)
+			if (port == PORT_NOT_SET) {
+				LOG_ERROR() << "Port not set";
 				throw std::runtime_error("Port not set");
+			}
 
 			setupSocket(port);
 		}
