@@ -10,9 +10,11 @@ private:
 	const Config& config_;
 	std::vector<int> sockets_;
 
-//	void	acceptConnections();
-//	void	handleClient(int client_fd);
 	void	setupSocket(int socket);
+	int		acceptClient();
+	void	handleClient(int client_fd);
+	void	sendResponse(int client_fd);
+//	buildResponse()
 
 public:
 	Server(const Config& config);
@@ -24,6 +26,7 @@ public:
 	const std::vector<int>& getSockets() const;
 
     // Grant access to private members to the test fixture
+	// TODO comment this out before validating
     friend class ServerTestFixture;
 };
 

@@ -33,7 +33,6 @@ void Server::setupSocket(int port) {
 		LOG_ERROR() << "setsockopt() failed";
 		throw std::runtime_error("setsockopt() failed");
 	}
-
 	sockaddr_in addr;
 	std::memset(&addr, 0, sizeof(addr));
 
@@ -46,7 +45,6 @@ void Server::setupSocket(int port) {
 		LOG_ERROR() << "bind() failed on port" << port;
 		throw std::runtime_error("bind() failed");
 	}
-
 	if (listen(server_fd, BACKLOG) < 0){
 		close(server_fd);
 		LOG_ERROR() << "listen() failed";
@@ -54,8 +52,69 @@ void Server::setupSocket(int port) {
 	}
 
 	sockets_.push_back(server_fd);
-
 	LOG_INFO() << "Listening on port " << port;
+}
+
+int	Server::acceptClient() {
+	sockaddr_in	client_addr;
+	socklen_t	client_len = sizeof(client_addr);
+
+	int client_fd = accept(
+			sockets_[0],
+			(struct sockaddr*)&client_addr,
+			&client_len
+			);
+	//eventually need to store the client_fd
+
+	if (client_fd < 0) {
+		LOG_ERROR() << "accept() failed";
+		// no need to throw here, otherwise we exit the loop
+		// and server dies.
+		return -1; // fd on failure needs to be -1
+	}
+	LOG_INFO() << "Client " << client_fd << " connected";
+	return (client_fd);
+}
+
+void	Server::sendResponse(int client_fd) {
+	std::string response =
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Length: 11\r\n"
+		"\r\n"
+		"Hello World";
+
+	ssize_t sent = send(client_fd, response.c_str(), response.size(), 0);
+	if (sent < 0) {
+		LOG_ERROR() << "send() failed for client fd " << client_fd;
+		return ;
+	}
+	LOG_INFO() << "Response sent to client fd " << client_fd;
+}
+
+void	Server::handleClient(int client_fd)
+{
+	// we need a raw buffer here becasue recv expects raw memory
+	// if we use std::string buffer:
+	// it has no allocated size, writing to it is UB
+	char buffer[1024];
+	ssize_t bytes = recv(client_fd, buffer, sizeof(buffer), 0);
+	
+	if (bytes == 0) {
+		LOG_INFO() << "Client " << client_fd << " disconnected";
+		close(client_fd);
+		return ;
+	}
+	else if (bytes < 0) {
+		LOG_INFO() << "recv() failed, closing client socket";
+		close(client_fd);
+		return ;
+	}
+
+	std::string request(buffer, bytes);
+	LOG_INFO() << "Received:\n" << request;
+	
+	sendResponse(client_fd);
+	close(client_fd);
 }
 
 bool Server::start() {
@@ -77,9 +136,12 @@ bool Server::start() {
 			setupSocket(port);
 		}
 
-		//temp loop
 		while (true) {
-			sleep(1);
+
+			int client_fd = acceptClient();
+			// later when client class is set up we can add ip info
+			// on the log output
+			handleClient(client_fd);	
 		}
 	}
 	catch (const std::exception& e) {
