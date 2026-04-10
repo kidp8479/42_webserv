@@ -51,7 +51,7 @@ TEST(ConfigTokenizer_CheckPathExists, ThrowsOnPathIsADirectory) {
 }
 
 TEST(ConfigTokenizer_CheckPathExists, NoThrowOnRightPath) {
-    EXPECT_NO_THROW(ConfigTokenizer("../../conf/default.conf"));
+    EXPECT_NO_THROW(ConfigTokenizer("../conf/default.conf"));
 }
 
 /* tests for checkPathExists()
@@ -71,7 +71,7 @@ TEST(ConfigTokenizer_CheckPathExists, NoThrowOnRightPath) {
  * lifecycle: SetUp -> TEST_F -> TearDown (repeated for each test)
  */
 
-class ConfigTokenizerCreateFileNoPerms : public ::testing::Test {
+class ConfigTokenizer_CheckReadable : public ::testing::Test {
 protected:
     void SetUp() {
         std::ofstream f("tmp_no_perms.conf");
@@ -85,44 +85,68 @@ protected:
     }
 };
 
-TEST_F(ConfigTokenizerCreateFileNoPerms, ThrowsOnNoPermissions) {
+TEST_F(ConfigTokenizer_CheckReadable, ThrowsOnNoPermissions) {
     EXPECT_THROW(ConfigTokenizer("tmp_no_perms.conf"), std::runtime_error);
 }
-
-TEST(ConfigTokenizer_CheckReadable, NoThrowOnSaneFile) {
-    EXPECT_NO_THROW(ConfigTokenizer("../../conf/default.conf"));
+// no need for the fixture here but I want the grouptest to have the same name
+TEST_F(ConfigTokenizer_CheckReadable, NoThrowOnSaneFile) {
+    EXPECT_NO_THROW(ConfigTokenizer("../conf/default.conf"));
 }
 
 // TODO
 
 /* tests for checkExtension()
+[FAIL] => multiple "."
 [FAIL] => no "." in name
 [FAIL] => "." is the first char (hidden file)
 [FAIL] => "." is in last position, nothing after
 [FAIL] => extension after dot is not "conf"
+[FAIL] => CONF is uppercase (nginx rejects)
 [PASS] => extension is ".conf" at the right place */
 
+TEST(ConfigTokenizer_CheckExtensions, ThrowsOnMultipleDots) {
+    EXPECT_THROW(ConfigTokenizer("../test_files/file.conf.conf"),
+                 std::runtime_error);
+}
+
 TEST(ConfigTokenizer_CheckExtensions, ThrowsOnFileHasNoDot) {
-    EXPECT_THROW(ConfigTokenizer("config/test_files/has_not_dot_conf"), std::runtime_error);
+    EXPECT_THROW(ConfigTokenizer("config/test_files/has_not_dot_conf"),
+                 std::runtime_error);
 }
 
 TEST(ConfigTokenizer_CheckExtensions, ThrowsOnDotFirstChar) {
-    EXPECT_THROW(ConfigTokenizer("config/test_files/.dot_first_char.conf"), std::runtime_error);
+    EXPECT_THROW(ConfigTokenizer("config/test_files/.dot_first_char.conf"),
+                 std::runtime_error);
 }
 
 TEST(ConfigTokenizer_CheckExtensions, ThrowsOnDotLastChar) {
-    EXPECT_THROW(ConfigTokenizer("config/test_files/dot_last_char.conf."), std::runtime_error);
+    EXPECT_THROW(ConfigTokenizer("config/test_files/dot_last_char.conf."),
+                 std::runtime_error);
 }
 
 TEST(ConfigTokenizer_CheckExtensions, ThrowsWrongExtension) {
-    EXPECT_THROW(ConfigTokenizer("config/test_files/wrong_extension.py"), std::runtime_error);
+    EXPECT_THROW(ConfigTokenizer("config/test_files/wrong_extension.py"),
+                 std::runtime_error);
+}
+
+TEST(ConfigTokenizer_CheckExtensions, ThrowsOnUppercaseExtension) {
+    EXPECT_THROW(ConfigTokenizer("config/test_files/file.CONF"),
+                 std::runtime_error);
 }
 
 TEST(ConfigTokenizer_CheckExtensions, NoThrowOnSaneFile) {
-    EXPECT_NO_THROW(ConfigTokenizer("../../conf/default.conf"));
+    EXPECT_NO_THROW(ConfigTokenizer("../conf/default.conf"));
 }
-
 
 /* tests for checkNotEmpty() */
 // [FAIL] => file is empty (peek() returns EOF immediately)
 // [PASS] => peek() returns a valid character, file has content
+
+TEST(ConfigTokenizer_CheckNotEmpty, ThrowOnFileEmpty) {
+    EXPECT_THROW(ConfigTokenizer("config/test_files/empty.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigTokenizer_CheckNotEmpty, NoThrowOnSaneFile) {
+    EXPECT_NO_THROW(ConfigTokenizer("../conf/default.conf"));
+}
