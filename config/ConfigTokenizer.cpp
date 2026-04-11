@@ -1,21 +1,45 @@
 #include "ConfigTokenizer.hpp"
 
-// no real default constructor because I'm not creating "useless surface"
-// where a default constructor has no sense here
+/**
+ * @brief Constructs a ConfigTokenizer from a config file path.
+ *
+ * Validates the file then tokenizes its content.
+ * No syntactic or semantic validation at this stage, pure tokens only.
+ *
+ * @param file_path Path to the config file (argv[1] or "conf/default.conf")
+ * @throws std::runtime_error If the file fails any validation check
+ */
 ConfigTokenizer::ConfigTokenizer(const std::string& file_path)
     : file_path_(file_path) {
     validateFile();
     tokenize();
 }
 
+/**
+ * @brief Destroys the ConfigTokenizer.
+ */
 ConfigTokenizer::~ConfigTokenizer() {
 }
 
+/**
+ * @brief Returns the list of tokens produced by tokenization.
+ * @note ConfigBuilder (config file parsing phase 2) will need it
+ */
 const std::vector<Token>& ConfigTokenizer::getTokenList() const {
     return this->token_list_;
 }
 
-// this function orchestrate the file validation
+/**
+ * @brief Orchestrator for file level validation.
+ *
+ * Performs various checks before tokenizing the content of the file:
+ * - path existence
+ * - file readable
+ * - file extension
+ * - file emptiness
+ *
+ * @throws std::runtime_error if any of the checks fails
+ */
 void ConfigTokenizer::validateFile() {
     checkPathExists();
     checkReadable();
@@ -23,11 +47,11 @@ void ConfigTokenizer::validateFile() {
     checkNotEmpty();
 }
 
-// this function check for 1) path exists 2) if it exists, is not a directory
-// tests to do :
-// [FAIL] => path doesn't exist (stat returns -1)
-// [FAIL] => path exists but is a directory (S_ISDIR is true)
-// [PASS] => path exists and is a file
+/**
+ * @brief Checks that the path exists and is not a directory.
+ *
+ * @throws std::runtime_error If the path does not exist or is a directory
+ */
 void ConfigTokenizer::checkPathExists() {
     struct stat file_info;
 
@@ -47,10 +71,11 @@ void ConfigTokenizer::checkPathExists() {
     LOG_DEBUG() << "Config: " << file_path_ << " exists";
 }
 
-// this function checks file permission and openability
-// tests to do :
-// [FAIL] => is_open() returns false (it means either the perms are wrong or the
-// file did not open, errno will tell) [PASS] => file opened
+/**
+ * @brief Checks that the file can be opened for reading.
+ *
+ * @throws std::runtime_error If the file cannot be opened
+ */
 void ConfigTokenizer::checkReadable() {
     std::ifstream config_file(file_path_.c_str());
 
@@ -63,13 +88,14 @@ void ConfigTokenizer::checkReadable() {
     LOG_DEBUG() << "Config: " << file_path_ << " opened successfully";
 }
 
-// this function handle checks for file extension
-// [FAIL] => multiple dots in filename (ex: test.py.conf, conf.conf.conf)
-// [FAIL] => no "." in name
-// [FAIL] => "." is the first char (hidden file like .conf)
-// [FAIL] => "." is in last position, nothing after (ex: file.)
-// [FAIL] => extension after dot is not "conf"
-// [PASS] => extension is ".conf" at the right place
+/**
+ * @brief Checks that the filename has a valid ".conf" extension.
+ *
+ * Rejects hidden files (.conf), files without extension, multiple dots,
+ * and any extension other than "conf" (rejects "CONF").
+ *
+ * @throws std::runtime_error If the extension is missing or invalid
+ */
 void ConfigTokenizer::checkExtension() {
     size_t slash_pos = file_path_.rfind('/');
     std::string filename = (slash_pos != std::string::npos)
@@ -95,9 +121,11 @@ void ConfigTokenizer::checkExtension() {
     LOG_DEBUG() << "Config: correct file extension";
 }
 
-// this function checks for non emptiness of the config file
-// [FAIL] => file is empty (peek() returns EOF immediately)
-// [PASS] => peek() returns a valid character, file has content
+/**
+ * @brief Checks that the config file is not empty.
+ *
+ * @throws std::runtime_error If the file contains no content
+ */
 void ConfigTokenizer::checkNotEmpty() {
     std::ifstream config_file(file_path_.c_str());
 
@@ -108,10 +136,16 @@ void ConfigTokenizer::checkNotEmpty() {
     LOG_DEBUG() << "Config: file is not empty";
 }
 
+/**
+ * @brief Tokenizes the config file into a list of tokens.
+ *
+ * Reads the file line by line and splits it into tokens on whitespace,
+ * '{', '}', and ';'. Comments starting with '#' are ignored.
+ */
 void ConfigTokenizer::tokenize() {
     std::ifstream file(file_path_.c_str());
     std::string line;
-    int line_number = 1;
+    size_t line_number = 1;
 
     while (std::getline(file, line)) {
         std::string current_word = "";
@@ -120,36 +154,45 @@ void ConfigTokenizer::tokenize() {
             char current_char = line[i];
 
             if (isspace(current_char)) {
-                if (!current_word.empty()) {
-                    Token token = {current_word, line_number};
-                    token_list_.push_back(token);
-                    current_word = "";
-                }
+                emitToken(current_word, line_number);
             } else if (current_char == '{' || current_char == '}' ||
                        current_char == ';') {
-                if (!current_word.empty()) {
-                    Token token = {current_word, line_number};
-                    token_list_.push_back(token);
-                    current_word = "";
-                }
+                emitToken(current_word, line_number);
                 Token token_special_char = {std::string(1, current_char),
                                             line_number};
                 token_list_.push_back(token_special_char);
             } else if (current_char == '#') {
-                if (!current_word.empty()) {
-                    Token token = {current_word, line_number};
-                    token_list_.push_back(token);
-                }
+                emitToken(current_word, line_number);
                 break;
             } else {
                 current_word += current_char;
             }
         }
+        emitToken(current_word, line_number);
         line_number++;
     }
 
     for (size_t i = 0; i < token_list_.size(); i++) {
         LOG_DEBUG() << "line [" << token_list_[i].line << "] - token[" << i
                     << "] = '" << token_list_[i].value << "' ";
+    }
+    LOG_DEBUG() << "Config: file successufully tokenized";
+}
+
+/**
+ * @brief Emits a token from the current accumulated word.
+ *
+ * If current_word is non-empty, creates a Token and appends it to token_list_,
+ * then resets current_word to "".
+ *
+ * @param current_word Accumulated characters since the last delimiter (reset on
+ * emit)
+ * @param line_number Current line number in the file
+ */
+void ConfigTokenizer::emitToken(std::string& current_word, size_t line_number) {
+    if (!current_word.empty()) {
+        Token token = {current_word, line_number};
+        token_list_.push_back(token);
+        current_word = "";
     }
 }

@@ -17,9 +17,22 @@
 
 struct Token {
     std::string value;
-    int line;
+    size_t line;
 };
 
+/**
+ * @brief Phase 1 of config parsing: tokenizes a .conf file into a flat token
+ * list.
+ *
+ * Validates the file (existence, permissions, extension, emptiness) then splits
+ * its content into tokens on whitespace, '{', '}', and ';'.
+ * Comments starting with '#' are ignored.
+ *
+ * Output is a std::vector<Token> consumed by ConfigBuilder (phase 2).
+ *
+ * @note No syntactic or semantic validation at this stage, pure tokens only.
+ * @note Copy and assignment are disabled: this class is not copyable.
+ */
 class ConfigTokenizer {
 public:
     ConfigTokenizer(const std::string& file_path);
@@ -40,6 +53,7 @@ private:
     void checkExtension();
     void checkNotEmpty();
     void tokenize();
+    void emitToken(std::string& current_word, size_t line_number);
 };
 
 #endif
