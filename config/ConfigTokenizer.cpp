@@ -5,7 +5,7 @@
 ConfigTokenizer::ConfigTokenizer(const std::string& file_path)
     : file_path_(file_path) {
     validateFile();
-    // tokenize();
+    tokenize();
 }
 
 ConfigTokenizer::~ConfigTokenizer() {
@@ -71,7 +71,7 @@ void ConfigTokenizer::checkReadable() {
 // [FAIL] => extension after dot is not "conf"
 // [PASS] => extension is ".conf" at the right place
 void ConfigTokenizer::checkExtension() {
-    std::string::size_type slash_pos = file_path_.rfind('/');
+    size_t slash_pos = file_path_.rfind('/');
     std::string filename = (slash_pos != std::string::npos)
                                ? file_path_.substr(slash_pos + 1)
                                : file_path_;
@@ -106,4 +106,50 @@ void ConfigTokenizer::checkNotEmpty() {
         throw std::runtime_error("Config: " + file_path_ + " is empty");
     }
     LOG_DEBUG() << "Config: file is not empty";
+}
+
+void ConfigTokenizer::tokenize() {
+    std::ifstream file(file_path_.c_str());
+    std::string line;
+    int line_number = 1;
+
+    while (std::getline(file, line)) {
+        std::string current_word = "";
+
+        for (size_t i = 0; i < line.size(); i++) {
+            char current_char = line[i];
+
+            if (isspace(current_char)) {
+                if (!current_word.empty()) {
+                    Token token = {current_word, line_number};
+                    token_list_.push_back(token);
+                    current_word = "";
+                }
+            } else if (current_char == '{' || current_char == '}' ||
+                       current_char == ';') {
+                if (!current_word.empty()) {
+                    Token token = {current_word, line_number};
+                    token_list_.push_back(token);
+                    current_word = "";
+                }
+                Token token_special_char = {std::string(1, current_char),
+                                            line_number};
+                token_list_.push_back(token_special_char);
+            } else if (current_char == '#') {
+                if (!current_word.empty()) {
+                    Token token = {current_word, line_number};
+                    token_list_.push_back(token);
+                }
+                break;
+            } else {
+                current_word += current_char;
+            }
+        }
+        line_number++;
+    }
+
+    for (size_t i = 0; i < token_list_.size(); i++) {
+        LOG_DEBUG() << "line [" << token_list_[i].line << "] - token[" << i
+                    << "] = '" << token_list_[i].value << "' ";
+    }
 }

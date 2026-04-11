@@ -39,7 +39,7 @@ private:
     void checkReadable();
     void checkExtension();
     void checkNotEmpty();
-    // void tokenize();
+    void tokenize();
 };
 
 #endif
