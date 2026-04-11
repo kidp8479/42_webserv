@@ -35,11 +35,11 @@ $(BIN_DIR)/test_%: test_%.cpp $(SRCS) |$(BIN_DIR)
 test: all
 	@for test in $(TEST_BINS); do \
 		echo "Running $$test"; \
-		./$$test; \
+		cd $(BIN_DIR) && ./$(notdir $$test) && cd ..; \
 	done
 
 test_%: $(BIN_DIR)/test_%
-	./$<
+	cd $(BIN_DIR) && ./$(notdir $<)
 
 clean:
 	rm -rf $(BIN_DIR)
