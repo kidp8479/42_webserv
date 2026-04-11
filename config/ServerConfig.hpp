@@ -11,13 +11,6 @@
 #define DEFAULT_MAX_BODY_SIZE 1048576  // 1MB
 
 class ServerConfig {
-private:
-    std::string host_;
-    int port_;
-    size_t max_body_size_;
-    std::map<int, std::string> error_pages_;
-    std::vector<LocationConfig> location_block_;
-
 public:
     ServerConfig();
     ServerConfig(const ServerConfig& copy);
@@ -40,6 +33,13 @@ public:
     void addErrorPage(int code, const std::string& path);
     // location /upload { ... } (one block at a time)
     void addLocationBlock(const LocationConfig& location);
+
+private:
+    std::string host_;
+    int port_;
+    size_t max_body_size_;
+    std::map<int, std::string> error_pages_;
+    std::vector<LocationConfig> location_block_;
 };
 
 #endif

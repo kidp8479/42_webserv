@@ -8,20 +8,6 @@
 #define NO_REDIRECT -1
 
 class LocationConfig {
-private:
-    std::string path_;
-    std::vector<std::string> methods_;
-    std::string root_;
-    std::string index_;
-    bool directory_listing_;
-    std::string upload_path_;
-
-    // extension -> binary
-    // (ex: ".php" -> "/usr/bin/php-cgi")
-    std::map<std::string, std::string> cgi_interpreters_;
-    int return_code_;  // NO_REDIRECT (-1) if no return directive is set
-    std::string return_url_;
-
 public:
     LocationConfig();
     LocationConfig(const LocationConfig& copy);
@@ -50,6 +36,20 @@ public:
     void addCgiInterpreter(const std::string& ext, const std::string& binary);
     void setReturnCode(int return_code);
     void setReturnUrl(const std::string& return_url);
+
+private:
+    std::string path_;
+    std::vector<std::string> methods_;
+    std::string root_;
+    std::string index_;
+    bool directory_listing_;
+    std::string upload_path_;
+
+    // extension -> binary
+    // (ex: ".php" -> "/usr/bin/php-cgi")
+    std::map<std::string, std::string> cgi_interpreters_;
+    int return_code_;  // NO_REDIRECT (-1) if no return directive is set
+    std::string return_url_;
 };
 
 #endif

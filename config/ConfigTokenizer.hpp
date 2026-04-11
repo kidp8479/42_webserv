@@ -21,9 +21,15 @@ struct Token {
 };
 
 class ConfigTokenizer {
+public:
+    ConfigTokenizer(const std::string& file_path);
+    ~ConfigTokenizer();
+
+    const std::vector<Token>& getTokenList() const;
+
 private:
-    std::vector<Token> token_list_;
     const std::string file_path_;
+    std::vector<Token> token_list_;
 
     ConfigTokenizer(const ConfigTokenizer& copy);
     ConfigTokenizer& operator=(const ConfigTokenizer& other);
@@ -33,16 +39,7 @@ private:
     void checkReadable();
     void checkExtension();
     void checkNotEmpty();
-
     // void tokenize();
-
-public:
-    ConfigTokenizer(const std::string& file_path);
-    ~ConfigTokenizer();
-    // getter
-    /* const before the return type so that no one can .push_back() anything on
-     * my precious vector */
-    const std::vector<Token>& getTokenList() const;
 };
 
 #endif
