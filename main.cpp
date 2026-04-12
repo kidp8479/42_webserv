@@ -5,7 +5,8 @@
 
 int main(int argc, char** argv) {
     if (argc > 3) {
-        std::cout << "usage: ./webserv <config file> [log level]\n";
+        std::cerr << "usage: ./webserv [config file] [log level] (default "
+                     "config: conf/default.conf)\n";
         return EXIT_FAILURE;
     }
 
