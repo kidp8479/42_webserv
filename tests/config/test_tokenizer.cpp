@@ -49,7 +49,7 @@ TEST(ConfigTokenizer_CheckPathExists, ThrowsOnNonExistentPath) {
 }
 
 TEST(ConfigTokenizer_CheckPathExists, ThrowsOnPathIsADirectory) {
-    EXPECT_THROW(ConfigTokenizer("../conf"), std::runtime_error);
+    EXPECT_THROW(ConfigTokenizer("../../conf"), std::runtime_error);
 }
 
 TEST(ConfigTokenizer_CheckPathExists, NoThrowOnRightPath) {
