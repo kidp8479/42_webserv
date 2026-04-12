@@ -105,12 +105,12 @@ TEST_F(ConfigTokenizer_CheckReadable, NoThrowOnSaneFile) {
 [PASS] => extension is ".conf" at the right place */
 
 TEST(ConfigTokenizer_CheckExtensions, ThrowsOnMultipleDots) {
-    EXPECT_THROW(ConfigTokenizer("../../config/test_files/file.conf.conf"),
+    EXPECT_THROW(ConfigTokenizer("../config/test_files/file.conf.conf"),
                  std::runtime_error);
 }
 
 TEST(ConfigTokenizer_CheckExtensions, ThrowsOnFileHasNoDot) {
-    EXPECT_THROW(ConfigTokenizer("../config/test_files/has_not_dot_conf"),
+    EXPECT_THROW(ConfigTokenizer("../config/test_files/has_no_dot_conf"),
                  std::runtime_error);
 }
 
