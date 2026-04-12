@@ -7,6 +7,11 @@
 
 #define NO_REDIRECT -1
 
+/**
+ * @brief Holds the parsed content of one location { } block.
+ *
+ * Pure data container, no validation logic.
+ */
 class LocationConfig {
 public:
     LocationConfig();

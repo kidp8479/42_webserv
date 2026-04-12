@@ -5,6 +5,12 @@
 
 #include "ServerConfig.hpp"
 
+/**
+ * @brief Top-level config container, holds all parsed server blocks.
+ *
+ * Built incrementally by ConfigBuilder via addServerBlock().
+ * Pure data container, no validation logic.
+ */
 class Config {
 public:
     Config();

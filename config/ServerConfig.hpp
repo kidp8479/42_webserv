@@ -10,6 +10,12 @@
 #define PORT_NOT_SET -1
 #define DEFAULT_MAX_BODY_SIZE 1048576  // 1MB
 
+/**
+ * @brief Holds the parsed content of one server { } block.
+ *
+ * @note This is NOT the Server class that handles sockets and connections.
+ * Pure data container, no validation logic.
+ */
 class ServerConfig {
 public:
     ServerConfig();

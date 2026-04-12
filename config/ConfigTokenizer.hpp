@@ -41,9 +41,6 @@ public:
     const std::vector<Token>& getTokenList() const;
 
 private:
-    const std::string file_path_;
-    std::vector<Token> token_list_;
-
     ConfigTokenizer(const ConfigTokenizer& copy);
     ConfigTokenizer& operator=(const ConfigTokenizer& other);
 
@@ -54,6 +51,9 @@ private:
     void checkNotEmpty();
     void tokenize();
     void emitToken(std::string& current_word, size_t line_number);
+
+    const std::string file_path_;
+    std::vector<Token> token_list_;
 };
 
 #endif
