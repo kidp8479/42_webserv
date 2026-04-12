@@ -13,6 +13,7 @@ OBJ_DIR = obj
 
 SRCS = main.cpp \
        config/Config.cpp \
+	   config/ConfigParser.cpp \
 	   config/ConfigTokenizer.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \

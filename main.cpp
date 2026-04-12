@@ -1,6 +1,6 @@
 #include <cstdlib>
 
-#include "config/ConfigTokenizer.hpp"
+#include "config/ConfigParser.hpp"
 #include "logger/Logger.hpp"
 
 int main(int argc, char** argv) {
@@ -15,15 +15,11 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     Logger::get().setLogFile("webserv.log");
 
-    // LOG_DEBUG() << "test log debug";
-    // LOG_INFO() << "test log info";
-    // LOG_WARNING() << "test log warning";
-    // LOG_ERROR() << "test log error";
-
-    std::string path = (argc > 1) ? argv[1] : "conf/default.conf";
+    std::string file_path = (argc > 1) ? argv[1] : "conf/default.conf";
 
     try {
-        ConfigTokenizer tokenizer(path);
+        ConfigParser parser;
+        parser.parse(file_path);
     } catch (const std::exception& e) {
         return EXIT_FAILURE;
     }
