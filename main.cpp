@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
 
     try {
         ConfigParser parser;
-        parser.parse(file_path);
+        Config config = parser.parse(file_path);
     } catch (const std::exception& e) {
         return EXIT_FAILURE;
     }
