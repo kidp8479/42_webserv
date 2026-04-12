@@ -34,6 +34,9 @@
  */
 
 #include <gtest/gtest.h>
+#include <sys/stat.h>
+
+#include <cstdio>
 
 // !! include what you need for your class to run normally !!
 #include "../../config/ConfigTokenizer.hpp"
