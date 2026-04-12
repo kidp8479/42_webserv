@@ -153,7 +153,7 @@ void ConfigTokenizer::tokenize() {
         for (size_t i = 0; i < line.size(); i++) {
             char current_char = line[i];
 
-            if (isspace(current_char)) {
+            if (isspace(static_cast<unsigned char>(current_char))) {
                 emitToken(current_word, line_number);
             } else if (current_char == '{' || current_char == '}' ||
                        current_char == ';') {

@@ -5,6 +5,7 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <cstring>
 #include <fstream>
