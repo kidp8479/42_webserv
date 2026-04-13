@@ -6,9 +6,6 @@
 #include <netinet/in.h> //sockaddr_in
 #include <unistd.h> // close
 
-// pulled this number from the man, in case anyone is wondering
-static const int BACKLOG = 128;
-
 Server::Server(const Config& config) : config_(config) {}
 
 Server::~Server() {
@@ -45,7 +42,7 @@ void Server::setupSocket(int port) {
 		LOG_ERROR() << "bind() failed on port" << port;
 		throw std::runtime_error("bind() failed");
 	}
-	if (listen(server_fd, BACKLOG) < 0){
+	if (listen(server_fd, kBACKLOG) < 0){
 		close(server_fd);
 		LOG_ERROR() << "listen() failed";
 		throw std::runtime_error("listen() failed");
