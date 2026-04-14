@@ -11,7 +11,7 @@ public:
 
 	//avoid unintentional construction by using explict keyword
 	// w/o explicit this is allowed Client c = 42
-	explict Client(int fd);
+	explicit Client(int fd);
 	~Client();
 
 	// getters
