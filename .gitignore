@@ -24,10 +24,13 @@ en.subject.pdf
 
 # ─── logs ─────────────────────────────────────────────────────────────────────
 *.log
+Logs/
+
+# ─── compiled objects directory ───────────────────────────────────────────────
+obj/
 
 # ─── uploads (generated at runtime, not tracked) ──────────────────────────────
 www/uploads/
 
-# ─── test binaries (to adapt) ─────────────────────────────────────────────────
-tests/test_config
-tests/test_request
+# ─── test binaries - ignore all bin directories ────────────────────────────────
+bin/
