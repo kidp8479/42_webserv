@@ -1,3 +1,6 @@
+#ifndef CLIENT_HPP
+#define CLIENT_HPP
+
 class Client {
 public:
 	enum class State {
@@ -33,3 +36,5 @@ private:
 	size_t		bytes_sent_;
 	State		state_;
 };
+
+#endif
