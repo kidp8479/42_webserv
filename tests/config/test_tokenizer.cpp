@@ -203,3 +203,75 @@ TEST_F(ConfigTokenizer_Tokenize, FirstTokenIsServer) {
 TEST_F(ConfigTokenizer_Tokenize, FirstTokenIsOnLine1) {
     EXPECT_EQ(tokens_[0].line, 1u);
 }
+
+/* tests for tokenize() edge cases
+ *
+ * test files needed in ../config/test_files/:
+ *   comment_only.conf       => "# this is a comment"
+ *   inline_comment.conf     => "server {\n    listen 8080; # comment\n}"
+ *   multi_spaces.conf       => "server  {" (multiple spaces between tokens)
+ *   semicolon_attached.conf => "server {\n    listen 8080;\n}"
+ *   empty_lines.conf        => "\n\nserver {\n\n    listen 8080;\n\n}"
+ *
+ * [PASS] => comment line produces no tokens
+ * [PASS] => inline comment is ignored, tokens before # are kept
+ * [PASS] => multiple spaces between tokens don't produce empty tokens
+ * [PASS] => semicolon attached to word produces same tokens as separated
+ * [PASS] => empty lines are silently skipped
+ */
+
+TEST(ConfigTokenizer_Tokenize_EdgeCases, CommentLineProducesNoTokens) {
+    ConfigTokenizer tokenizer("../config/test_files/comment_only.conf");
+    EXPECT_EQ(tokenizer.getTokenList().size(), 0u);
+}
+
+TEST(ConfigTokenizer_Tokenize_EdgeCases, InlineCommentIgnored) {
+    ConfigTokenizer tokenizer("../config/test_files/inline_comment.conf");
+    const std::vector<Token>& tokens = tokenizer.getTokenList();
+    // expected: "server" "{" "listen" "8080" ";" "}"
+    // anything after # on the listen line should be dropped
+    ASSERT_EQ(tokens.size(), 6u);
+    EXPECT_EQ(tokens[0].value, "server");
+    EXPECT_EQ(tokens[1].value, "{");
+    EXPECT_EQ(tokens[2].value, "listen");
+    EXPECT_EQ(tokens[3].value, "8080");
+    EXPECT_EQ(tokens[4].value, ";");
+    EXPECT_EQ(tokens[5].value, "}");
+}
+
+TEST(ConfigTokenizer_Tokenize_EdgeCases, MultipleSpacesBetweenTokens) {
+    ConfigTokenizer tokenizer("../config/test_files/multi_spaces.conf");
+    const std::vector<Token>& tokens = tokenizer.getTokenList();
+    // extra spaces should not produce empty tokens
+    for (size_t i = 0; i < tokens.size(); i++) {
+        EXPECT_FALSE(tokens[i].value.empty());
+    }
+}
+
+TEST(ConfigTokenizer_Tokenize_EdgeCases, SemicolonAttachedToWord) {
+    // "listen 8080;" and "listen 8080 ;" should produce identical token lists
+    ConfigTokenizer attached("../config/test_files/semicolon_attached.conf");
+    ConfigTokenizer separated("../config/test_files/test_tokenizer.conf");
+
+    const std::vector<Token>& t1 = attached.getTokenList();
+    const std::vector<Token>& t2 = separated.getTokenList();
+
+    ASSERT_EQ(t1.size(), t2.size());
+    for (size_t i = 0; i < t1.size(); i++) {
+        EXPECT_EQ(t1[i].value, t2[i].value);
+    }
+}
+
+TEST(ConfigTokenizer_Tokenize_EdgeCases, EmptyLinesIgnored) {
+    ConfigTokenizer tokenizer("../config/test_files/empty_lines.conf");
+    const std::vector<Token>& tokens = tokenizer.getTokenList();
+    // same content as test_tokenizer.conf, just with empty lines added
+    // token count and values should be identical
+    ASSERT_EQ(tokens.size(), 6u);
+    EXPECT_EQ(tokens[0].value, "server");
+    EXPECT_EQ(tokens[1].value, "{");
+    EXPECT_EQ(tokens[2].value, "listen");
+    EXPECT_EQ(tokens[3].value, "8080");
+    EXPECT_EQ(tokens[4].value, ";");
+    EXPECT_EQ(tokens[5].value, "}");
+}
