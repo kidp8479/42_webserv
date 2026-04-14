@@ -19,10 +19,12 @@ public:
 	State		getState() const;
 	Request&	getRequest();
 	Response&	getResponse();
+	
+	// setter
+	void	setState(State new_state);
 
 
 private:
-	void	setState(State new_state);
 
 	int			fd_;
 	size_t		bytes_sent_;
