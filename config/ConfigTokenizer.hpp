@@ -47,6 +47,8 @@ private:
     ConfigTokenizer(const ConfigTokenizer& copy);
     ConfigTokenizer& operator=(const ConfigTokenizer& other);
 
+    void configError(const std::string& msg) const;
+
     void validateFile();
     void checkPathExists();
     void checkReadable();

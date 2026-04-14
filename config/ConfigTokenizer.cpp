@@ -30,6 +30,19 @@ const std::vector<Token>& ConfigTokenizer::getTokenList() const {
 }
 
 /**
+ * @brief Logs an error and throws a std::runtime_error with a "Config: "
+ * prefix.
+ *
+ * @param msg The error message (without the "Config: " prefix)
+ * @throws std::runtime_error Always
+ */
+void ConfigTokenizer::configError(const std::string& msg) const {
+    std::string full = "Config: " + msg;
+    LOG_ERROR() << full;
+    throw std::runtime_error(full);
+}
+
+/**
  * @brief Orchestrator for file level validation.
  *
  * Performs various checks before tokenizing the content of the file:
@@ -60,17 +73,10 @@ void ConfigTokenizer::checkPathExists() {
     struct stat file_info;
 
     if (stat(file_path_.c_str(), &file_info) == 0) {
-        if (S_ISDIR(file_info.st_mode)) {
-            LOG_ERROR() << "Config: path error:" << file_path_
-                        << " is a directory";
-            throw std::runtime_error("Config: " + file_path_ +
-                                     " is a directory");
-        }
+        if (S_ISDIR(file_info.st_mode))
+            configError(file_path_ + " is a directory");
     } else {
-        LOG_ERROR() << "Config: path error: " << file_path_ << ": "
-                    << std::strerror(errno);
-        throw std::runtime_error("Config: path error: " + file_path_ + ": " +
-                                 std::strerror(errno));
+        configError("path error: " + file_path_ + ": " + std::strerror(errno));
     }
     LOG_DEBUG() << "Config: " << file_path_ << " exists";
 }
@@ -83,12 +89,8 @@ void ConfigTokenizer::checkPathExists() {
 void ConfigTokenizer::checkReadable() {
     std::ifstream config_file(file_path_.c_str());
 
-    if (!config_file.is_open()) {
-        LOG_ERROR() << "Config: cannot read: " << file_path_ << ": "
-                    << std::strerror(errno);
-        throw std::runtime_error("Config: cannot read: " + file_path_ + ": " +
-                                 std::strerror(errno));
-    }
+    if (!config_file.is_open())
+        configError("cannot read: " + file_path_ + ": " + std::strerror(errno));
     LOG_DEBUG() << "Config: " << file_path_ << " opened successfully";
 }
 
@@ -106,22 +108,16 @@ void ConfigTokenizer::checkExtension() {
                                ? file_path_.substr(slash_pos + 1)
                                : file_path_;
 
-    if (std::count(filename.begin(), filename.end(), '.') != 1) {
-        LOG_ERROR() << "Config: filename must have exactly one dot";
-        throw std::runtime_error("Config: filename must have exactly one dot");
-    }
+    if (std::count(filename.begin(), filename.end(), '.') != 1)
+        configError("filename must have exactly one dot");
 
     std::string::size_type dot_position = filename.rfind('.');
 
-    if (dot_position == 0 || dot_position >= filename.length() - 1) {
-        LOG_ERROR() << "Config: no valid extension found";
-        throw std::runtime_error("Config: no valid extension found");
-    }
+    if (dot_position == 0 || dot_position >= filename.length() - 1)
+        configError("no valid extension found");
     std::string extension = filename.substr(dot_position + 1);
-    if (extension != "conf") {
-        LOG_ERROR() << "Config: wrong file extension";
-        throw std::runtime_error("Config: wrong file extension");
-    }
+    if (extension != "conf")
+        configError("wrong file extension");
     LOG_DEBUG() << "Config: correct file extension";
 }
 
@@ -133,10 +129,8 @@ void ConfigTokenizer::checkExtension() {
 void ConfigTokenizer::checkNotEmpty() {
     std::ifstream config_file(file_path_.c_str());
 
-    if (config_file.peek() == std::ifstream::traits_type::eof()) {
-        LOG_ERROR() << "Config: " << file_path_ << " is empty";
-        throw std::runtime_error("Config: " + file_path_ + " is empty");
-    }
+    if (config_file.peek() == std::ifstream::traits_type::eof())
+        configError(file_path_ + " is empty");
     LOG_DEBUG() << "Config: file is not empty";
 }
 
