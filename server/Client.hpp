@@ -1,9 +1,9 @@
 class Client {
 public:
 	enum class State {
-		Reading,
-		Writing,
-		Done
+		kReading,
+		kWriting,
+		kDone
 	};
 
 	//avoid unintentional construction by using explict keyword
