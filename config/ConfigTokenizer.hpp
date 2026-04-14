@@ -16,6 +16,8 @@
 
 #include "../logger/Logger.hpp"
 
+// note: std::pair was considered but rejected - struct gives named fields
+// (.value, .line) over .first/.second, and leaves room to add fields later
 struct Token {
     std::string value;
     size_t line;

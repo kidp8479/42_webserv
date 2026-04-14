@@ -38,6 +38,10 @@ const std::vector<Token>& ConfigTokenizer::getTokenList() const {
  * - file extension
  * - file emptiness
  *
+ * @note Each check opens its own ifstream independently. This is intentional:
+ * each method is self-contained, fails fast, and has nothing to clean up.
+ * Three file opens at startup is negligible.
+ *
  * @throws std::runtime_error if any of the checks fails
  */
 void ConfigTokenizer::validateFile() {
