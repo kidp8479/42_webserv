@@ -15,26 +15,20 @@ public:
 	~Client();
 
 	// getters
-    int		getFd() const;
-	State	getState() const;
+    int			getFd() const;
+	State		getState() const;
+	Request&	getRequest();
+	Response&	getResponse();
 
-	// request handling
-	void	appendRequest(const char* data, size_t size);
-	bool	isRequestComplete() const;
-
-	// response handling
-	void	setResponse(const std::string& response);
-	bool	hasResponse() const;
-	void	sendResponse();
 
 private:
 	void	setState(State new_state);
 
 	int			fd_;
-	std::string	request_buffer_;
-	std::string	response_buffer_;
 	size_t		bytes_sent_;
 	State		state_;
+	Request		request_;
+	Response	response_;
 };
 
 #endif
