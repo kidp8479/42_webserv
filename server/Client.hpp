@@ -1,9 +1,15 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
+#include <stddef.h>
+#include "../http/Request.hpp"
+#include "../http/Response.hpp"
+
+//class Request //fwd declare for now, include later when its implemented
+
 class Client {
 public:
-	enum class State {
+	enum State {
 		kReading,
 		kWriting,
 		kDone
@@ -16,6 +22,7 @@ public:
 
 	// getters
     int			getFd() const;
+	size_t		getBytesSent() const;
 	State		getState() const;
 	Request&	getRequest();
 	Response&	getResponse();
@@ -23,9 +30,10 @@ public:
 	// setter
 	void	setState(State new_state);
 
+	void	addBytesSent(size_t n);
+
 
 private:
-
 	int			fd_;
 	size_t		bytes_sent_;
 	State		state_;
