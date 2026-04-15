@@ -1,6 +1,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include "Client.hpp"
 #include <vector>
 #include <map>
 #include "../config/Config.hpp"
@@ -22,11 +23,17 @@ public:
     friend class ServerTestFixture;
 
 private:
+	void	setNonBlocking(int fd);
 	void	setupSocket(int socket);
 	int		acceptClient();
-	void	handleClient(int client_fd);
+	void	handleRead(Client& client);
+	void	handleWrite(Client& client);
+
+	//place holder
 	void	sendResponse(int client_fd);
-	//	buildResponse()
+	
+	//	helpers
+	void serverError(const std::string& msg);
 
 	const Config&			config_;
 	std::vector<int>		sockets_;
