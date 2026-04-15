@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     Logger::get().setLogFile("webserv.log");
 
     std::string file_path = (argc > 1) ? argv[1] : "conf/default.conf";
-
+/*
     try {
         ConfigParser parser;
         Config config = parser.parse(file_path);
