@@ -2,6 +2,7 @@
 #define REQUEST_HPP
 
 #include <string>
+#include <map>
 
 /**
  * @class Request
@@ -11,31 +12,47 @@
  */
 class Request {
 	public:
+		/* List of accepted http methods */
+		enum HttpMethod {
+			kNone = 0,
+			kGet,
+			kPost,
+			kDelete,
+		};
+
 		/* Orthodox Canonical Form */
 		Request();
 		~Request();
 		Request(const Request& other);
 		Request &operator=(const Request& other);
 
-		/* List of accepted http methods */
-		enum HttpMethod {
-			NONE = 0,
-			GET = 1,
-			POST = 2,
-			DELETE = 3
-		};
+		/* Constructors */
+		Request(std::string raw);
 
 		/* Getters */
-		HttpMethod getMethod();
+		HttpMethod							getMethod() const;
+		std::string							getTarget() const;
+		std::string							getProtocol() const;
+		std::string							getBody() const;
+		std::map<std::string, std::string>	getHeaders() const;
+
+		/* Checkers */
+		bool								isComplete() const;
 
 		/* Setters */
-		void	readMessage(int fd);
+		void	append(const char* data, size_t len);
+		void	setRaw(std::string raw);
+
+		/* Parsing */
+		void	parseMessage();
 	
 	private:
-		std::string	request_message_;
-		HttpMethod	request_method_;
-		std::string	request_target_;
-		std::string	request_protocol_;
+		std::string							raw_;
+		HttpMethod							method_;
+		std::string							target_;
+		std::string							protocol_;
+		std::map<std::string, std::string>	headers_;
+		std::string							body_;
 };
 
 #endif
