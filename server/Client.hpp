@@ -5,8 +5,6 @@
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
 
-//class Request //fwd declare for now, include later when its implemented
-
 class Client {
 public:
 	enum State {
@@ -31,7 +29,6 @@ public:
 	void	setState(State new_state);
 
 	void	addBytesSent(size_t n);
-
 
 private:
 	int			fd_;
