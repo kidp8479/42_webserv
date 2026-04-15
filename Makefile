@@ -12,6 +12,11 @@ OBJ_DIR = obj
 # ─── Sources ──────────────────────────────────────────────────────────────────
 
 SRCS = main.cpp \
+       config/Config.cpp \
+	   config/ConfigParser.cpp \
+	   config/ConfigTokenizer.cpp \
+       config/ServerConfig.cpp \
+       config/LocationConfig.cpp \
 	   logger/Logger.cpp \
 
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)

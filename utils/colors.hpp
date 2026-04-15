@@ -25,9 +25,9 @@
 #define BR_CYN "\033[1;36m"
 #define BR_WHT "\033[1;37m"
 
-# define BLD "\033[1m"
-# define ITL "\033[3m"
-# define ULN "\033[4m"
+#define BLD "\033[1m"
+#define ITL "\033[3m"
+#define ULN "\033[4m"
 
 #define RESET "\033[0m"
 
