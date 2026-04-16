@@ -21,6 +21,8 @@ private:
 
     void configError(const std::string& msg) const;
 
+    ServerConfig parseServerBlock();
+
     size_t index_;
     const std::vector<Token>* tokens_list_;
 };

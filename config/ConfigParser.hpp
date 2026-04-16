@@ -20,13 +20,6 @@ public:
     ConfigParser();
     ~ConfigParser();
 
-    /**
-     * @brief Parses a .conf file and returns a validated Config object.
-     *
-     * @param file_path Path to the .conf file (absolute or relative)
-     * @return Fully populated and validated Config object
-     * @throws std::runtime_error If the file is invalid or contains errors
-     */
     Config parse(const std::string& file_path);
 
 private:

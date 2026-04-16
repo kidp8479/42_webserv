@@ -34,9 +34,14 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
             oss << (*tokens_list_)[index_].line;
             configError("unexpected token \"" + (*tokens_list_)[index_].value +
                         "\" on line " + oss.str() + ", expected \"server\"");
+        } else {
+            config.addServerBlock(parseServerBlock(););
         }
         index_++;
         LOG_DEBUG() << "config object successfully filled.";
     }
     return (config);
+}
+
+ServerConfig ConfigBuilder::parseServerBlock() {
 }
