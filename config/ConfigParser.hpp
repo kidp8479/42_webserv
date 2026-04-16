@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Config.hpp"
+#include "ConfigBuilder.hpp"
 #include "ConfigTokenizer.hpp"
 
 /**

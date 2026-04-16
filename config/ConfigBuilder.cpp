@@ -1,5 +1,7 @@
 #include "ConfigBuilder.hpp"
 
+#include <sstream>
+
 ConfigBuilder::ConfigBuilder() : index_(0), tokens_list_(NULL) {
 }
 
@@ -20,9 +22,21 @@ void ConfigBuilder::configError(const std::string& msg) const {
 }
 
 Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
+    Config config;
     index_ = 0;
     tokens_list_ = &raw_tokens;
 
-    while (index_ < raw_tokens.size()) {
+    while (index_ < tokens_list_->size()) {
+        if ((*tokens_list_)[index_].value != "server") {
+            // size_t can't be concatenated with std::string directly
+            // convert via ostringstream first
+            std::ostringstream oss;
+            oss << (*tokens_list_)[index_].line;
+            configError("unexpected token \"" + (*tokens_list_)[index_].value +
+                        "\" on line " + oss.str() + ", expected \"server\"");
+        }
+        index_++;
+        LOG_DEBUG() << "config object successfully filled.";
     }
+    return (config);
 }
