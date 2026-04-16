@@ -17,13 +17,16 @@ TEST_NAMES := $(notdir $(TEST_SRCS:.cpp=))
 TEST_BINS := $(addprefix $(BIN_DIR)/,$(TEST_NAMES))
 VPATH := $(sort $(dir $(TEST_SRCS)))
 
-# shared sources
-SRCS = \
-    ../config/ConfigTokenizer.cpp \
-    ../logger/Logger.cpp \
-    ../config/Config.cpp \
-    ../config/ServerConfig.cpp \
-    ../config/LocationConfig.cpp
+# shared sources (no test files here)
+SRCS = 	\
+		../config/ConfigTokenizer.cpp \
+		../logger/Logger.cpp \
+		../config/Config.cpp \
+		../config/ServerConfig.cpp \
+		../config/LocationConfig.cpp \
+		../server/Fd.cpp \
+		#../server/Server.cpp \
+		
 
 all: $(BIN_DIR) $(OBJ_DIR) $(GTEST_OBJ) $(GTEST_MAIN_OBJ) $(TEST_BINS)
 
