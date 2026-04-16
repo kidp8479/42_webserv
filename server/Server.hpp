@@ -37,7 +37,7 @@ private:
 
 	const Config&			config_;
 	std::vector<int>		sockets_;
-	std::map<int, Client>	clients_;
+	std::map<int, Client*>	clients_;
 };
 
 #endif

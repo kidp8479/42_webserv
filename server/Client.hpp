@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
+#include "Fd.hpp"
 
 class Client {
 public:
@@ -31,7 +32,7 @@ public:
 	void	addBytesSent(size_t n);
 
 private:
-	int			fd_;
+	Fd			fd_;
 	size_t		bytes_sent_;
 	State		state_;
 	Request		request_;

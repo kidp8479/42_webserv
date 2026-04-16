@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <string>
+#include <sstream>
 
 Server::Server(const Config& config) : config_(config) {}
 
@@ -77,17 +78,13 @@ int	Server::acceptClient() {
 	int client_fd = accept(
 			sockets_[0],
 			(struct sockaddr*)&client_addr,
-			&client_len
-			);
-	//eventually need to store the client_fd
+			&client_len);
 
 	if (client_fd < 0) {
 		if (errno != EWOULDBLOCK && errno != EAGAIN) {
 			LOG_ERROR() << "accept() failed" << std::strerror(errno);
 		}
-		// no need to throw here, otherwise we exit the loop
-		// and server dies.
-		return -1; // fd on failure needs to be -1
+		return -1;
 	}
 
 	try {
@@ -205,12 +202,11 @@ bool Server::start() {
 			//accept new clients
 			int client_fd = acceptClient();
 			if (client_fd >= 0) {
-				clients_.insert(std::make_pair(client_fd, Client(client_fd)));
+				clients_.insert(std::make_pair(client_fd, new Client(client_fd)));
 			}
-			for(std::map<int, Client>::iterator it = clients_.begin();
+			for(std::map<int, Client*>::iterator it = clients_.begin();
 					it != clients_.end(); ) {
-				int fd = it->first;
-				Client& client = it->second;
+				Client& client = *it->second;
 
 				if (client.getState() == Client::kReading) {
 					handleRead(client);
@@ -219,7 +215,7 @@ bool Server::start() {
 				}
 				
 				if (client.getState() == Client::kDone) {
-					close(fd);
+					delete it->second;
 					clients_.erase(it++);
 				} else {
 					++it;
@@ -234,6 +230,12 @@ bool Server::start() {
 }
 
 void	Server::stop() {
+	for (std::map<int, Client*>::iterator it = clients_.begin();
+			it != clients_.end(); ++it) {
+		delete it->second;
+	}
+	clients_.clear();
+
 	for (size_t i = 0; i < sockets_.size(); i++) {
 		close(sockets_[i]);
 	}
