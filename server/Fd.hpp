@@ -14,12 +14,15 @@ public:
 	~Fd();
 
 	int		getFd() const;
-
 	void	reset(int fd = -1);
 	int		release();
 	bool	valid() const;
 
 private:
+	// no copying allowed
+	Fd(const Fd&);
+	Fd& operator=(const Fd&);
+
 	int	fd_;
 };
 

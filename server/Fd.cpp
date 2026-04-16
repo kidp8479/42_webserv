@@ -17,8 +17,8 @@ void	Fd::reset(int new_fd) {
 	if (fd_ != new_fd) {
 		if (fd_ >= 0) {
 			close(fd_);
-			fd_ = new_fd;
 		}
+		fd_ = new_fd;
 	}
 }
 
