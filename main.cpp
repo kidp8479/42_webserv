@@ -12,21 +12,21 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
- std::string level = (argc == 3) ? argv[2] : "INFO";
+	std::string level = (argc == 3) ? argv[2] : "INFO";
 
     if (!initLogger(level))
         return EXIT_FAILURE;
     Logger::get().setLogFile("webserv.log");
 
     std::string file_path = (argc > 1) ? argv[1] : "conf/default.conf";
-/*
+
     try {
         ConfigParser parser;
         Config config = parser.parse(file_path);
     } catch (const std::exception& e) {
         return EXIT_FAILURE;
     }
-*/
+
 	Config config;
 	
 	// create one server block
