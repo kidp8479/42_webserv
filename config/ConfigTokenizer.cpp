@@ -26,7 +26,7 @@ ConfigTokenizer::~ConfigTokenizer() {
  * @note ConfigBuilder (config file parsing phase 2) will need it
  */
 const std::vector<Token>& ConfigTokenizer::getTokenList() const {
-    return this->token_list_;
+    return this->tokens_list_;
 }
 
 /**
@@ -158,7 +158,7 @@ void ConfigTokenizer::tokenize() {
                 emitToken(current_word, line_number);
                 Token token_special_char = {std::string(1, current_char),
                                             line_number};
-                token_list_.push_back(token_special_char);
+                tokens_list_.push_back(token_special_char);
             } else if (current_char == '#') {
                 emitToken(current_word, line_number);
                 break;
@@ -170,9 +170,9 @@ void ConfigTokenizer::tokenize() {
         line_number++;
     }
 
-    for (size_t i = 0; i < token_list_.size(); i++) {
-        LOG_DEBUG() << "line [" << token_list_[i].line << "] - token[" << i
-                    << "] = '" << token_list_[i].value << "' ";
+    for (size_t i = 0; i < tokens_list_.size(); i++) {
+        LOG_DEBUG() << "line [" << tokens_list_[i].line << "] - token[" << i
+                    << "] = '" << tokens_list_[i].value << "' ";
     }
     LOG_DEBUG() << "Config: file successfully tokenized";
 }
@@ -190,7 +190,7 @@ void ConfigTokenizer::tokenize() {
 void ConfigTokenizer::emitToken(std::string& current_word, size_t line_number) {
     if (!current_word.empty()) {
         Token token = {current_word, line_number};
-        token_list_.push_back(token);
+        tokens_list_.push_back(token);
         current_word = "";
     }
 }

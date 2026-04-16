@@ -58,7 +58,7 @@ private:
     void emitToken(std::string& current_word, size_t line_number);
 
     const std::string file_path_;
-    std::vector<Token> token_list_;
+    std::vector<Token> tokens_list_;
 };
 
 #endif
