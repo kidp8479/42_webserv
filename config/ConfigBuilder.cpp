@@ -1,6 +1,6 @@
 #include "ConfigBuilder.hpp"
 
-ConfigBuilder::ConfigBuilder(/* args */) {
+ConfigBuilder::ConfigBuilder() : index_(0), tokens_list_(NULL) {
 }
 
 ConfigBuilder::~ConfigBuilder() {
@@ -17,4 +17,12 @@ void ConfigBuilder::configError(const std::string& msg) const {
     std::string full = "Config: " + msg;
     LOG_ERROR() << full;
     throw std::runtime_error(full);
+}
+
+Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
+    index_ = 0;
+    tokens_list_ = &raw_tokens;
+
+    while (index_ < raw_tokens.size()) {
+    }
 }
