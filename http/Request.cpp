@@ -1,4 +1,6 @@
 #include "Request.hpp"
+#include <iostream>
+#include <sstream>
 
 /*****************************************************************************
  *                                  REQUEST                                  *
@@ -51,7 +53,7 @@ Request::~Request() {
  /**
  * @brief Get Request Method.
  */
-Request::HttpMethod Request::getMethod() const {
+HttpMethod Request::getMethod() const {
 	return(this->method_);
 }
 
@@ -90,7 +92,7 @@ std::map<std::string, std::string> Request::getHeaders() const {
  * @return true if the request message is complete
  */
 bool Request::isComplete() const {
-	return (false);
+	return (false); //WIP!
 }
 
 
@@ -117,9 +119,52 @@ void Request::setRaw(std::string raw) {
 /********************************* Parsing **********************************/
 
  /**
- * @brief Parse request message to extract request data.
+ * @brief Parse the stored raw string to extract request data.
  */
 void Request::parseMessage() {
-	
+	std::string			line;
+	std::istringstream	rawStream(this->raw_);
+	bool				atStartLine = true;
+	bool				atBody = false;
 
+	while (std::getline(rawStream, line)) {
+		std::istringstream	lineStream(line);
+
+		if (atStartLine) {
+			/*Parsing request start line*/
+			std::string	strMethod;
+			std::string	methodCheck[3] = {"GET", "POST", "DELETE"};
+			HttpMethod	methodSet[3] = {kGet, kPost, kDelete};
+
+			this->method_ = kNone;
+			std::getline(lineStream, strMethod, ' ');
+			for (size_t i = 0; i < 3 && this->method_ == kNone; i++) {
+				if (strMethod == methodCheck[i])
+					this->method_ = methodSet[i];
+			}
+			std::getline(lineStream, this->target_, ' ');
+			std::getline(lineStream, this->protocol_, ' ');
+			atStartLine = false;
+		}
+		else if (!atBody) {
+			/*Parsing headers*/
+			if (line != "") {
+				std::string	name, value;
+				
+				std::getline(lineStream, name, ':');
+				std::getline(lineStream, value);
+				value.erase(0, value.find_first_not_of(' '));
+				this->headers_[name] = value;
+				std::cout << "Header \'" << name << "' of value " << value << std::endl;
+			}
+			else
+				atBody = true;
+		}
+		else {
+			/*Parsing body*/
+			if (!this->body_.empty())
+				this->body_ += '\n';
+			this->body_ += line;
+		}
+	}
 }

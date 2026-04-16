@@ -4,6 +4,14 @@
 #include <string>
 #include <map>
 
+/* List of accepted http methods */
+enum HttpMethod {
+	kNone = 0,
+	kGet,
+	kPost,
+	kDelete,
+};
+
 /**
  * @class Request
  * @brief Manages request parsing and request data storage
@@ -12,14 +20,6 @@
  */
 class Request {
 	public:
-		/* List of accepted http methods */
-		enum HttpMethod {
-			kNone = 0,
-			kGet,
-			kPost,
-			kDelete,
-		};
-
 		/* Orthodox Canonical Form */
 		Request();
 		~Request();
