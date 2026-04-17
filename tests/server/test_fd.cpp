@@ -43,15 +43,13 @@ TEST(FdRAII, ReleaseTransfersOwnership)
 	int fd = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
 	ASSERT_NE(fd, -1);
 
-	int	tmp = fd;
-	
 	{
 		Fd wrapper(fd);
 		ASSERT_TRUE(wrapper.valid());
+
 		int released = wrapper.release();
-		EXPECT_EQ(tmp, released);
-	} // destructor runs, but fd is not closed because release()
-	  // transferred ownership
+		EXPECT_EQ(fd, released);
+	}
 	int result = fcntl(fd, F_GETFD);
 
 	EXPECT_NE(-1, result);
