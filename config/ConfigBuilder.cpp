@@ -35,13 +35,40 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
             configError("unexpected token \"" + (*tokens_list_)[index_].value +
                         "\" on line " + oss.str() + ", expected \"server\"");
         } else {
-            config.addServerBlock(parseServerBlock(););
+            config.addServerBlock(parseServerBlock());
         }
-        index_++;
         LOG_DEBUG() << "config object successfully filled.";
     }
     return (config);
 }
 
 ServerConfig ConfigBuilder::parseServerBlock() {
+    ServerConfig server_block;
+
+    // advance index 1 spot to move from "server" token
+    index_++;
+
+    // check if next token is "{"
+    if ((*tokens_list_)[index_].value != "{") {
+        std::ostringstream oss;
+        oss << (*tokens_list_)[index_].line;
+        configError("unexpected token \"" + (*tokens_list_)[index_].value +
+                    "\" on line " + oss.str() + ", expected \"{\"");
+    }
+
+    index_++;  // advance past "{"
+
+    // go throught the list of tokens, looping untill we find "}" and with
+    // boundaries checks in case we don't find it
+    while (index_ < tokens_list_->size() &&
+           (*tokens_list_)[index_].value != "}") {
+        // TODO
+        index_++;
+    }
+    // index reached end of vector without finding "}", block is unclosed
+    if (index_ >= tokens_list_->size())
+        configError("unclosed server block, expected \"}\"");
+    // found "}", advance past it
+    index_++;
+    return server_block;
 }

@@ -170,11 +170,11 @@ void ConfigTokenizer::tokenize() {
         line_number++;
     }
 
-    for (size_t i = 0; i < tokens_list_.size(); i++) {
-        LOG_DEBUG() << "line [" << tokens_list_[i].line << "] - token[" << i
-                    << "] = '" << tokens_list_[i].value << "' ";
-    }
-    LOG_DEBUG() << "Config: file successfully tokenized";
+    // for (size_t i = 0; i < tokens_list_.size(); i++) {
+    //     LOG_DEBUG() << "line [" << tokens_list_[i].line << "] - token[" << i
+    //                 << "] = '" << tokens_list_[i].value << "' ";
+    // }
+    // LOG_DEBUG() << "Config: file successfully tokenized";
 }
 
 /**
