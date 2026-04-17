@@ -29,9 +29,15 @@ public:
 	// setter
 	void	setState(State new_state);
 
-	void	addBytesSent(size_t n);
+void	addBytesSent(size_t n);
 
 private:
+	// no copying or assignment allowed, client owns fd
+	// rule of thumb: any class that owns resrouces must not
+	// be copyable
+	Client(const Client&);
+	Client& operator=(const Client&);
+
 	Fd			fd_;
 	size_t		bytes_sent_;
 	State		state_;

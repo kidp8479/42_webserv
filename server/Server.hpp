@@ -23,6 +23,12 @@ public:
     friend class ServerTestFixture;
 
 private:
+	// cannot be copied or assigned because server owns sockets_
+	// and clients_. this prevents double close on sockets and 
+	// double delete on clients.
+	Server(const Server&);
+	Server& operator=(const Server&);
+
 	void	setNonBlocking(int fd);
 	void	setupSocket(int socket);
 	int		acceptClient();
@@ -34,6 +40,8 @@ private:
 
 	const Config&			config_;
 	std::vector<int>		sockets_;
+	// Pointer used because Client is non-copyable and owned dynamically.
+	// Server is responsible for lifetime management (new/delete).
 	std::map<int, Client*>	clients_;
 };
 
