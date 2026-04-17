@@ -20,8 +20,13 @@ private:
     ConfigBuilder& operator=(const ConfigBuilder& other);
 
     void configError(const std::string& msg) const;
+    void expectSemicolon();
+    int toInt(const std::string& s) const;
+    size_t toSizeT(const std::string& s) const;
 
     ServerConfig parseServerBlock();
+    void parseListen(ServerConfig& server_block);
+    void parseClientBodySize(ServerConfig& server_block);
 
     size_t index_;
     const std::vector<Token>* tokens_list_;
