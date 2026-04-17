@@ -86,9 +86,8 @@ int	Server::acceptClient() {
 	Fd client_fd(accept(sockets_[0], (struct sockaddr*)&client_addr, &client_len));
 
 	if (!client_fd.valid()) {
-		if (errno != EWOULDBLOCK && errno != EAGAIN) {
-			LOG_ERROR() << "accept() failed" << std::strerror(errno);
-		}
+		// accept failed or no connection ready
+		// ignore for now (poll will handle this properly later)
 		return -1;
 	}
 
@@ -129,14 +128,10 @@ void	Server::handleRead(Client& client)
 		client.setState(Client::kDone);
 	}
 	else {
-		if (errno == EWOULDBLOCK || errno == EAGAIN) {
-			LOG_DEBUG() << "EAGAIN on fd " << client.getFd()
-						<< "(no data available yet)"
-						<< ": " <<std::strerror(errno);
-			return ;
-		}
+		// Without poll/epoll, we cannot distinguish between "try again later"
+		// and real errors, so any failure is treated as a dead connection.
 		client.setState(Client::kDone);
-		LOG_INFO() << "Client " << client.getFd() << " disconnected";
+		LOG_INFO() << "Client " << client.getFd() << " disconnected or error";
 	}
 }
 
@@ -154,9 +149,6 @@ void	Server::handleWrite(Client& client) {
 			client.setState(Client::kDone);
 		}
 	} else {
-		if (errno == EWOULDBLOCK || errno == EAGAIN) {
-			return ;
-		}
 		client.setState(Client::kDone);
 	}
 }
