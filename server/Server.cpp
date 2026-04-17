@@ -2,20 +2,14 @@
 #include "Client.hpp"
 #include "../logger/Logger.hpp"
 #include <stdexcept>
-#include <sys/socket.h> //socket
-#include <cstring> // std::memset
-#include <netinet/in.h> //sockaddr_in
-#include <unistd.h> // close
+#include <sys/socket.h>
+#include <cstring>
+#include <netinet/in.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <cerrno>
 #include <string>
 #include <sstream>
-
-Server::Server(const Config& config) : config_(config) {}
-
-Server::~Server() {
-	stop();
-}
 
 // maybe put this in a utils.hpp file?
 static std::string toString(int value) {
@@ -24,15 +18,87 @@ static std::string toString(int value) {
 	return oss.str();
 }
 
-void	Server::setNonBlocking(int fd) {
-	int flags = fcntl(fd, F_GETFL, 0);
-	
-	if (flags == -1) {
-		serverError("fcntl(F_GETFL) failed for fd " + toString(fd));
+Server::Server(const Config& config) : config_(config) {}
+
+Server::~Server() {
+	stop();
+}
+
+bool Server::start() {
+	LOG_INFO() << "Server starting...";
+	try {
+		const std::vector<ServerConfig>& servers =
+			config_.getServerBlock();
+
+		if (servers.empty()) {
+			serverError("No servers configured");
+		}
+
+		for (size_t i = 0; i < servers.size(); i++) {
+			int port = servers[i].getPort();
+
+			if (port == PORT_NOT_SET) {
+				serverError("Port not set");
+			}
+
+			setupSocket(port);
+			LOG_INFO() << "Server listening setup complete";
+		}
+
+		while (true) {
+			//accept new clients
+			int raw_fd = acceptClient();
+			if (raw_fd >= 0) {
+				LOG_DEBUG() << "Accepted new connection, raw_fd: " << raw_fd;
+				// Store client by fd: maps raw socket fd to its owning Client instance
+				clients_.insert(std::make_pair(raw_fd, new Client(raw_fd)));
+				LOG_DEBUG() << "Client created and stored in map, fd: " << raw_fd;
+			}
+			for(std::map<int, Client*>::iterator it = clients_.begin();
+					it != clients_.end(); ) {
+				Client& client = *it->second;
+
+				if (client.getState() == Client::kReading) {
+					handleRead(client);
+				} else if (client.getState() == Client::kWriting) {
+					handleWrite(client);
+				}
+				
+				if (client.getState() == Client::kDone) {
+					delete it->second;
+					clients_.erase(it++);
+				} else {
+					++it;
+				}
+			}
+		}
 	}
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-		serverError("fcntl(F_SETFL) failed for " + toString(fd));
+	catch (const std::exception& e) {
+		return false;
 	}
+	return true;
+}
+
+void	Server::stop() {
+	for (std::map<int, Client*>::iterator it = clients_.begin();
+			it != clients_.end(); ++it) {
+		LOG_DEBUG() << "Client*[" << it->second->getFd() << " ] deleted";
+		delete it->second;
+	}
+	clients_.clear();
+
+	// since the transfer of the fd has been passed to sockets_ ,
+	// we still need to close manually here
+	for (size_t i = 0; i < sockets_.size(); i++) {
+		close(sockets_[i]);
+		LOG_DEBUG() << "sockets_[" << i << " ] deleted";
+	}
+	sockets_.clear();
+}
+
+// getters
+const std::vector<int>& Server::getSockets() const {
+	return sockets_;
 }
 
 void Server::setupSocket(int port) {
@@ -40,7 +106,6 @@ void Server::setupSocket(int port) {
 	if(!server_fd.valid()){
 		serverError("socket() failed");
 	}
-
 
 	int opt = 1;
 	// an integer flag used to configure a socket option.
@@ -74,6 +139,17 @@ void Server::setupSocket(int port) {
 	// we dont need to keep track of closing the fd at each error path.
 	sockets_.push_back(server_fd.release());
 	LOG_INFO() << "Listening on port " << port;
+}
+
+void	Server::setNonBlocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	
+	if (flags == -1) {
+		serverError("fcntl(F_GETFL) failed for fd " + toString(fd));
+	}
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		serverError("fcntl(F_SETFL) failed for " + toString(fd));
+	}
 }
 
 int	Server::acceptClient() {
@@ -123,11 +199,9 @@ void	Server::handleRead(Client& client)
 		client.setState(Client::kWriting);
 		LOG_DEBUG() << "Client " << client.getFd()
 					<< " switching to WRITING state";
-	}
-	else if (bytes == 0) {
+	} else if (bytes == 0) {
 		client.setState(Client::kDone);
-	}
-	else {
+	} else {
 		// Without poll/epoll, we cannot distinguish between "try again later"
 		// and real errors, so any failure is treated as a dead connection.
 		client.setState(Client::kDone);
@@ -157,76 +231,4 @@ void	Server::serverError(const std::string& msg) {
 	std::string full = "Server: " + msg;
 	LOG_ERROR() << full;
 	throw std::runtime_error(full);
-}
-
-bool Server::start() {
-	LOG_INFO() << "Server starting...";
-	try {
-		const std::vector<ServerConfig>& servers =
-			config_.getServerBlock();
-
-		if (servers.empty()) {
-			serverError("No servers configured");
-		}
-
-		for (size_t i = 0; i < servers.size(); i++) {
-			int port = servers[i].getPort();
-
-			if (port == PORT_NOT_SET) {
-				serverError("Port not set");
-			}
-
-			setupSocket(port);
-			LOG_INFO() << "Server listening setup complete";
-		}
-
-		while (true) {
-			//accept new clients
-			int client_fd = acceptClient();
-			if (client_fd >= 0) {
-				clients_.insert(std::make_pair(client_fd, new Client(client_fd)));
-			}
-			for(std::map<int, Client*>::iterator it = clients_.begin();
-					it != clients_.end(); ) {
-				Client& client = *it->second;
-
-				if (client.getState() == Client::kReading) {
-					handleRead(client);
-				} else if (client.getState() == Client::kWriting) {
-					handleWrite(client);
-				}
-				
-				if (client.getState() == Client::kDone) {
-					delete it->second;
-					clients_.erase(it++);
-				} else {
-					++it;
-				}
-			}
-		}
-	}
-	catch (const std::exception& e) {
-		return false;
-	}
-	return true;
-}
-
-void	Server::stop() {
-	for (std::map<int, Client*>::iterator it = clients_.begin();
-			it != clients_.end(); ++it) {
-		delete it->second;
-	}
-	clients_.clear();
-
-	// since the transfer of the fd has been pased to sockets_ ,
-	// we still need to close manually here
-	for (size_t i = 0; i < sockets_.size(); i++) {
-		close(sockets_[i]);
-	}
-	sockets_.clear();
-}
-
-// getters
-const std::vector<int>& Server::getSockets() const {
-	return sockets_;
 }

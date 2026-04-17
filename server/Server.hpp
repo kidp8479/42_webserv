@@ -14,10 +14,10 @@ public:
 	Server(const Config& config);
 	~Server();
 
-	bool	start(); // bind, listen, enter main loop
-	void	stop(); // close sockets
-	
+	bool					start(); // bind, listen, enter main loop
+	void					stop(); // close sockets
 	const std::vector<int>& getSockets() const;
+
     // TODO: comment this out before validatin
     // Grant access to private members to the test fixture
     friend class ServerTestFixture;
@@ -29,14 +29,12 @@ private:
 	Server(const Server&);
 	Server& operator=(const Server&);
 
-	void	setNonBlocking(int fd);
 	void	setupSocket(int socket);
+	void	setNonBlocking(int fd);
 	int		acceptClient();
 	void	handleRead(Client& client);
 	void	handleWrite(Client& client);
-
-	//	helpers
-	void serverError(const std::string& msg);
+	void	serverError(const std::string& msg);
 
 	const Config&			config_;
 	std::vector<int>		sockets_;
