@@ -54,3 +54,35 @@ TEST(FdRAII, ReleaseTransfersOwnership)
 
 	EXPECT_NE(-1, result);
 }
+
+TEST(FdRAII, ReleaseSetsInternalFdToMinusOne)
+{
+	int fd = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
+	ASSERT_NE(fd, -1);
+
+	Fd wrapper(fd);
+	ASSERT_TRUE(wrapper.valid());
+
+	wrapper.release();
+
+	EXPECT_EQ(wrapper.getFd(), -1);
+}
+
+/** uncomment to test
+TEST(FdCopy, CopyShouldNotCompile) {
+	Fd fd1 = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
+	ASSERT_NE(-1, fd1.getFd());
+
+	Fd fd2(fd1);
+}
+*/
+
+/** uncomment to test
+TEST(FdCopy, AssignmentShouldNotCompile) {
+	Fd fd1 = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
+	ASSERT_NE(-1, fd1.getFd());
+
+	Fd fd2 = fd1;
+
+}
+*/
