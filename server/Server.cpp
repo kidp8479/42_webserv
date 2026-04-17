@@ -17,6 +17,7 @@ Server::~Server() {
 	stop();
 }
 
+// maybe put this in a utils.hpp file?
 static std::string toString(int value) {
 	std::ostringstream oss;
 	oss << value;
@@ -35,8 +36,8 @@ void	Server::setNonBlocking(int fd) {
 }
 
 void Server::setupSocket(int port) {
-	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(server_fd < 0){
+	Fd server_fd(socket(AF_INET, SOCK_STREAM, 0));
+	if(!server_fd.valid()){
 		serverError("socket() failed");
 	}
 
@@ -46,8 +47,7 @@ void Server::setupSocket(int port) {
 	// Allow this socket to reuse an address (port), even if it was recently used.
 	// without this if we run server, stop and try to restart we'll get 
 	// bind() failed: address alreayd in use
-	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-		close(server_fd);
+	if (setsockopt(server_fd.getFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
 		serverError("setsockopt() failed");
 	}
 	sockaddr_in addr;
@@ -57,17 +57,22 @@ void Server::setupSocket(int port) {
 	addr.sin_addr.s_addr = INADDR_ANY;  // later use host_
 	addr.sin_port = htons(port);
 
-	if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-		close(server_fd);
+	if (bind(server_fd.getFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0) {
 		serverError("bind() failed on port " + toString(port));
 	}
-	if (listen(server_fd, kBACKLOG) < 0){
-		close(server_fd);
+	if (listen(server_fd.getFd(), kBACKLOG) < 0){
 		serverError("listen() failed");
 	}
-	 setNonBlocking(server_fd);
+	setNonBlocking(server_fd.getFd());
 
-	sockets_.push_back(server_fd);
+	// transfer ownership of fd to server with release. if we dont do this
+	// fd will go out of scope after this function ends and it will close the
+	// fd automatically, which is what we dont want. release() saves current
+	// fd in tmp and sets the current fd to -1. and the tmp fd goes into
+	// sockets_ which will need to be closed manually in close()
+	// this method adds a bit more complexity, but the trade-off is that
+	// we dont need to keep track of closing the fd at each error path.
+	sockets_.push_back(server_fd.release());
 	LOG_INFO() << "Listening on port " << port;
 }
 
@@ -75,12 +80,12 @@ int	Server::acceptClient() {
 	sockaddr_in	client_addr;
 	socklen_t	client_len = sizeof(client_addr);
 
-	int client_fd = accept(
-			sockets_[0],
-			(struct sockaddr*)&client_addr,
-			&client_len);
+	// Single-socket, single-threaded setup for now: we only listen on sockets_[0].
+	// This will be extended later (e.g. with poll/epoll) to handle multiple
+	// listening sockets and concurrent client readiness.
+	Fd client_fd(accept(sockets_[0], (struct sockaddr*)&client_addr, &client_len));
 
-	if (client_fd < 0) {
+	if (!client_fd.valid()) {
 		if (errno != EWOULDBLOCK && errno != EAGAIN) {
 			LOG_ERROR() << "accept() failed" << std::strerror(errno);
 		}
@@ -88,16 +93,18 @@ int	Server::acceptClient() {
 	}
 
 	try {
-		setNonBlocking(client_fd);
-		LOG_DEBUG() << "Setting client " << client_fd << " to non-blocking";
+		setNonBlocking(client_fd.getFd());
+		LOG_DEBUG() << "Setting client " << client_fd.getFd() << " to non-blocking";
 	} catch (const std::exception& e) {
-		close(client_fd);
-		LOG_ERROR() << "Failed to set client fd " << client_fd << " to non-blocking";
+		LOG_ERROR() << "Failed to set client fd " << client_fd.getFd() << " to non-blocking";
 		return -1;
 	}
 
-	LOG_INFO() << "Client " << client_fd << " connected";
-	return (client_fd);
+	LOG_INFO() << "Client " << client_fd.getFd() << " connected";
+	// transfer ownership of fd here, since at the end of this function
+	// Fd will go out of scope and it will close the fd, an we dont want that
+	// we need it for later.
+	return client_fd.release();
 }
 
 void	Server::handleRead(Client& client)
@@ -136,12 +143,10 @@ void	Server::handleRead(Client& client)
 void	Server::handleWrite(Client& client) {
 	const std::string& response = client.getResponse().getRaw();
 
-	ssize_t sent = send(
-			client.getFd(),
+	ssize_t sent = send(client.getFd(),
 			response.c_str() + client.getBytesSent(),
 			response.size() - client.getBytesSent(),
-			0
-			);
+			0);
 
 	if (sent > 0) {
 		client.addBytesSent(sent);
@@ -154,21 +159,6 @@ void	Server::handleWrite(Client& client) {
 		}
 		client.setState(Client::kDone);
 	}
-}
-
-void	Server::sendResponse(int client_fd) {
-	std::string response =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Length: 11\r\n"
-		"\r\n"
-		"Hello World";
-
-	ssize_t sent = send(client_fd, response.c_str(), response.size(), 0);
-	if (sent < 0) {
-		LOG_ERROR() << "send() failed for client fd " << client_fd;
-		return ;
-	}
-	LOG_INFO() << "Response sent to client fd " << client_fd;
 }
 
 void	Server::serverError(const std::string& msg) {
@@ -236,6 +226,8 @@ void	Server::stop() {
 	}
 	clients_.clear();
 
+	// since the transfer of the fd has been pased to sockets_ ,
+	// we still need to close manually here
 	for (size_t i = 0; i < sockets_.size(); i++) {
 		close(sockets_[i]);
 	}

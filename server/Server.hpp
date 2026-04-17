@@ -29,9 +29,6 @@ private:
 	void	handleRead(Client& client);
 	void	handleWrite(Client& client);
 
-	//place holder
-	void	sendResponse(int client_fd);
-	
 	//	helpers
 	void serverError(const std::string& msg);
 
