@@ -4,6 +4,13 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
+TEST(FdBasic, DefaultFdIsMinusOne) {
+	Fd fd;
+
+	EXPECT_FALSE(fd.valid());
+	ASSERT_EQ(-1, fd.getFd());
+}
+
 TEST(FdBasic, ValidFd) {
 	int fd = socket(AF_INET, SOCK_STREAM, 0);
 	ASSERT_GE(fd, 0);
@@ -13,7 +20,39 @@ TEST(FdBasic, ValidFd) {
 }
 
 TEST(FdBasic, InvalidFd) {
-	Fd wrapper(-1);
+	Fd fd(-1);
 
-	EXPECT_FALSE(wrapper.valid());
+	EXPECT_FALSE(fd.valid());
+}
+
+TEST(FdRAII, DestructorClosesFd) {
+	int fd = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
+	ASSERT_NE(fd, -1);
+	{
+		Fd wrapper(fd);
+		ASSERT_TRUE(wrapper.valid());
+	}
+	int result = fcntl(fd, F_GETFD);
+
+	EXPECT_EQ(-1, result);
+	EXPECT_EQ(EBADF, errno);
+}
+
+TEST(FdRAII, ReleaseTransfersOwnership)
+{
+	int fd = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
+	ASSERT_NE(fd, -1);
+
+	int	tmp = fd;
+	
+	{
+		Fd wrapper(fd);
+		ASSERT_TRUE(wrapper.valid());
+		int released = wrapper.release();
+		EXPECT_EQ(tmp, released);
+	} // destructor runs, but fd is not closed because release()
+	  // transferred ownership
+	int result = fcntl(fd, F_GETFD);
+
+	EXPECT_NE(-1, result);
 }
