@@ -82,7 +82,7 @@ bool Server::start() {
 void	Server::stop() {
 	for (std::map<int, Client*>::iterator it = clients_.begin();
 			it != clients_.end(); ++it) {
-		LOG_DEBUG() << "Client*[" << it->second.getFd() << " ] deleted";
+		LOG_DEBUG() << "Client*[" << it->second->getFd() << " ] deleted";
 		delete it->second;
 	}
 	clients_.clear();
