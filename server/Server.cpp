@@ -46,24 +46,30 @@ bool Server::start() {
 		}
 
 		while (true) {
-			//accept new clients
+			//accept new incoming connections
 			int raw_fd = acceptClient();
 			if (raw_fd >= 0) {
 				LOG_DEBUG() << "Accepted new connection, raw_fd: " << raw_fd;
+
 				// Store client by fd: maps raw socket fd to its owning Client instance
 				clients_.insert(std::make_pair(raw_fd, new Client(raw_fd)));
 				LOG_DEBUG() << "Client created and stored in map, fd: " << raw_fd;
 			}
+
+			// iterate over all active clients continuously
 			for(std::map<int, Client*>::iterator it = clients_.begin();
 					it != clients_.end(); ) {
 				Client& client = *it->second;
 
+				// handle client based on its current state
 				if (client.getState() == Client::kReading) {
+					// read incoming data (append to requeest buffer)
 					handleRead(client);
 				} else if (client.getState() == Client::kWriting) {
+					// send response data (may be partial, tracked by bytes_sent_)
 					handleWrite(client);
 				}
-				
+				// cleanup finished clients
 				if (client.getState() == Client::kDone) {
 					delete it->second;
 					clients_.erase(it++);
@@ -170,8 +176,10 @@ int	Server::acceptClient() {
 	}
 
 	try {
+		//Setting the client socket to non-blocking ensures that future recv() and send()
+		//calls never stall the entire server if no data is ready or the kernel buffer is full.
 		setNonBlocking(client_fd.getFd());
-		LOG_DEBUG() << "Setting client " << client_fd.getFd() << " to non-blocking";
+		LOG_DEBUG() << "Setting client fd " << client_fd.getFd() << " to non-blocking";
 	} catch (const std::exception& e) {
 		LOG_ERROR() << "Failed to set client fd " << client_fd.getFd() << " to non-blocking";
 		return -1;
@@ -184,6 +192,10 @@ int	Server::acceptClient() {
 	return client_fd.release();
 }
 
+// the client request comes in as a stream of raw data, that can come
+// in partial chunks or split messages - these raw data must be parsed
+// and reconstructed at the HTTP layer (Charlie's part). My job
+// here is just to store the raw data
 void	Server::handleRead(Client& client)
 {
 	LOG_DEBUG() << "Reading from fd " << client.getFd();
@@ -194,37 +206,48 @@ void	Server::handleRead(Client& client)
 	ssize_t bytes = recv(client.getFd(), buffer, sizeof(buffer), 0);
 	LOG_DEBUG() << "Received " << bytes << " bytes from fd " << client.getFd();
 	if (bytes > 0) {
+		// i store the request directly in request object raw_ for Charlie
 		client.getRequest().append(buffer, bytes);
 
-		//TODO: check if request is complete
-		client.getResponse().buildFrom(client.getRequest());
-		client.setState(Client::kWriting);
-		LOG_DEBUG() << "Client " << client.getFd()
-					<< " switching to WRITING state";
-	} else if (bytes == 0) {
+		// charlie then parses the header and body and check to see if the request
+		// isComplete when "\r\n\r\n" is found (+ full body if Content-Length is set)
+		if (client.getRequest().isComplete())
+		{
+			client.getResponse().buildFrom(client.getRequest());
+			client.setState(Client::kWriting);
+			LOG_DEBUG() << "Client fd " << client.getFd()
+						<< " switching to WRITING state";
+		}
+	} else if (bytes == 0) { // connection finished, stream closed
 		client.setState(Client::kDone);
 	} else {
 		// Without poll/epoll, we cannot distinguish between "try again later"
 		// and real errors, so any failure is treated as a dead connection.
 		client.setState(Client::kDone);
-		LOG_INFO() << "Client " << client.getFd() << " disconnected or error";
+		LOG_INFO() << "Client fd " << client.getFd() << " disconnected or error";
 	}
 }
 
 void	Server::handleWrite(Client& client) {
+	// use &, no unnecessary copying. points to Response::raw_
 	const std::string& response = client.getResponse().getRaw();
 
+	// send() may write only part of the data, so we resume from bytes already sent
 	ssize_t sent = send(client.getFd(),
 			response.c_str() + client.getBytesSent(),
 			response.size() - client.getBytesSent(),
 			0);
 
 	if (sent > 0) {
+		// track how many bytes have been successfully sent so far
 		client.addBytesSent(sent);
+
+		// if entire response has been sent, mark client as done
 		if (client.getBytesSent() >= response.size()) {
 			client.setState(Client::kDone);
 		}
 	} else {
+		// w/o polling, treat any failure as a closed connection
 		client.setState(Client::kDone);
 	}
 }

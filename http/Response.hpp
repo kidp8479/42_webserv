@@ -2,15 +2,20 @@
 #define RESPONSE_HPP
 
 #include <string>
-
-class Request; // fwd declaration
+#include "Request.hpp"
 
 class Response {
 public:
 	Response();
 
-	void	buildFrom(const Request& request);
-	const std::string& getRaw() const;
+	// what this function should do :
+	// read parsed request data (method, path, etc.), decide what to return,
+	// construct a valid HTTP response string
+	// and store the results in raw_:
+	void				buildFrom(const Request& request);
+	
+	// this function will allow me to get the results
+	const std::string&	getRaw() const;
 
 private:
 	std::string raw_;

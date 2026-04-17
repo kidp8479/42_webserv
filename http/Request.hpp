@@ -9,7 +9,8 @@ public:
     ~Request();
 
     // temporary stub API (enough for Client/Server)
-    void append(const char* data, size_t len);
+    void	append(const char* data, size_t len);
+	bool	isComplete() const { return true; }
 
 private:
     std::string raw_;

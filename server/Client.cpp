@@ -5,6 +5,8 @@ Client::Client(int fd) : fd_(fd), bytes_sent_(0), state_(kReading)
 {
 	LOG_DEBUG() << "fd: " << fd_.getFd() << ", bytes sent: " << bytes_sent_
 				<< ", state: " << state_;
+	// request_ object default constructed automatically
+	// response_ object also default constructed automatically
 }
 
 Client::~Client() {}
