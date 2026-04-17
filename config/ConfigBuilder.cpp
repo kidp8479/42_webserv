@@ -92,13 +92,13 @@ ServerConfig ConfigBuilder::parseServerBlock() {
 
         } else if ((*tokens_list_)[index_].value == "error_page") {
             index_++;
+            expectSemicolon();
         } else {
             std::ostringstream oss;
             oss << (*tokens_list_)[index_].line;
             configError("unexpected token \"" + (*tokens_list_)[index_].value +
-                        "\" on line " + oss.str() + ", expected \"listen\"");
+                        "\" on line " + oss.str());
         }
-        index_++;
     }
     // index reached end of vector without finding "}", block is unclosed
     if (index_ >= tokens_list_->size())
@@ -127,21 +127,22 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
 
     size_t unit_position =
         (*tokens_list_)[index_].value.find_first_of("KkMmGg");
-    std::string body_size_value =
-        (*tokens_list_)[index_].value.substr(0, unit_position);
-    std::string body_size_unit =
-        (*tokens_list_)[index_].value.substr(unit_position);
-
-    size_t raw_size = toSizeT(body_size_value);
+    size_t raw_size;
     size_t byte_size;
-    if (body_size_unit == "k" || body_size_unit == "K")
-        byte_size = raw_size * 1024;
-    else if (body_size_unit == "m" || body_size_unit == "M")
-        byte_size = raw_size * 1048576;
-    else if (body_size_unit == "g" || body_size_unit == "G")
-        byte_size = raw_size * 1073741824;
-    else  // no unit — treat as bytes, like nginx
-        byte_size = raw_size;
+    if (unit_position == std::string::npos) {
+        // no unit — treat entire value as bytes, like nginx
+        byte_size = toSizeT((*tokens_list_)[index_].value);
+    } else {
+        raw_size =
+            toSizeT((*tokens_list_)[index_].value.substr(0, unit_position));
+        std::string unit = (*tokens_list_)[index_].value.substr(unit_position);
+        if (unit == "k" || unit == "K")
+            byte_size = raw_size * 1024;
+        else if (unit == "m" || unit == "M")
+            byte_size = raw_size * 1048576;
+        else
+            byte_size = raw_size * 1073741824;  // "g" or "G"
+    }
     server_block.setMaxBodySize(byte_size);
     index_++;  // advance to ";"
     expectSemicolon();
