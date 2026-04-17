@@ -9,7 +9,10 @@
 class Server {
 public:
 	// pulled this number from the man, in case anyone is wondering
-	static const int kBACKLOG = 128;
+	static const int kBacklog = 128;
+	// why this number? 4k is typical page size and still safe on stack
+	// reduces syscall overhead vs 1K
+	static const size_t kBufferSize = 4096;
 
 	Server(const Config& config);
 	~Server();

@@ -82,7 +82,7 @@ bool Server::start() {
 void	Server::stop() {
 	for (std::map<int, Client*>::iterator it = clients_.begin();
 			it != clients_.end(); ++it) {
-		LOG_DEBUG() << "Client*[" << it->second->getFd() << " ] deleted";
+		LOG_DEBUG() << "Client*[" << it->second.getFd() << " ] deleted";
 		delete it->second;
 	}
 	clients_.clear();
@@ -125,7 +125,9 @@ void Server::setupSocket(int port) {
 	if (bind(server_fd.getFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0) {
 		serverError("bind() failed on port " + toString(port));
 	}
-	if (listen(server_fd.getFd(), kBACKLOG) < 0){
+	// use system defined minimum for backlog, the maximum number of
+	// connections that can be waiting in the accept queue.
+	if (listen(server_fd.getFd(), SOMAXCONN) < 0){
 		serverError("listen() failed");
 	}
 	setNonBlocking(server_fd.getFd());
@@ -188,7 +190,7 @@ void	Server::handleRead(Client& client)
 	// we need a raw buffer here becasue recv expects raw memory
 	// if we use std::string buffer:
 	// it has no allocated size, writing to it is UB
-	char buffer[1024];
+	char buffer[kBufferSize];
 	ssize_t bytes = recv(client.getFd(), buffer, sizeof(buffer), 0);
 	LOG_DEBUG() << "Received " << bytes << " bytes from fd " << client.getFd();
 	if (bytes > 0) {
