@@ -1,10 +1,17 @@
 #include "ConfigBuilder.hpp"
 
-#include <sstream>
-
+/**
+ * @brief Constructs a ConfigBuilder object.
+ *
+ * @note: initialize index_ to 0 et tokens_list_ to NULL (pointer to a vector of
+ * Token)
+ */
 ConfigBuilder::ConfigBuilder() : index_(0), tokens_list_(NULL) {
 }
 
+/**
+ * @brief Destroys the ConfigBuilder.
+ */
 ConfigBuilder::~ConfigBuilder() {
 }
 
@@ -99,10 +106,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
         } else if (current_token.value == "error_page") {
             parseErrorPage(server_block);
         } else if (current_token.value == "location") {
-            // TODO: implement parseErrorPage() and parseLocationBlock() in
-            // parseServerBlock() dispatch — add matching gtest cases in
-            // test_builder.cpp once each is done
-            index_++;
+            parseLocationBlock(server_block);
         } else {
             std::ostringstream oss;
             oss << current_token.line;
@@ -151,11 +155,11 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
         size_t raw_size = toSizeT(current_token.value.substr(0, unit_pos));
         std::string unit = current_token.value.substr(unit_pos);
         if (unit == "k" || unit == "K") {
-            byte_size = raw_size * 1024;
+            byte_size = raw_size * BYTES_PER_KB;
         } else if (unit == "m" || unit == "M") {
-            byte_size = raw_size * 1048576;
+            byte_size = raw_size * BYTES_PER_MB;
         } else {
-            byte_size = raw_size * 1073741824;  // "g" or "G"
+            byte_size = raw_size * BYTES_PER_GB;  // "g" or "G"
         }
     }
     server_block.setMaxBodySize(byte_size);
@@ -179,4 +183,7 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     server_block.addErrorPage(code, path);
     index_++;  // advance to ";"
     expectSemicolon();
+}
+
+void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
 }

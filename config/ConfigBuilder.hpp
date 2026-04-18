@@ -1,6 +1,11 @@
 #ifndef CONFIG_BUILDER_HPP
 #define CONFIG_BUILDER_HPP
 
+#define BYTES_PER_KB 1024
+#define BYTES_PER_MB 1048576
+#define BYTES_PER_GB 1073741824
+
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -20,6 +25,7 @@ private:
     ConfigBuilder& operator=(const ConfigBuilder& other);
 
     void configError(const std::string& msg) const;
+
     void expectSemicolon();
     int toInt(const std::string& s) const;
     size_t toSizeT(const std::string& s) const;
@@ -28,6 +34,8 @@ private:
     void parseListen(ServerConfig& server_block);
     void parseClientBodySize(ServerConfig& server_block);
     void parseErrorPage(ServerConfig& server_block);
+
+    void parseLocationBlock(ServerConfig& server_block);
 
     size_t index_;
     const std::vector<Token>* tokens_list_;
