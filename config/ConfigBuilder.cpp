@@ -186,4 +186,6 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
 }
 
 void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
+    (void)server_block;
+    // TODO
 }
