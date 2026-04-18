@@ -22,9 +22,12 @@ void ConfigBuilder::configError(const std::string& msg) const {
 }
 
 void ConfigBuilder::expectSemicolon() {
-    if ((*tokens_list_)[index_].value != ";") {
+    if (index_ >= tokens_list_->size())
+        configError("unexpected end of file, expected \";\"");
+    const Token& current_token = (*tokens_list_)[index_];
+    if (current_token.value != ";") {
         std::ostringstream oss;
-        oss << (*tokens_list_)[index_].line;
+        oss << current_token.line;
         configError("missing \";\" at line " + oss.str());
     }
     index_++;
@@ -33,14 +36,16 @@ void ConfigBuilder::expectSemicolon() {
 int ConfigBuilder::toInt(const std::string& s) const {
     std::istringstream iss(s);
     int result;
-    iss >> result;
+    if (!(iss >> result))
+        configError("invalid integer value: \"" + s + "\"");
     return result;
 }
 
 size_t ConfigBuilder::toSizeT(const std::string& s) const {
     std::istringstream iss(s);
     size_t result;
-    iss >> result;
+    if (!(iss >> result))
+        configError("invalid size value: \"" + s + "\"");
     return result;
 }
 
@@ -50,92 +55,91 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     tokens_list_ = &raw_tokens;
 
     while (index_ < tokens_list_->size()) {
-        if ((*tokens_list_)[index_].value != "server") {
-            // size_t can't be concatenated with std::string directly
-            // convert via ostringstream first
+        const Token& current_token = (*tokens_list_)[index_];
+        if (current_token.value != "server") {
             std::ostringstream oss;
-            oss << (*tokens_list_)[index_].line;
-            configError("unexpected token \"" + (*tokens_list_)[index_].value +
+            oss << current_token.line;
+            configError("unexpected token \"" + current_token.value +
                         "\" on line " + oss.str() + ", expected \"server\"");
-        } else {
-            config.addServerBlock(parseServerBlock());
         }
-        LOG_DEBUG() << "config object successfully filled.";
+        config.addServerBlock(parseServerBlock());
     }
-    return (config);
+    LOG_DEBUG() << "ConfigBuilder: config object successfully filled";
+    return config;
 }
 
 ServerConfig ConfigBuilder::parseServerBlock() {
     ServerConfig server_block;
 
-    // advance index 1 spot to move from "server" token
-    index_++;
+    index_++;  // advance past "server"
+    if (index_ >= tokens_list_->size())
+        configError("unexpected end of file after \"server\", expected \"{\"");
 
-    // check if next token is "{"
-    if ((*tokens_list_)[index_].value != "{") {
+    const Token& open_brace = (*tokens_list_)[index_];
+    if (open_brace.value != "{") {
         std::ostringstream oss;
-        oss << (*tokens_list_)[index_].line;
-        configError("unexpected token \"" + (*tokens_list_)[index_].value +
-                    "\" on line " + oss.str() + ", expected \"{\"");
+        oss << open_brace.line;
+        configError("unexpected token \"" + open_brace.value + "\" on line " +
+                    oss.str() + ", expected \"{\"");
     }
-
     index_++;  // advance past "{"
 
-    // go throught the list of tokens, looping untill we find "}" and with
-    // boundaries checks in case we don't find it
+    // loop through directives until "}" or end of file
     while (index_ < tokens_list_->size() &&
            (*tokens_list_)[index_].value != "}") {
-        if ((*tokens_list_)[index_].value == "listen") {
+        const Token& current_token = (*tokens_list_)[index_];
+        if (current_token.value == "listen")
             parseListen(server_block);
-        } else if ((*tokens_list_)[index_].value == "client_max_body_size") {
+        else if (current_token.value == "client_max_body_size")
             parseClientBodySize(server_block);
-
-        } else if ((*tokens_list_)[index_].value == "error_page") {
+        else if (current_token.value == "error_page")
+            // TODO: implement parseErrorPage() and parseLocationBlock() in
+            // parseServerBlock() dispatch - add matching gtest cases in
+            // test_builder.cpp once each is done
             index_++;
-            expectSemicolon();
-        } else {
+        else if (current_token.value == "location")
+            index_++;
+        else {
             std::ostringstream oss;
-            oss << (*tokens_list_)[index_].line;
-            configError("unexpected token \"" + (*tokens_list_)[index_].value +
+            oss << current_token.line;
+            configError("unknown directive \"" + current_token.value +
                         "\" on line " + oss.str());
         }
     }
-    // index reached end of vector without finding "}", block is unclosed
     if (index_ >= tokens_list_->size())
         configError("unclosed server block, expected \"}\"");
-    // found "}", advance past it
-    index_++;
+    index_++;  // advance past "}"
     return server_block;
 }
 
 void ConfigBuilder::parseListen(ServerConfig& server_block) {
     index_++;  // advance past "listen"
-    size_t delimiter_pos = (*tokens_list_)[index_].value.find(":");
+    if (index_ >= tokens_list_->size())
+        configError("unexpected end of file after \"listen\"");
+    const Token& current_token = (*tokens_list_)[index_];
+    size_t delimiter_pos = current_token.value.find(":");
     if (delimiter_pos == std::string::npos)
-        configError("invalid listen value \"" + (*tokens_list_)[index_].value +
+        configError("invalid listen value \"" + current_token.value +
                     "\", expected \"host:port\"");
-    server_block.setHost(
-        (*tokens_list_)[index_].value.substr(0, delimiter_pos));
-    server_block.setPort(
-        toInt((*tokens_list_)[index_].value.substr(delimiter_pos + 1)));
+    server_block.setHost(current_token.value.substr(0, delimiter_pos));
+    server_block.setPort(toInt(current_token.value.substr(delimiter_pos + 1)));
     index_++;  // advance to ";"
     expectSemicolon();
 }
 
 void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
-    index_++;
-
-    size_t unit_position =
-        (*tokens_list_)[index_].value.find_first_of("KkMmGg");
-    size_t raw_size;
+    index_++;  // advance past "client_max_body_size"
+    if (index_ >= tokens_list_->size())
+        configError("unexpected end of file after \"client_max_body_size\"");
+    const Token& current_token = (*tokens_list_)[index_];
+    size_t unit_pos = current_token.value.find_first_of("KkMmGg");
     size_t byte_size;
-    if (unit_position == std::string::npos) {
+    if (unit_pos == std::string::npos) {
         // no unit — treat entire value as bytes, like nginx
-        byte_size = toSizeT((*tokens_list_)[index_].value);
+        byte_size = toSizeT(current_token.value);
     } else {
-        raw_size =
-            toSizeT((*tokens_list_)[index_].value.substr(0, unit_position));
-        std::string unit = (*tokens_list_)[index_].value.substr(unit_position);
+        size_t raw_size = toSizeT(current_token.value.substr(0, unit_pos));
+        std::string unit = current_token.value.substr(unit_pos);
         if (unit == "k" || unit == "K")
             byte_size = raw_size * 1024;
         else if (unit == "m" || unit == "M")
