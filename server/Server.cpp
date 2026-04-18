@@ -192,64 +192,22 @@ int	Server::acceptClient() {
 	return client_fd.release();
 }
 
-// the client request comes in as a stream of raw data, that can come
-// in partial chunks or split messages - these raw data must be parsed
-// and reconstructed at the HTTP layer (Charlie's part). My job
-// here is just to store the raw data
 void	Server::handleRead(Client& client)
 {
-	LOG_DEBUG() << "Reading from fd " << client.getFd();
-	// we need a raw buffer here becasue recv expects raw memory
-	// if we use std::string buffer:
-	// it has no allocated size, writing to it is UB
-	char buffer[kBufferSize];
-	ssize_t bytes = recv(client.getFd(), buffer, sizeof(buffer), 0);
-	LOG_DEBUG() << "Received " << bytes << " bytes from fd " << client.getFd();
-	if (bytes > 0) {
-		// i store the request directly in request object raw_ for Charlie
-		client.getRequest().append(buffer, bytes);
+	// this is where Charlie's part comes in - see notes in Client::read()
+	Client::ReadResult result = client.read();
 
-		// charlie then parses the header and body and check to see if the request
-		// isComplete when "\r\n\r\n" is found (+ full body if Content-Length is set)
-		if (client.getRequest().isComplete())
-		{
-			client.getResponse().buildFrom(client.getRequest());
-			client.setState(Client::kWriting);
-			LOG_DEBUG() << "Client fd " << client.getFd()
-						<< " switching to WRITING state";
-		}
-	} else if (bytes == 0) { // connection finished, stream closed
-		client.setState(Client::kDone);
-	} else {
-		// Without poll/epoll, we cannot distinguish between "try again later"
-		// and real errors, so any failure is treated as a dead connection.
-		client.setState(Client::kDone);
-		LOG_INFO() << "Client fd " << client.getFd() << " disconnected or error";
+	if (result == Client::kReadComplete) {
+		// later: if (isCGI(client.getRequest())) { dispatchCGI(client); return; }
+		client.getResponse().buildFrom(client.getRequest());
 	}
 }
 
 void	Server::handleWrite(Client& client) {
-	// use &, no unnecessary copying. points to Response::raw_
-	const std::string& response = client.getResponse().getRaw();
-
-	// send() may write only part of the data, so we resume from bytes already sent
-	ssize_t sent = send(client.getFd(),
-			response.c_str() + client.getBytesSent(),
-			response.size() - client.getBytesSent(),
-			0);
-
-	if (sent > 0) {
-		// track how many bytes have been successfully sent so far
-		client.addBytesSent(sent);
-
-		// if entire response has been sent, mark client as done
-		if (client.getBytesSent() >= response.size()) {
-			client.setState(Client::kDone);
-		}
-	} else {
-		// w/o polling, treat any failure as a closed connection
-		client.setState(Client::kDone);
-	}
+	Client::WriteResult result = client.write();
+	// kWriteDone and kWriteError already set state_ = kDone inside Client
+    // kWritePending: loop continues, try again next iteration
+    (void)result; // poll version will use this return value properly
 }
 
 void	Server::serverError(const std::string& msg) {

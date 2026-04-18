@@ -5,6 +5,7 @@
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
 #include "Fd.hpp"
+#include <sys/socket.h>
 
 class Client {
 public:
@@ -13,23 +14,33 @@ public:
 		kWriting,
 		kDone
 	};
+	enum ReadResult {
+		kReadPending,
+		kReadComplete,
+		kReadClosed,
+		kReadError
+	};
+	enum WriteResult {
+		kWritePending,
+		kWriteDone,
+		kWriteError
+	};
+
+	static const size_t kBufferSize = 4096;
 
 	//avoid unintentional construction by using explict keyword
 	// w/o explicit this is allowed Client c = 42
 	explicit Client(int fd);
 	~Client();
 
-	// getters
     int			getFd() const;
-	size_t		getBytesSent() const;
 	State		getState() const;
 	Request&	getRequest();
 	Response&	getResponse();
-	
-	// setter
-	void	setState(State new_state);
 
-void	addBytesSent(size_t n);
+	// I/O
+	ReadResult	read();
+	WriteResult	write();
 
 private:
 	// no copying or assignment allowed, client owns fd

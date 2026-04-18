@@ -8,10 +8,6 @@
 
 class Server {
 public:
-	// why this number? 4k is typical page size and still safe on stack
-	// reduces syscall overhead vs 1K
-	static const size_t kBufferSize = 4096;
-
 	Server(const Config& config);
 	~Server();
 
