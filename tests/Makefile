@@ -25,6 +25,9 @@ SRCS = 	\
 		../config/ServerConfig.cpp \
 		../config/LocationConfig.cpp \
 		../server/Fd.cpp \
+		../server/Client.cpp \
+		../http/Request.cpp \
+		../http/Response.cpp \
 		#../server/Server.cpp \
 		
 
