@@ -89,3 +89,40 @@ TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesRawBytes) {
     ASSERT_EQ(config.getServerBlock().size(), 1u);
     EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 512u);
 }
+
+/* tests for parseErrorPage()
+[FAIL] => no code after "error_page" (end of file)
+[FAIL] => no path after code (end of file)
+[FAIL] => ";" missing after path
+[PASS] => code and path correctly stored */
+
+TEST(ConfigBuilder_ParseErrorPage, ThrowsOnMissingCode) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/error_page_missing_code.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseErrorPage, ThrowsOnMissingPath) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/error_page_missing_path.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseErrorPage, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/error_page_missing_semicolon.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseErrorPage, CorrectlyParsesCodeAndPath) {
+    Config config =
+        buildFromFile("../config/builder_test_files/error_page_valid.conf");
+    ASSERT_EQ(config.getServerBlock().size(), 1u);
+    const std::map<int, std::string>& pages =
+        config.getServerBlock()[0].getErrorPages();
+    ASSERT_EQ(pages.size(), 1u);
+    EXPECT_EQ(pages.at(404), "/errors/404.html");
+}

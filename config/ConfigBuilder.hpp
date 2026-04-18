@@ -27,6 +27,7 @@ private:
     ServerConfig parseServerBlock();
     void parseListen(ServerConfig& server_block);
     void parseClientBodySize(ServerConfig& server_block);
+    void parseErrorPage(ServerConfig& server_block);
 
     size_t index_;
     const std::vector<Token>* tokens_list_;
