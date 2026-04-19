@@ -205,3 +205,63 @@ TEST_F(ClientReadTest, ReadErrorOnInvalidFd) {
 /*****************************************************************************/
 /*                             Client Write Tests                            */
 /*****************************************************************************/
+
+class ClientWriteTest : public ClientTestBase {};
+
+TEST_F(ClientWriteTest, WriteDoneOnEmptyResponse){
+	// no buildFrom() call → response is empty
+	Client::WriteResult result = client->write();
+
+	EXPECT_EQ(Client::kWriteDone, result);
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientWriteTest, WriteDoneOnFullResponse){
+	prepareCompleteRequest();
+	Client::WriteResult result = client->write();
+
+	EXPECT_EQ(Client::kWriteDone, result);
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientWriteTest, WriteTransitionsToDoneState) {
+	prepareCompleteRequest();
+	client->write();
+
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientWriteTest, MultipleWritesEventuallyComplete) {
+	prepareCompleteRequest();
+	while (client->getState() != Client::kDone)
+	{
+		Client::WriteResult result = client->write();
+		EXPECT_NE(Client::kWriteError, result);
+	}
+
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientWriteTest, WriteAfterDoneDoesNotChangeState) {
+	prepareCompleteRequest();
+	while (client->getState() != Client::kDone)
+		client->write();
+
+	// call write again after completion
+	Client::WriteResult result = client->write();
+
+	EXPECT_EQ(Client::kWriteDone, result);
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientWriteTest, WriteWorksAfterReadComplete) {
+	sendToClient("GET / HTTP/1.1\r\nHost: test\r\n\r\n");
+
+	ASSERT_EQ(Client::kReadComplete, client->read());
+
+	client->getResponse().buildFrom(client->getRequest());
+	Client::WriteResult result = client->write();
+
+	EXPECT_EQ(Client::kWriteDone, result);
+	EXPECT_EQ(Client::kDone, client->getState());
+}
