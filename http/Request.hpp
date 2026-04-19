@@ -9,9 +9,7 @@ public:
     ~Request();
 
     // temporary stub API (enough for Client/Server)
-    void	append(const char* data, size_t len) {
-		raw_.append(data, len);
-	}
+    void	append(const char* data, size_t len);
 	bool	isComplete() const {	
 		return raw_.find("\r\n\r\n") != std::string::npos;
 	}
