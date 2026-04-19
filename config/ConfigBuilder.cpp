@@ -35,6 +35,10 @@ void ConfigBuilder::unknownDirectiveError(const Token& current_token) {
                 oss.str());
 }
 
+const Token& ConfigBuilder::currentToken() const {
+    return (*tokens_list_)[index_];
+}
+
 void ConfigBuilder::checkBounds(const std::string& context) {
     if (index_ >= tokens_list_->size()) {
         configError("unexpected end of file " + context);
@@ -43,7 +47,7 @@ void ConfigBuilder::checkBounds(const std::string& context) {
 
 void ConfigBuilder::expectSemicolon() {
     checkBounds("expected \";\"");
-    const Token& current_token = (*tokens_list_)[index_];
+    const Token& current_token = currentToken();
     if (current_token.value != ";") {
         std::ostringstream oss;
         oss << current_token.line;
@@ -53,7 +57,7 @@ void ConfigBuilder::expectSemicolon() {
 }
 
 void ConfigBuilder::expectOpenBrace() {
-    const Token& open_brace = (*tokens_list_)[index_];
+    const Token& open_brace = currentToken();
     if (open_brace.value != "{") {
         std::ostringstream oss;
         oss << open_brace.line;
@@ -87,7 +91,7 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     tokens_list_ = &raw_tokens;
 
     while (index_ < tokens_list_->size()) {
-        const Token& current_token = (*tokens_list_)[index_];
+        const Token& current_token = currentToken();
         if (current_token.value != "server") {
             std::ostringstream oss;
             oss << current_token.line;
@@ -108,9 +112,8 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     expectOpenBrace();
 
     // loop through directives until "}" or end of file
-    while (index_ < tokens_list_->size() &&
-           (*tokens_list_)[index_].value != "}") {
-        const Token& current_token = (*tokens_list_)[index_];
+    while (index_ < tokens_list_->size() && currentToken().value != "}") {
+        const Token& current_token = currentToken();
         if (current_token.value == "listen") {
             parseListen(server_block);
         } else if (current_token.value == "client_max_body_size") {
@@ -134,7 +137,7 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
     index_++;  // advance past "listen"
     checkBounds("after \"listen\"");
 
-    const Token& current_token = (*tokens_list_)[index_];
+    const Token& current_token = currentToken();
     size_t delimiter_pos = current_token.value.find(":");
     if (delimiter_pos == std::string::npos) {
         configError("invalid listen value \"" + current_token.value +
@@ -150,7 +153,7 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     index_++;  // advance past "client_max_body_size"
     checkBounds("after \"client_max_body_size\"");
 
-    const Token& current_token = (*tokens_list_)[index_];
+    const Token& current_token = currentToken();
     size_t unit_pos = current_token.value.find_first_of("KkMmGg");
     size_t byte_size;
     if (unit_pos == std::string::npos) {
@@ -176,11 +179,11 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     index_++;  // advance past "error_page"
     checkBounds("after \"error_page\"");
 
-    int code = toInt((*tokens_list_)[index_].value);
+    int code = toInt(currentToken().value);
     index_++;  // advance to path
     checkBounds("after error_page code");
 
-    const std::string& path = (*tokens_list_)[index_].value;
+    const std::string& path = currentToken().value;
     server_block.addErrorPage(code, path);
     index_++;  // advance to ";"
     expectSemicolon();
@@ -192,15 +195,14 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
     index_++;  // advance past "location"
     checkBounds("after \"location\", expected path");
 
-    location_block.setPath((*tokens_list_)[index_].value);
+    location_block.setPath(currentToken().value);
     index_++;  // advance to "{"
     checkBounds("after location path, expected \"{\"");
     expectOpenBrace();
 
     // TODO: parse location directives - if/else first - lookup table maybe next
-    while (index_ < tokens_list_->size() &&
-           (*tokens_list_)[index_].value != "}") {
-        const Token& current_token = (*tokens_list_)[index_];
+    while (index_ < tokens_list_->size() && currentToken().value != "}") {
+        const Token& current_token = currentToken();
 
         if (current_token.value == "methods") {
         } else if (current_token.value == "root") {
@@ -226,22 +228,27 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
 void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"root\", expected path");
-    location_block.setRoot((*tokens_list_)[index_].value);
+    location_block.setRoot(currentToken().value);
     index_++;  // advance to ";"
     expectSemicolon();
 }
 
 void ConfigBuilder::parseIndex(LocationConfig& location_block) {
+    (void)location_block;
 }
 
 void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
+    (void)location_block;
 }
 
 void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
+    (void)location_block;
 }
 
 void ConfigBuilder::parseCGI(LocationConfig& location_block) {
+    (void)location_block;
 }
 
 void ConfigBuilder::parseReturn(LocationConfig& location_block) {
+    (void)location_block;
 }

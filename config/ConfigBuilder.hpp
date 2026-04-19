@@ -28,6 +28,7 @@ private:
     void configError(const std::string& msg) const;
     void unknownDirectiveError(const Token& current_token);
 
+    const Token& currentToken() const;
     void checkBounds(const std::string& context);
     void expectSemicolon();
     void expectOpenBrace();
