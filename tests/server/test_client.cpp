@@ -28,26 +28,26 @@ TEST(ClientBasic, FdIsClosedOnDestruction) {
 	EXPECT_EQ(EBADF, errno);
 }
 
-class ClientState : public ::testing::Test {
+class ClientTestBase : public ::testing::Test {
 protected:
 	int fds[2];
-	Client* client;
+	std::unique_ptr<Client> client;
 	int peer;
 	//side note:  my mental model for this set up:
 	//think of client as what we're testing (us the person) on the phone
 	//and peer is the friend on the other end of the phone
 
-	void SetUp() {
+	void SetUp() override {
 		// socketpair simulates already accepted connection:
 		// socket -> bind -> listen -> accept
 		// so we can directly test handleRead and handleWrite behavior
 		ASSERT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
-		client = new Client(fds[0]);
+//		client.reset(new Client(fds[0]));
+		client = std::make_unique<Client>(fds[0]);
 		peer = fds[1];
 	}
 
-	void TearDown() {
-		delete client;
+	void TearDown() override {
 		close(peer);
 	}
 
@@ -62,11 +62,13 @@ protected:
 	}
 };
 
-TEST_F(ClientState, InitialStateIsReading) {
+class ClientStateTest : public ClientTestBase {};
+
+TEST_F(ClientStateTest, InitialStateIsReading) {
 	EXPECT_EQ(Client::kReading, client->getState());
 }
 
-TEST_F(ClientState, ReadCompleteTransitionsToWriting) {
+TEST_F(ClientStateTest, ReadCompleteTransitionsToWriting) {
 	sendToClient("GET / HTTP/1.1\r\nHost: test\r\n\r\n");
 
 	Client::ReadResult result = client->read();
@@ -75,7 +77,7 @@ TEST_F(ClientState, ReadCompleteTransitionsToWriting) {
 	EXPECT_EQ(Client::kWriting, client->getState());
 }
 
-TEST_F(ClientState, WriteDoneTransitionsToDone) {
+TEST_F(ClientStateTest, WriteDoneTransitionsToDone) {
 	sendToClient("GET / HTTP/1.1\r\nHost: test\r\n\r\n");
 
 	// read request
@@ -91,7 +93,7 @@ TEST_F(ClientState, WriteDoneTransitionsToDone) {
 	EXPECT_EQ(Client::kDone, client->getState());
 }
 
-TEST_F(ClientState, ReadClosedSetsDone) {
+TEST_F(ClientStateTest, ReadClosedSetsDone) {
 	//simulate client disconnect
 	close(peer);
 
@@ -100,3 +102,20 @@ TEST_F(ClientState, ReadClosedSetsDone) {
 	EXPECT_EQ(Client::kReadClosed, result);
 	EXPECT_EQ(Client::kDone, client->getState());
 }
+
+class ClientReadTest : public ClientTestBase {};
+
+/** this part is coupled with Reqeust uncomment when it's ready
+TEST_F(ClientReadTest, DataIsStoredInRequestBuffer) {
+	sendToClient("Hello");
+
+	client->read();
+
+}
+
+TEST_F(ClientReadTest, PartialRequestReturnsPending) {
+	sendToClient("GET / HTT");
+
+	EXPECT_EQ(Client::kReadPending, client->read());
+}
+*/
