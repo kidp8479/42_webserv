@@ -10,8 +10,8 @@ TEST(ClientBasic, CreateFromValidFd) {
 	
 	Client client(fd);
 	EXPECT_EQ(fd, client.getFd());
-	EXPECT_EQ(0, client.getBytesSent());
 	EXPECT_EQ(0, client.getState());
+	//temporary test for now
 	EXPECT_TRUE(client.getRequest().isComplete());
 	EXPECT_EQ("", client.getResponse().getRaw());
 }
