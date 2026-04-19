@@ -242,7 +242,21 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
 }
 
 void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
-    (void)location_block;
+    index_++;
+    bool directory_listing = false;
+    checkBounds("after \"autoindex\", expected on or off");
+
+    if (currentToken().value == "off") {
+        directory_listing = false;
+    } else if (currentToken().value == "on") {
+        directory_listing = true;
+    } else {
+        configError("unexpected token, \"autoindex\" is either on or off.");
+    }
+
+    location_block.setDirectoryListing(directory_listing);
+    index_++;  // advance to ";"
+    expectSemicolon();
 }
 
 void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
