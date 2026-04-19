@@ -13,6 +13,7 @@ TEST(ClientBasicTest, CreateFromValidFd) {
 	ASSERT_TRUE(fd >= 0);
 	
 	Client client(fd);
+
 	EXPECT_EQ(fd, client.getFd());
 	EXPECT_EQ(Client::kReading, client.getState());
 	EXPECT_FALSE(client.getRequest().isComplete());
@@ -27,6 +28,7 @@ TEST(ClientBasicTest, FdIsClosedOnDestruction) {
 	}
 	char buffer[10];
 	ssize_t result = read(fd, &buffer, 1);
+
 	EXPECT_EQ(-1, result);
 	EXPECT_EQ(EBADF, errno);
 }
@@ -87,7 +89,6 @@ TEST_F(ClientStateTest, InitialStateIsReading) {
 
 TEST_F(ClientStateTest, ReadCompleteTransitionsToWriting) {
 	sendToClient("GET / HTTP/1.1\r\nHost: test\r\n\r\n");
-
 	Client::ReadResult result = client->read();
 
 	EXPECT_EQ(Client::kReadComplete, result);
@@ -105,7 +106,6 @@ TEST_F(ClientStateTest, WriteDoneTransitionsToDone) {
 TEST_F(ClientStateTest, ReadClosedSetsDone) {
 	//simulate client disconnect
 	close(peer);
-
 	Client::ReadResult result = client->read();
 
 	EXPECT_EQ(Client::kReadClosed, result);
@@ -115,7 +115,7 @@ TEST_F(ClientStateTest, ReadClosedSetsDone) {
 /*****************************************************************************/
 /*                             Client Bytes Tests                            */
 /*****************************************************************************/
-class ClientBytes : public ClientTestBase {};
+class ClientBytesTest : public ClientTestBase {};
 
 TEST_F(ClientBytesTest, FullWriteCompletesInOneGo) {
 	prepareCompleteRequest();
@@ -131,6 +131,7 @@ TEST_F(ClientBytesTest, WriteEventuallyCompletes) {
 		Client::WriteResult result = client->write();
 		EXPECT_NE(Client::kWriteError, result);
 	}
+
 	EXPECT_EQ(Client::kDone, client->getState());
 }
 
@@ -152,27 +153,54 @@ class ClientReadTest : public ClientTestBase {};
 
 TEST_F(ClientReadTest, ReadCompleteTransitionsToWriting) {
 	sendToClient("Get / HTTP/1.1\r\nHost: test\r\n\r\n");
-	
 	Client::ReadResult result = client->read();
 
 	EXPECT_EQ(Client::kReadComplete, result);
 	EXPECT_EQ(Client::kWriting, client->getState());
 	
 }
-/*
-TEST_F(ClientReadTest, DataIsStoredInRequestBuffer) {
-	sendToClient("Hello");
-
-	client->read();
-
-}
 
 TEST_F(ClientReadTest, PartialRequestReturnsPending) {
-	sendToClient("GET / HTT");
+	sendToClient("GET / HTTP/1.1\r\n");
+	Client::ReadResult result = client->read();
 
-	EXPECT_EQ(Client::kReadPending, client->read());
+	EXPECT_EQ(Client::kReadPending, result);
 }
-*/
+
+TEST_F(ClientReadTest, PartialDataIsStoredInRequestBuffer) {
+	sendToClient("GET / HTTP/1.1\r\n");
+	Client::ReadResult result = client->read();
+
+	EXPECT_EQ(Client::kReadPending, result);
+	EXPECT_FALSE(client->getRequest().isComplete());
+}
+
+TEST_F(ClientReadTest, RequestAccumulatesAcrossMultipleReads)
+{
+	sendToClient("GET / HTTP/1.1\r\n");
+	client->read();
+	sendToClient("Host: test\r\n\r\n");
+	Client::ReadResult result = client->read();
+
+	EXPECT_EQ(Client::kReadComplete, result);
+	EXPECT_TRUE(client->getRequest().isComplete());
+}
+
+TEST_F(ClientReadTest, ReadClosedOnPeerDisconnect) {
+	//simulate client disconnect
+	close(peer);
+	Client::ReadResult result = client->read();
+
+	EXPECT_EQ(Client::kReadClosed, result);
+}
+
+TEST_F(ClientReadTest, ReadErrorOnInvalidFd) {
+	// break the file descriptor
+	close(fds[0]); // or close(client fd)
+	Client::ReadResult result = client->read();
+
+	EXPECT_EQ(Client::kReadError, result);
+}
 
 /*****************************************************************************/
 /*                             Client Write Tests                            */
