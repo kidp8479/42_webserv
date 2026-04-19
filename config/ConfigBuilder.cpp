@@ -224,6 +224,11 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
 }
 
 void ConfigBuilder::parseRoot(LocationConfig& location_block) {
+    index_++;
+    checkBounds("after \"root\", expected path");
+    location_block.setRoot((*tokens_list_)[index_].value);
+    index_++;  // advance to ";"
+    expectSemicolon();
 }
 
 void ConfigBuilder::parseIndex(LocationConfig& location_block) {
