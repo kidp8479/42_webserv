@@ -179,6 +179,7 @@ TEST_F(ClientReadTest, RequestAccumulatesAcrossMultipleReads)
 {
 	sendToClient("GET / HTTP/1.1\r\n");
 	client->read();
+
 	sendToClient("Host: test\r\n\r\n");
 	Client::ReadResult result = client->read();
 
@@ -260,6 +261,15 @@ TEST_F(ClientWriteTest, WriteWorksAfterReadComplete) {
 	ASSERT_EQ(Client::kReadComplete, client->read());
 
 	client->getResponse().buildFrom(client->getRequest());
+	Client::WriteResult result = client->write();
+
+	EXPECT_EQ(Client::kWriteDone, result);
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientWriteTest, WriteDoesNotResetStateIfCalledEarly) {
+	EXPECT_EQ(Client::kReading, client->getState());
+	// calling write before response is ready
 	Client::WriteResult result = client->write();
 
 	EXPECT_EQ(Client::kWriteDone, result);
