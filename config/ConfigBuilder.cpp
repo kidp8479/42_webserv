@@ -234,7 +234,11 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
 }
 
 void ConfigBuilder::parseIndex(LocationConfig& location_block) {
-    (void)location_block;
+    index_++;
+    checkBounds("after \"index\", expected path");
+    location_block.setIndex(currentToken().value);
+    index_++;  // advance to ";"
+    expectSemicolon();
 }
 
 void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
@@ -242,7 +246,11 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
 }
 
 void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
-    (void)location_block;
+    index_++;
+    checkBounds("after \"upload_path\", expected path");
+    location_block.setUploadPath(currentToken().value);
+    index_++;  // advance to ";"
+    expectSemicolon();
 }
 
 void ConfigBuilder::parseCGI(LocationConfig& location_block) {
