@@ -28,10 +28,14 @@ void ConfigBuilder::configError(const std::string& msg) const {
     throw std::runtime_error(full);
 }
 
-void ConfigBuilder::expectSemicolon() {
+void ConfigBuilder::checkBounds(const std::string& context) {
     if (index_ >= tokens_list_->size()) {
-        configError("unexpected end of file, expected \";\"");
+        configError("unexpected end of file " + context);
     }
+}
+
+void ConfigBuilder::expectSemicolon() {
+    checkBounds("expected \";\"");
     const Token& current_token = (*tokens_list_)[index_];
     if (current_token.value != ";") {
         std::ostringstream oss;
@@ -39,6 +43,17 @@ void ConfigBuilder::expectSemicolon() {
         configError("missing \";\" at line " + oss.str());
     }
     index_++;
+}
+
+void ConfigBuilder::expectOpenBrace() {
+    const Token& open_brace = (*tokens_list_)[index_];
+    if (open_brace.value != "{") {
+        std::ostringstream oss;
+        oss << open_brace.line;
+        configError("unexpected token \"" + open_brace.value + "\" on line " +
+                    oss.str() + ", expected \"{\"");
+    }
+    index_++;  // advance past "{"
 }
 
 int ConfigBuilder::toInt(const std::string& s) const {
@@ -82,18 +97,8 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     ServerConfig server_block;
 
     index_++;  // advance past "server"
-    if (index_ >= tokens_list_->size()) {
-        configError("unexpected end of file after \"server\", expected \"{\"");
-    }
-
-    const Token& open_brace = (*tokens_list_)[index_];
-    if (open_brace.value != "{") {
-        std::ostringstream oss;
-        oss << open_brace.line;
-        configError("unexpected token \"" + open_brace.value + "\" on line " +
-                    oss.str() + ", expected \"{\"");
-    }
-    index_++;  // advance past "{"
+    checkBounds("after \"server\", expected \"{\"");
+    expectOpenBrace();
 
     // loop through directives until "}" or end of file
     while (index_ < tokens_list_->size() &&
@@ -123,9 +128,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
 
 void ConfigBuilder::parseListen(ServerConfig& server_block) {
     index_++;  // advance past "listen"
-    if (index_ >= tokens_list_->size()) {
-        configError("unexpected end of file after \"listen\"");
-    }
+    checkBounds("after \"listen\"");
 
     const Token& current_token = (*tokens_list_)[index_];
     size_t delimiter_pos = current_token.value.find(":");
@@ -141,9 +144,7 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
 
 void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     index_++;  // advance past "client_max_body_size"
-    if (index_ >= tokens_list_->size()) {
-        configError("unexpected end of file after \"client_max_body_size\"");
-    }
+    checkBounds("after \"client_max_body_size\"");
 
     const Token& current_token = (*tokens_list_)[index_];
     size_t unit_pos = current_token.value.find_first_of("KkMmGg");
@@ -169,15 +170,11 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
 
 void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     index_++;  // advance past "error_page"
-    if (index_ >= tokens_list_->size()) {
-        configError("unexpected end of file after \"error_page\"");
-    }
+    checkBounds("after \"error_page\"");
 
     int code = toInt((*tokens_list_)[index_].value);
     index_++;  // advance to path
-    if (index_ >= tokens_list_->size()) {
-        configError("unexpected end of file after error_page code");
-    }
+    checkBounds("after error_page code");
 
     const std::string& path = (*tokens_list_)[index_].value;
     server_block.addErrorPage(code, path);
@@ -186,6 +183,24 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
 }
 
 void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
-    (void)server_block;
-    // TODO
+    LocationConfig location_block;
+
+    index_++;  // advance past "location"
+    checkBounds("after \"location\", expected path");
+
+    location_block.setPath((*tokens_list_)[index_].value);
+    index_++;  // advance to "{"
+    checkBounds("after location path, expected \"{\"");
+    expectOpenBrace();
+
+    // TODO: parse location directives
+    while (index_ < tokens_list_->size() &&
+           (*tokens_list_)[index_].value != "}") {
+        index_++;
+    }
+    if (index_ >= tokens_list_->size()) {
+        configError("unclosed location block, expected \"}\"");
+    }
+    index_++;  // advance past "}"
+    server_block.addLocationBlock(location_block);
 }

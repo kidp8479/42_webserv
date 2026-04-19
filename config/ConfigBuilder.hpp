@@ -12,6 +12,7 @@
 #include "../logger/Logger.hpp"
 #include "Config.hpp"
 #include "ConfigTokenizer.hpp"
+#include "LocationConfig.hpp"
 
 class ConfigBuilder {
 public:
@@ -26,7 +27,9 @@ private:
 
     void configError(const std::string& msg) const;
 
+    void checkBounds(const std::string& context);
     void expectSemicolon();
+    void expectOpenBrace();
     int toInt(const std::string& s) const;
     size_t toSizeT(const std::string& s) const;
 
