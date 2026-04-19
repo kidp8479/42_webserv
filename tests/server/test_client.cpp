@@ -4,19 +4,22 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-TEST(ClientBasic, CreateFromValidFd) {
+/*****************************************************************************/
+/*                      Basic constructor / destructor                       */
+/*****************************************************************************/
+
+TEST(ClientBasicTest, CreateFromValidFd) {
 	int fd = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
 	ASSERT_TRUE(fd >= 0);
 	
 	Client client(fd);
 	EXPECT_EQ(fd, client.getFd());
 	EXPECT_EQ(Client::kReading, client.getState());
-	//temporary test for now
-	EXPECT_TRUE(client.getRequest().isComplete());
+	EXPECT_FALSE(client.getRequest().isComplete());
 	EXPECT_EQ("", client.getResponse().getRaw());
 }
 
-TEST(ClientBasic, FdIsClosedOnDestruction) {
+TEST(ClientBasicTest, FdIsClosedOnDestruction) {
 	int fd = open("/tmp/test_fd.txt", O_CREAT | O_RDONLY, 0644);
 	ASSERT_TRUE(fd >= 0);
 	{	
@@ -28,7 +31,10 @@ TEST(ClientBasic, FdIsClosedOnDestruction) {
 	EXPECT_EQ(EBADF, errno);
 }
 
-// set up fixture for various test suites
+/*****************************************************************************/
+/*                          fixture: ClientTestBase                          */
+/*****************************************************************************/
+
 class ClientTestBase : public ::testing::Test {
 protected:
 	int fds[2];
@@ -70,6 +76,9 @@ protected:
 	}
 };
 
+/*****************************************************************************/
+/*                             Client State Tests                            */
+/*****************************************************************************/
 class ClientStateTest : public ClientTestBase {};
 
 TEST_F(ClientStateTest, InitialStateIsReading) {
@@ -87,7 +96,6 @@ TEST_F(ClientStateTest, ReadCompleteTransitionsToWriting) {
 
 TEST_F(ClientStateTest, WriteDoneTransitionsToDone) {
 	prepareCompleteRequest();
-	//  write response
 	Client::WriteResult result = client->write();
 
 	EXPECT_EQ(Client::kWriteDone, result);
@@ -104,9 +112,12 @@ TEST_F(ClientStateTest, ReadClosedSetsDone) {
 	EXPECT_EQ(Client::kDone, client->getState());
 }
 
+/*****************************************************************************/
+/*                             Client Bytes Tests                            */
+/*****************************************************************************/
 class ClientBytes : public ClientTestBase {};
 
-TEST_F(ClientBytes, FullWriteCompletesInOneGo) {
+TEST_F(ClientBytesTest, FullWriteCompletesInOneGo) {
 	prepareCompleteRequest();
 	Client::WriteResult result = client->write();
 
@@ -114,7 +125,7 @@ TEST_F(ClientBytes, FullWriteCompletesInOneGo) {
 	EXPECT_EQ(Client::kDone, client->getState());
 }
 
-TEST_F(ClientBytes, WriteEventuallyCompletes) {
+TEST_F(ClientBytesTest, WriteEventuallyCompletes) {
 	prepareCompleteRequest();
 	while (client->getState() != Client::kDone) {
 		Client::WriteResult result = client->write();
@@ -123,7 +134,7 @@ TEST_F(ClientBytes, WriteEventuallyCompletes) {
 	EXPECT_EQ(Client::kDone, client->getState());
 }
 
-TEST_F(ClientBytes, WriteMayRequireMultipleCalls)
+TEST_F(ClientBytesTest, WriteMayRequireMultipleCalls)
 {
 	prepareCompleteRequest();
 	while (client->getState() != Client::kDone)
@@ -134,9 +145,21 @@ TEST_F(ClientBytes, WriteMayRequireMultipleCalls)
 	EXPECT_EQ(Client::kDone, client->getState());
 }
 
-/** this part is coupled with Reqeust uncomment when it's ready
+/*****************************************************************************/
+/*                             Client Read Tests                             */
+/*****************************************************************************/
 class ClientReadTest : public ClientTestBase {};
 
+TEST_F(ClientReadTest, ReadCompleteTransitionsToWriting) {
+	sendToClient("Get / HTTP/1.1\r\nHost: test\r\n\r\n");
+	
+	Client::ReadResult result = client->read();
+
+	EXPECT_EQ(Client::kReadComplete, result);
+	EXPECT_EQ(Client::kWriting, client->getState());
+	
+}
+/*
 TEST_F(ClientReadTest, DataIsStoredInRequestBuffer) {
 	sendToClient("Hello");
 
@@ -150,3 +173,7 @@ TEST_F(ClientReadTest, PartialRequestReturnsPending) {
 	EXPECT_EQ(Client::kReadPending, client->read());
 }
 */
+
+/*****************************************************************************/
+/*                             Client Write Tests                            */
+/*****************************************************************************/
