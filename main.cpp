@@ -4,8 +4,20 @@
 #include "logger/Logger.hpp"
 #include "config/Config.hpp"
 #include "server/Server.hpp"
+#include <csignal>
 
+/* add this when polling is implemented
+volatile sig_atomic_t g_running = 1;
+
+void handleSigInt(int) {
+	g_running = 0;
+}
+*/
 int main(int argc, char** argv) {
+//	uncomment when polling is implemented
+//	signal(SIGINT, handleSigInt);
+//	signal(SIGPIPE, SIG_IGN);
+
     if (argc > 3) {
         std::cerr << "usage: ./webserv [config file] [log level] (default "
                      "config: conf/default.conf)\n";
@@ -42,5 +54,3 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
-
-
