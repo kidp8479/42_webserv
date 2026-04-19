@@ -28,6 +28,13 @@ void ConfigBuilder::configError(const std::string& msg) const {
     throw std::runtime_error(full);
 }
 
+void ConfigBuilder::unknownDirectiveError(const Token& current_token) {
+    std::ostringstream oss;
+    oss << current_token.line;
+    configError("unknown directive \"" + current_token.value + "\" on line " +
+                oss.str());
+}
+
 void ConfigBuilder::checkBounds(const std::string& context) {
     if (index_ >= tokens_list_->size()) {
         configError("unexpected end of file " + context);
@@ -113,10 +120,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
         } else if (current_token.value == "location") {
             parseLocationBlock(server_block);
         } else {
-            std::ostringstream oss;
-            oss << current_token.line;
-            configError("unknown directive \"" + current_token.value +
-                        "\" on line " + oss.str());
+            unknownDirectiveError(current_token);
         }
     }
     if (index_ >= tokens_list_->size()) {
@@ -196,7 +200,18 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
     // TODO: parse location directives
     while (index_ < tokens_list_->size() &&
            (*tokens_list_)[index_].value != "}") {
-        index_++;
+        const Token& current_token = (*tokens_list_)[index_];
+
+        if (current_token.value == "methods") {
+        } else if (current_token.value == "root") {
+        } else if (current_token.value == "index") {
+        } else if (current_token.value == "autoindex") {
+        } else if (current_token.value == "upload_path") {
+        } else if (current_token.value == "cgi") {
+        } else if (current_token.value == "return") {
+        } else {
+            unknownDirectiveError(current_token);
+        }
     }
     if (index_ >= tokens_list_->size()) {
         configError("unclosed location block, expected \"}\"");
