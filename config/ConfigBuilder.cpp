@@ -197,7 +197,7 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
     checkBounds("after location path, expected \"{\"");
     expectOpenBrace();
 
-    // TODO: parse location directives
+    // TODO: parse location directives - if/else first - lookup table maybe next
     while (index_ < tokens_list_->size() &&
            (*tokens_list_)[index_].value != "}") {
         const Token& current_token = (*tokens_list_)[index_];
@@ -218,4 +218,25 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
     }
     index_++;  // advance past "}"
     server_block.addLocationBlock(location_block);
+}
+
+void ConfigBuilder::parseMethods(LocationConfig& location_block) {
+}
+
+void ConfigBuilder::parseRoot(LocationConfig& location_block) {
+}
+
+void ConfigBuilder::parseIndex(LocationConfig& location_block) {
+}
+
+void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
+}
+
+void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
+}
+
+void ConfigBuilder::parseCGI(LocationConfig& location_block) {
+}
+
+void ConfigBuilder::parseReturn(LocationConfig& location_block) {
 }

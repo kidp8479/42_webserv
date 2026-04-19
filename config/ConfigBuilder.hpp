@@ -40,6 +40,13 @@ private:
     void parseErrorPage(ServerConfig& server_block);
 
     void parseLocationBlock(ServerConfig& server_block);
+    void parseMethods(LocationConfig& location_block);
+    void parseRoot(LocationConfig& location_block);
+    void parseIndex(LocationConfig& location_block);
+    void parseAutoIndex(LocationConfig& location_block);
+    void parseUploadPath(LocationConfig& location_block);
+    void parseCGI(LocationConfig& location_block);
+    void parseReturn(LocationConfig& location_block);
 
     size_t index_;
     const std::vector<Token>* tokens_list_;
