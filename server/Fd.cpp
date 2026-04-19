@@ -23,7 +23,7 @@ void	Fd::reset(int new_fd) {
 			LOG_DEBUG() << "Fd reset: closing fd " << fd_;
 			close(fd_);
 		}
-		LOG_DEBUG() << "Fd now holds: fd " << fd_;
+		LOG_DEBUG() << "Fd now holds: fd " << new_fd;
 		fd_ = new_fd;
 	}
 }
