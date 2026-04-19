@@ -205,6 +205,7 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
         const Token& current_token = currentToken();
 
         if (current_token.value == "methods") {
+            parseMethods(location_block);
         } else if (current_token.value == "root") {
             parseRoot(location_block);
         } else if (current_token.value == "index") {
@@ -227,6 +228,25 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
 }
 
 void ConfigBuilder::parseMethods(LocationConfig& location_block) {
+    index_++;
+    checkBounds("after \"methods\", expected GET and/or POST and/or DELETE");
+
+    std::vector<std::string> collect_methods;
+    while (index_ < tokens_list_->size() && currentToken().value != ";") {
+        if (currentToken().value == "GET" || currentToken().value == "POST" ||
+            currentToken().value == "DELETE") {
+            collect_methods.push_back(currentToken().value);
+        } else {
+            configError(
+                "unexpected token, \"methods\" accepts GET POST DELETE.");
+        }
+        index_++;
+    }
+    if (index_ >= tokens_list_->size()) {
+        configError("unclosed methods directive, expected \";\"");
+    }
+    location_block.setMethods(collect_methods);
+    expectSemicolon();
 }
 
 void ConfigBuilder::parseRoot(LocationConfig& location_block) {
