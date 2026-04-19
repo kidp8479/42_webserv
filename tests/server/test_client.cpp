@@ -28,6 +28,7 @@ TEST(ClientBasic, FdIsClosedOnDestruction) {
 	EXPECT_EQ(EBADF, errno);
 }
 
+// set up fixture for various test suites
 class ClientTestBase : public ::testing::Test {
 protected:
 	int fds[2];
@@ -42,7 +43,6 @@ protected:
 		// socket -> bind -> listen -> accept
 		// so we can directly test handleRead and handleWrite behavior
 		ASSERT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
-//		client.reset(new Client(fds[0]));
 		client = std::make_unique<Client>(fds[0]);
 		peer = fds[1];
 	}
@@ -59,6 +59,14 @@ protected:
 			// test code (peer side) -> write() -> socketpair connection ->
 			// Client fd -> Client::read()
 		ASSERT_GT(write(peer, data.c_str(), data.size()), 0);
+	}
+
+	void prepareCompleteRequest() {
+		sendToClient("Get / HTTP/1.1\r\n\r\n");
+		Client::ReadResult result = client->read();
+		ASSERT_EQ(Client::kReadComplete, result);
+
+		client->getResponse().buildFrom(client->getRequest());
 	}
 };
 
@@ -103,9 +111,39 @@ TEST_F(ClientStateTest, ReadClosedSetsDone) {
 	EXPECT_EQ(Client::kDone, client->getState());
 }
 
-class ClientReadTest : public ClientTestBase {};
+class ClientBytes : public ClientTestBase {};
+
+TEST_F(ClientBytes, FullWriteCompletesInOneGo) {
+	prepareCompleteRequest();
+	Client::WriteResult result = client->write();
+
+	EXPECT_EQ(Client::kWriteDone, result);
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientBytes, WriteEventuallyCompletes) {
+	prepareCompleteRequest();
+	while (client->getState() != Client::kDone) {
+		Client::WriteResult result = client->write();
+		EXPECT_NE(Client::kWriteError, result);
+	}
+	EXPECT_EQ(Client::kDone, client->getState());
+}
+
+TEST_F(ClientBytes, WriteMayRequireMultipleCalls)
+{
+	prepareCompleteRequest();
+	while (client->getState() != Client::kDone)
+	{
+		Client::WriteResult result = client->write();
+		EXPECT_NE(Client::kWriteError, result);
+	}
+	EXPECT_EQ(Client::kDone, client->getState());
+}
 
 /** this part is coupled with Reqeust uncomment when it's ready
+class ClientReadTest : public ClientTestBase {};
+
 TEST_F(ClientReadTest, DataIsStoredInRequestBuffer) {
 	sendToClient("Hello");
 
