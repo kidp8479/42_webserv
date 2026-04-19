@@ -206,9 +206,13 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
 
         if (current_token.value == "methods") {
         } else if (current_token.value == "root") {
+            parseRoot(location_block);
         } else if (current_token.value == "index") {
+            parseIndex(location_block);
         } else if (current_token.value == "autoindex") {
+            parseAutoIndex(location_block);
         } else if (current_token.value == "upload_path") {
+            parseUploadPath(location_block);
         } else if (current_token.value == "cgi") {
         } else if (current_token.value == "return") {
         } else {
