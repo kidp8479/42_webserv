@@ -293,8 +293,18 @@ void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
 
 void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     (void)location_block;
+    index_++;
+    checkBounds("after \"upload_path\", expected extension + path to binary");
+
+    index_++;  // advance to ";"
+    expectSemicolon();
 }
 
 void ConfigBuilder::parseReturn(LocationConfig& location_block) {
     (void)location_block;
+    index_++;
+    checkBounds("after \"return\", code + path");
+
+    index_++;  // advance to ";"
+    expectSemicolon();
 }
