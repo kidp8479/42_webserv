@@ -86,14 +86,7 @@ TEST_F(ClientStateTest, ReadCompleteTransitionsToWriting) {
 }
 
 TEST_F(ClientStateTest, WriteDoneTransitionsToDone) {
-	sendToClient("GET / HTTP/1.1\r\nHost: test\r\n\r\n");
-
-	// read request
-	ASSERT_EQ(Client::kReadComplete, client->read());
-
-	// build response
-	client->getResponse().buildFrom(client->getRequest());
-
+	prepareCompleteRequest();
 	//  write response
 	Client::WriteResult result = client->write();
 
