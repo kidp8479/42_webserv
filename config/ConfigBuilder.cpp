@@ -399,7 +399,8 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
  * @brief Parses a root directive and sets the root path.
  *
  * @param location_block The LocationConfig to fill
- * @note Parses: root www/html;
+ * @throws std::runtime_error if value is missing or ";" is absent
+ * @note Parses: root /www/html;
  */
 void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     index_++;
@@ -417,6 +418,7 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
  * @brief Parses an index directive and sets the default index file.
  *
  * @param location_block The LocationConfig to fill
+ * @throws std::runtime_error if value is missing or ";" is absent
  * @note Parses: index index.html;
  */
 void ConfigBuilder::parseIndex(LocationConfig& location_block) {
@@ -441,8 +443,8 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
  */
 void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     index_++;
-    bool directory_listing = false;
     checkBounds("after \"autoindex\", expected on or off");
+    bool directory_listing = false;
 
     if (currentToken().value == "off") {
         directory_listing = false;
@@ -464,7 +466,8 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
  * @brief Parses an upload_path directive and sets the upload directory.
  *
  * @param location_block The LocationConfig to fill
- * @note Parses: upload_path www/uploads;
+ * @throws std::runtime_error if value is missing or ";" is absent
+ * @note Parses: upload_path /www/uploads;
  */
 void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     index_++;
