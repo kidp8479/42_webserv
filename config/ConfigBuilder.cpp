@@ -209,8 +209,10 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
         configError("invalid listen value \"" + current_token.value +
                     "\", expected \"host:port\"");
     }
+
     server_block.setHost(current_token.value.substr(0, delimiter_pos));
     server_block.setPort(toInt(current_token.value.substr(delimiter_pos + 1)));
+
     index_++;  // advance to ";"
     expectSemicolon();
 }
@@ -247,7 +249,9 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
             byte_size = raw_size * BYTES_PER_GB;  // "g" or "G"
         }
     }
+
     server_block.setMaxBodySize(byte_size);
+
     index_++;  // advance to ";"
     expectSemicolon();
 }
@@ -264,11 +268,13 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     checkBounds("after \"error_page\"");
 
     int code = toInt(currentToken().value);
+
     index_++;  // advance to path
     checkBounds("after error_page code");
 
     const std::string& path = currentToken().value;
     server_block.addErrorPage(code, path);
+
     index_++;  // advance to ";"
     expectSemicolon();
 }
@@ -346,7 +352,9 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
     if (index_ >= tokens_list_->size()) {
         configError("unclosed methods directive, expected \";\"");
     }
+
     location_block.setMethods(collect_methods);
+
     expectSemicolon();
 }
 
@@ -359,7 +367,9 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
 void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"root\", expected path");
+
     location_block.setRoot(currentToken().value);
+
     index_++;  // advance to ";"
     expectSemicolon();
 }
@@ -373,7 +383,9 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
 void ConfigBuilder::parseIndex(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"index\", expected path");
+
     location_block.setIndex(currentToken().value);
+
     index_++;  // advance to ";"
     expectSemicolon();
 }
@@ -400,6 +412,7 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     }
 
     location_block.setDirectoryListing(directory_listing);
+
     index_++;  // advance to ";"
     expectSemicolon();
 }
@@ -413,15 +426,23 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
 void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"upload_path\", expected path");
+
     location_block.setUploadPath(currentToken().value);
+
     index_++;  // advance to ";"
     expectSemicolon();
 }
 
 void ConfigBuilder::parseCGI(LocationConfig& location_block) {
-    (void)location_block;
     index_++;
-    checkBounds("after \"upload_path\", expected extension + path to binary");
+    checkBounds("after \"cgi\", expected extension + path to binary");
+
+    std::string cgi_extension = currentToken().value;
+    index_++;
+    checkBounds("after cgi extention (ex:\".php\") expexted binary path");
+    std::string cgi_binary_path = currentToken().value;
+
+    location_block.addCgiInterpreter(cgi_extension, cgi_binary_path);
 
     index_++;  // advance to ";"
     expectSemicolon();
