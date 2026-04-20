@@ -30,9 +30,21 @@ TEST(ConfigBuilder_Build, NoThrowOnMinimalValidBlock) {
         buildFromFile("../config/builder_test_files/valid_minimal.conf"));
 }
 
+/* tests for build() multiple server blocks
+[PASS] => two server blocks correctly parsed */
+
+TEST(ConfigBuilder_Build, CorrectlyParsesMultipleServerBlocks) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/valid_multiple_server_blocks.conf");
+    ASSERT_EQ(config.getServerBlock().size(), 2u);
+    EXPECT_EQ(config.getServerBlock()[0].getPort(), 8080);
+    EXPECT_EQ(config.getServerBlock()[1].getPort(), 8081);
+}
+
 /* tests for parseServerBlock()
 [FAIL] => "{" missing after "server"
-[FAIL] => block is never closed with "}" */
+[FAIL] => block is never closed with "}"
+[FAIL] => unknown directive inside server block */
 
 TEST(ConfigBuilder_ParseServerBlock, ThrowsOnMissingOpenBrace) {
     EXPECT_THROW(
@@ -46,10 +58,23 @@ TEST(ConfigBuilder_ParseServerBlock, ThrowsOnUnclosedBlock) {
         std::runtime_error);
 }
 
+TEST(ConfigBuilder_ParseServerBlock, ThrowsOnUnknownDirective) {
+    EXPECT_THROW(
+        buildFromFile("../config/builder_test_files/unknown_directive.conf"),
+        std::runtime_error);
+}
+
 /* tests for parseListen()
+[FAIL] => no value after "listen" (end of file)
 [FAIL] => listen value has no ":" separator
 [FAIL] => ";" missing after listen value
 [PASS] => host and port are correctly parsed */
+
+TEST(ConfigBuilder_ParseListen, ThrowsOnMissingValue) {
+    EXPECT_THROW(
+        buildFromFile("../config/builder_test_files/listen_missing_value.conf"),
+        std::runtime_error);
+}
 
 TEST(ConfigBuilder_ParseListen, ThrowsOnMissingColon) {
     EXPECT_THROW(
@@ -73,14 +98,44 @@ TEST(ConfigBuilder_ParseListen, CorrectlyParsesHostAndPort) {
 }
 
 /* tests for parseClientBodySize()
+[FAIL] => no value after "client_max_body_size" (end of file)
+[FAIL] => ";" missing after value
+[PASS] => kilobyte unit correctly converted
 [PASS] => megabyte unit correctly converted
+[PASS] => gigabyte unit correctly converted
 [PASS] => no unit treated as bytes */
+
+TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnMissingValue) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/"
+                               "client_max_body_size_missing_value.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/"
+                               "client_max_body_size_missing_semicolon.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesKilobytes) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/client_max_body_size_kilobytes.conf");
+    ASSERT_EQ(config.getServerBlock().size(), 1u);
+    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 4u * 1024u);
+}
 
 TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesMegabytes) {
     Config config = buildFromFile(
         "../config/builder_test_files/client_max_body_size_megabytes.conf");
     ASSERT_EQ(config.getServerBlock().size(), 1u);
     EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 10u * 1048576u);
+}
+
+TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesGigabytes) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/client_max_body_size_gigabytes.conf");
+    ASSERT_EQ(config.getServerBlock().size(), 1u);
+    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 2u * 1073741824u);
 }
 
 TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesRawBytes) {
@@ -126,3 +181,49 @@ TEST(ConfigBuilder_ParseErrorPage, CorrectlyParsesCodeAndPath) {
     ASSERT_EQ(pages.size(), 1u);
     EXPECT_EQ(pages.at(404), "/errors/404.html");
 }
+
+/* tests for parseLocationBlock()
+[FAIL] => "{" missing after location path
+[FAIL] => block is never closed with "}"
+[FAIL] => unknown directive inside location block
+[PASS] => path correctly stored */
+
+/* tests for parseMethods()
+[FAIL] => invalid method name (not GET/POST/DELETE)
+[FAIL] => ";" missing after methods
+[PASS] => single method correctly stored
+[PASS] => multiple methods correctly stored */
+
+/* tests for parseRoot()
+[FAIL] => no value after "root" (end of file)
+[FAIL] => ";" missing after value
+[PASS] => root path correctly stored */
+
+/* tests for parseIndex()
+[FAIL] => no value after "index" (end of file)
+[FAIL] => ";" missing after value
+[PASS] => index file correctly stored */
+
+/* tests for parseAutoIndex()
+[FAIL] => value is not "on" or "off"
+[FAIL] => ";" missing after value
+[PASS] => "on" sets directory listing to true
+[PASS] => "off" sets directory listing to false */
+
+/* tests for parseUploadPath()
+[FAIL] => no value after "upload_path" (end of file)
+[FAIL] => ";" missing after value
+[PASS] => upload path correctly stored */
+
+/* tests for parseCGI()
+[FAIL] => no extension after "cgi" (end of file)
+[FAIL] => no binary after extension (end of file)
+[FAIL] => ";" missing after binary
+[PASS] => extension and binary correctly stored
+[PASS] => multiple cgi entries correctly stored */
+
+/* tests for parseReturn()
+[FAIL] => no code after "return" (end of file)
+[FAIL] => no url after code (end of file)
+[FAIL] => ";" missing after url
+[PASS] => code and url correctly stored */
