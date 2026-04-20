@@ -84,9 +84,10 @@ void ConfigBuilder::expectSemicolon() {
 /**
  * @brief Verifies the current token is "{" and advances past it.
  *
- * @throws std::runtime_error if current token is not "{"
+ * @throws std::runtime_error if end of file or current token is not "{"
  */
 void ConfigBuilder::expectOpenBrace() {
+    checkBounds("expected \"{\"");
     const Token& open_brace = currentToken();
     if (open_brace.value != "{") {
         std::ostringstream oss;
@@ -177,7 +178,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
 
     index_++;  // advance past "server"
     checkBounds("after \"server\", expected \"{\"");
-    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" RESET;
+    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" << RESET;
     expectOpenBrace();
 
     // loop through directives until "}" or end of file
