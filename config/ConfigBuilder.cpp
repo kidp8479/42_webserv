@@ -4,7 +4,7 @@
  * @brief Constructs a ConfigBuilder object.
  *
  * @note: initialize index_ to 0 et tokens_list_ to NULL (pointer to a vector of
- * Token)
+ * Token), object starts in a clean state.
  */
 ConfigBuilder::ConfigBuilder() : index_(0), tokens_list_(NULL) {
 }
@@ -20,7 +20,7 @@ ConfigBuilder::~ConfigBuilder() {
  * prefix.
  *
  * @param msg The error message (without the "Config: " prefix)
- * @throws std::runtime_error Always
+ * @throws std::runtime_error always
  */
 void ConfigBuilder::configError(const std::string& msg) const {
     std::string full = "Config: " + msg;
@@ -28,6 +28,13 @@ void ConfigBuilder::configError(const std::string& msg) const {
     throw std::runtime_error(full);
 }
 
+/**
+ * @brief Throws a configError for an unknown directive, including its name and
+ * line number.
+ *
+ * @param current_token The unrecognized token
+ * @throws std::runtime_error always
+ */
 void ConfigBuilder::unknownDirectiveError(const Token& current_token) {
     std::ostringstream oss;
     oss << current_token.line;
@@ -35,16 +42,34 @@ void ConfigBuilder::unknownDirectiveError(const Token& current_token) {
                 oss.str());
 }
 
+/**
+ * @brief Returns a const reference to the current token.
+ *
+ * @return const Token& The token at index_
+ * @note Exists to avoid repeating (*tokens_list_)[index_] everywhere in the
+ * class.
+ */
 const Token& ConfigBuilder::currentToken() const {
     return (*tokens_list_)[index_];
 }
 
+/**
+ * @brief Throws if index_ is past the end of the token list.
+ *
+ * @param context Description of where we are, included in the error message
+ * @throws std::runtime_error if index_ >= tokens_list_->size()
+ */
 void ConfigBuilder::checkBounds(const std::string& context) {
     if (index_ >= tokens_list_->size()) {
         configError("unexpected end of file " + context);
     }
 }
 
+/**
+ * @brief Verifies the current token is ";" and advances past it.
+ *
+ * @throws std::runtime_error if end of file or current token is not ";"
+ */
 void ConfigBuilder::expectSemicolon() {
     checkBounds("expected \";\"");
     const Token& current_token = currentToken();
@@ -56,6 +81,11 @@ void ConfigBuilder::expectSemicolon() {
     index_++;
 }
 
+/**
+ * @brief Verifies the current token is "{" and advances past it.
+ *
+ * @throws std::runtime_error if current token is not "{"
+ */
 void ConfigBuilder::expectOpenBrace() {
     const Token& open_brace = currentToken();
     if (open_brace.value != "{") {
@@ -67,6 +97,13 @@ void ConfigBuilder::expectOpenBrace() {
     index_++;  // advance past "{"
 }
 
+/**
+ * @brief Converts a string to int via istringstream.
+ *
+ * @param s The string to convert
+ * @return int The converted value
+ * @throws std::runtime_error if the string is not a valid integer
+ */
 int ConfigBuilder::toInt(const std::string& s) const {
     std::istringstream iss(s);
     int result;
@@ -76,6 +113,13 @@ int ConfigBuilder::toInt(const std::string& s) const {
     return result;
 }
 
+/**
+ * @brief Converts a string to size_t via istringstream.
+ *
+ * @param s The string to convert
+ * @return size_t The converted value
+ * @throws std::runtime_error if the string is not a valid size
+ */
 size_t ConfigBuilder::toSizeT(const std::string& s) const {
     std::istringstream iss(s);
     size_t result;
@@ -85,6 +129,14 @@ size_t ConfigBuilder::toSizeT(const std::string& s) const {
     return result;
 }
 
+/**
+ * @brief Entry point. Consumes the token list and returns a filled Config
+ * object.
+ *
+ * @param raw_tokens The token list produced by ConfigTokenizer
+ * @return Config The fully parsed config object
+ * @throws std::runtime_error on any sequence error
+ */
 Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     Config config;
     index_ = 0;
@@ -104,6 +156,13 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     return config;
 }
 
+/**
+ * @brief Parses one server { } block and returns a filled ServerConfig.
+ *
+ * @return ServerConfig The parsed server block
+ * @throws std::runtime_error on missing braces, unclosed block, or unknown
+ * directive
+ */
 ServerConfig ConfigBuilder::parseServerBlock() {
     ServerConfig server_block;
 
@@ -133,6 +192,13 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     return server_block;
 }
 
+/**
+ * @brief Parses a listen directive and sets host and port on the server block.
+ *
+ * @param server_block The ServerConfig to fill
+ * @throws std::runtime_error if the value is missing or has no ":" separator
+ * @note Parses: listen 127.0.0.1:8080;
+ */
 void ConfigBuilder::parseListen(ServerConfig& server_block) {
     index_++;  // advance past "listen"
     checkBounds("after \"listen\"");
@@ -149,6 +215,17 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses a client_max_body_size directive and sets the max body size in
+ * bytes.
+ *
+ * @param server_block The ServerConfig to fill
+ * @throws std::runtime_error if the value is missing or not a valid number
+ * @note Accepts an optional unit suffix: K/k (kilobytes), M/m (megabytes), G/g
+ * (gigabytes). No suffix is treated as raw bytes, consistent with nginx
+ * behavior.
+ * @note Parses: client_max_body_size 10M;
+ */
 void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     index_++;  // advance past "client_max_body_size"
     checkBounds("after \"client_max_body_size\"");
@@ -175,6 +252,13 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses an error_page directive and stores the code/path pair.
+ *
+ * @param server_block The ServerConfig to fill
+ * @throws std::runtime_error if the code or path is missing
+ * @note Parses: error_page 404 /errors/404.html;
+ */
 void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     index_++;  // advance past "error_page"
     checkBounds("after \"error_page\"");
@@ -189,6 +273,14 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses one location { } block and appends it to the server block.
+ *
+ * @param server_block The ServerConfig that owns this location block
+ * @throws std::runtime_error on missing braces, unclosed block, or unknown
+ * directive
+ * @note Parses: location /path { ... }
+ */
 void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
     LocationConfig location_block;
 
@@ -215,7 +307,9 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
         } else if (current_token.value == "upload_path") {
             parseUploadPath(location_block);
         } else if (current_token.value == "cgi") {
+            parseCGI(location_block);
         } else if (current_token.value == "return") {
+            parseReturn(location_block);
         } else {
             unknownDirectiveError(current_token);
         }
@@ -227,6 +321,14 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
     server_block.addLocationBlock(location_block);
 }
 
+/**
+ * @brief Parses a methods directive and sets the allowed HTTP methods.
+ *
+ * @param location_block The LocationConfig to fill
+ * @throws std::runtime_error if a token is not GET, POST, or DELETE, or if ";"
+ * is missing
+ * @note Parses: methods GET POST DELETE;
+ */
 void ConfigBuilder::parseMethods(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"methods\", expected GET and/or POST and/or DELETE");
@@ -238,7 +340,7 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
             collect_methods.push_back(currentToken().value);
         } else {
             configError(
-                "unexpected token, \"methods\" accepts GET POST DELETE.");
+                "unexpected token, \"methods\" accepts GET POST DELETE only.");
         }
         index_++;
     }
@@ -249,6 +351,12 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses a root directive and sets the root path.
+ *
+ * @param location_block The LocationConfig to fill
+ * @note Parses: root www/html;
+ */
 void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"root\", expected path");
@@ -257,6 +365,12 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses an index directive and sets the default index file.
+ *
+ * @param location_block The LocationConfig to fill
+ * @note Parses: index index.html;
+ */
 void ConfigBuilder::parseIndex(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"index\", expected path");
@@ -265,6 +379,14 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses an autoindex directive and enables or disables directory
+ * listing.
+ *
+ * @param location_block The LocationConfig to fill
+ * @throws std::runtime_error if the value is not "on" or "off"
+ * @note Parses: autoindex on;
+ */
 void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     index_++;
     bool directory_listing = false;
@@ -283,6 +405,12 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses an upload_path directive and sets the upload directory.
+ *
+ * @param location_block The LocationConfig to fill
+ * @note Parses: upload_path www/uploads;
+ */
 void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"upload_path\", expected path");
