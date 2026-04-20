@@ -252,12 +252,15 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     while (i < raw.size() && std::isdigit(raw[i])) {
         i++;
     }
-    if (i == 0 || (i < raw.size() &&
-                   (raw.size() != i + 1 ||
-                    (raw[i] != 'K' && raw[i] != 'k' && raw[i] != 'M' &&
-                     raw[i] != 'm' && raw[i] != 'G' && raw[i] != 'g')))) {
+    if (i == 0) {
         configError("invalid client_max_body_size value \"" + raw +
-                    "\", expected a number with optional K/M/G suffix");
+                    "\", value must start with a digit");
+    }
+    if (i < raw.size() && (raw.size() != i + 1 ||
+                           (raw[i] != 'K' && raw[i] != 'k' && raw[i] != 'M' &&
+                            raw[i] != 'm' && raw[i] != 'G' && raw[i] != 'g'))) {
+        configError("invalid client_max_body_size value \"" + raw +
+                    "\", expected K/M/G suffix or no suffix");
     }
 
     size_t numeric = toSizeT(raw.substr(0, i));
