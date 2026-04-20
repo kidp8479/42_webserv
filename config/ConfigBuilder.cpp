@@ -439,7 +439,7 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
 
     std::string cgi_extension = currentToken().value;
     index_++;
-    checkBounds("after cgi extention (ex:\".php\") expexted binary path");
+    checkBounds("after cgi extension (ex:\".php\") expected binary path");
     std::string cgi_binary_path = currentToken().value;
 
     location_block.addCgiInterpreter(cgi_extension, cgi_binary_path);
@@ -449,9 +449,16 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
 }
 
 void ConfigBuilder::parseReturn(LocationConfig& location_block) {
-    (void)location_block;
     index_++;
-    checkBounds("after \"return\", code + path");
+    checkBounds("after \"return\", expected code + path");
+
+    int return_code = toInt(currentToken().value);
+    index_++;
+    checkBounds("after \"return code\", expected path");
+    std::string return_path = currentToken().value;
+
+    location_block.setReturnCode(return_code);
+    location_block.setReturnUrl(return_path);
 
     index_++;  // advance to ";"
     expectSemicolon();
