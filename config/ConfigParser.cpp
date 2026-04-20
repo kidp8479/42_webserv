@@ -16,6 +16,7 @@ ConfigParser::~ConfigParser() {
 Config ConfigParser::parse(const std::string& file_path) {
     Config config;
 
+    LOG_INFO() << BR_CYN "Config: starting to parse " << file_path << RESET;
     LOG_DEBUG() << BR_YEL "ConfigParser: parsing phase 1 - tokenizing "
                 << file_path << RESET;
     ConfigTokenizer tokenizer(file_path);
@@ -27,6 +28,7 @@ Config ConfigParser::parse(const std::string& file_path) {
 
     LOG_DEBUG() << BR_YEL "ConfigParser: parsing phase 3 to be coded" RESET;
     // ConfigValidator validator(config); => phase 3
+    LOG_INFO() << BR_CYN "Config: " << file_path << " fully parsed" << RESET;
 
     return config;
 }
