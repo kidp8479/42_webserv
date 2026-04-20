@@ -14,7 +14,7 @@ static Config buildFromFile(const std::string& path) {
     return builder.build(tokenizer.getTokenList());
 }
 
-/* tests for build() top-level dispatch
+/* tests for build() dispatcher
 [FAIL] => first token is not "server"
 [PASS] => minimal valid server block */
 
@@ -48,14 +48,15 @@ TEST(ConfigBuilder_Build, CorrectlyParsesMultipleServerBlocks) {
 
 TEST(ConfigBuilder_ParseServerBlock, ThrowsOnMissingOpenBrace) {
     EXPECT_THROW(
-        buildFromFile("../config/builder_test_files/missing_open_brace.conf"),
+        buildFromFile(
+            "../config/builder_test_files/server_missing_open_brace.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseServerBlock, ThrowsOnUnclosedBlock) {
-    EXPECT_THROW(
-        buildFromFile("../config/builder_test_files/unclosed_block.conf"),
-        std::runtime_error);
+    EXPECT_THROW(buildFromFile(
+                     "../config/builder_test_files/server_unclosed_block.conf"),
+                 std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseServerBlock, ThrowsOnUnknownDirective) {
@@ -187,6 +188,27 @@ TEST(ConfigBuilder_ParseErrorPage, CorrectlyParsesCodeAndPath) {
 [FAIL] => block is never closed with "}"
 [FAIL] => unknown directive inside location block
 [PASS] => path correctly stored */
+
+TEST(ConfigBuilder_ParseLocationBlock, ThrowsOnMissingOpenBrace) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location_missing_open_brace.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseLocationBlock, ThrowsOnUnclosedBlock) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location_unclosed_block.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseLocationBlock, ThrowsOnUnknownDirective) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location_unknown_directive.conf"),
+        std::runtime_error);
+}
 
 /* tests for parseMethods()
 [FAIL] => invalid method name (not GET/POST/DELETE)

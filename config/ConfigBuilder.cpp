@@ -248,7 +248,7 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     size_t unit_pos = current_token.value.find_first_of("KkMmGg");
     size_t byte_size;
     if (unit_pos == std::string::npos) {
-        // no unit — treat entire value as bytes, like nginx
+        // no unit - treat entire value as bytes, like nginx
         byte_size = toSizeT(current_token.value);
     } else {
         size_t raw_size = toSizeT(current_token.value.substr(0, unit_pos));
