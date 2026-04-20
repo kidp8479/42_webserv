@@ -446,11 +446,9 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     checkBounds("after \"autoindex\", expected on or off");
     bool directory_listing = false;
 
-    if (currentToken().value == "off") {
-        directory_listing = false;
-    } else if (currentToken().value == "on") {
+    if (currentToken().value == "on") {
         directory_listing = true;
-    } else {
+    } else if (currentToken().value != "off") {
         configError("unexpected token, \"autoindex\" is either on or off.");
     }
 
