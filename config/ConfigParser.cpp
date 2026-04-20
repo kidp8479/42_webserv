@@ -16,17 +16,16 @@ ConfigParser::~ConfigParser() {
 Config ConfigParser::parse(const std::string& file_path) {
     Config config;
 
-    LOG_DEBUG() << "ConfigParser: parsing phase 1 - tokenizing " << file_path;
+    LOG_DEBUG() << BR_YEL "ConfigParser: parsing phase 1 - tokenizing "
+                << file_path << RESET;
     ConfigTokenizer tokenizer(file_path);
-    LOG_DEBUG() << "ConfigParser: parsing phase 1 done - "
-                << tokenizer.getTokenList().size() << " tokens extracted";
 
-    LOG_DEBUG()
-        << "ConfigParser: parsing phase 2 - filling object with raw tokens";
+    LOG_DEBUG() << BR_YEL
+        "ConfigParser: parsing phase 2 - filling object with raw tokens" RESET;
     ConfigBuilder builder;
     config = builder.build(tokenizer.getTokenList());
 
-    LOG_DEBUG() << "ConfigParser: parsing phase 3 to be coded";
+    LOG_DEBUG() << BR_YEL "ConfigParser: parsing phase 3 to be coded" RESET;
     // ConfigValidator validator(config); => phase 3
 
     return config;

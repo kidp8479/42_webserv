@@ -142,8 +142,8 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     index_ = 0;
     tokens_list_ = &raw_tokens;
 
-    LOG_DEBUG() << "ConfigBuilder: starting build, " << tokens_list_->size()
-                << " tokens";
+    LOG_DEBUG() << BR_CYN "ConfigBuilder: starting build, "
+                << tokens_list_->size() << " tokens" << RESET;
 
     while (index_ < tokens_list_->size()) {
         const Token& current_token = currentToken();
@@ -155,8 +155,13 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
         }
         config.addServerBlock(parseServerBlock());
     }
-    LOG_INFO() << "ConfigBuilder: build complete, "
-               << config.getServerBlock().size() << " server block(s) loaded";
+    size_t total_locations = 0;
+    for (size_t i = 0; i < config.getServerBlock().size(); i++) {
+        total_locations += config.getServerBlock()[i].getLocationBlock().size();
+    }
+    LOG_INFO() << BR_CYN "ConfigBuilder: build complete - "
+               << config.getServerBlock().size() << " server block(s), "
+               << total_locations << " location block(s)" << RESET;
     return config;
 }
 
@@ -172,7 +177,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
 
     index_++;  // advance past "server"
     checkBounds("after \"server\", expected \"{\"");
-    LOG_DEBUG() << "ConfigBuilder: parsing server block";
+    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" RESET;
     expectOpenBrace();
 
     // loop through directives until "}" or end of file
@@ -217,8 +222,8 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
 
     server_block.setHost(current_token.value.substr(0, delimiter_pos));
     server_block.setPort(toInt(current_token.value.substr(delimiter_pos + 1)));
-    LOG_DEBUG() << "ConfigBuilder: listen -> " << server_block.getHost() << ":"
-                << server_block.getPort();
+    LOG_DEBUG() << "ConfigBuilder: listen -> " << GRN << server_block.getHost()
+                << ":" << server_block.getPort() << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -258,6 +263,8 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     }
 
     server_block.setMaxBodySize(byte_size);
+    LOG_DEBUG() << "ConfigBuilder: client_max_body_size -> " << GRN << byte_size
+                << " bytes" << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -281,6 +288,8 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
 
     const std::string& path = currentToken().value;
     server_block.addErrorPage(code, path);
+    LOG_DEBUG() << "ConfigBuilder: error_page -> " << GRN << code << " " << path
+                << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -301,8 +310,8 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
     checkBounds("after \"location\", expected path");
 
     location_block.setPath(currentToken().value);
-    LOG_DEBUG() << "ConfigBuilder: parsing location block \""
-                << location_block.getPath() << "\"";
+    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing location block \""
+                << location_block.getPath() << "\"" << RESET;
     index_++;  // advance to "{"
     checkBounds("after location path, expected \"{\"");
     expectOpenBrace();
@@ -364,6 +373,11 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
 
     if (collect_methods.empty()) {
         LOG_WARNING() << "ConfigBuilder: \"methods\" directive is empty";
+    } else {
+        for (size_t i = 0; i < collect_methods.size(); i++) {
+            LOG_DEBUG() << "ConfigBuilder: methods -> " << GRN
+                        << collect_methods[i] << RESET;
+        }
     }
     location_block.setMethods(collect_methods);
 
@@ -381,6 +395,8 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     checkBounds("after \"root\", expected path");
 
     location_block.setRoot(currentToken().value);
+    LOG_DEBUG() << "ConfigBuilder: root -> " << GRN << location_block.getRoot()
+                << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -397,6 +413,8 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
     checkBounds("after \"index\", expected path");
 
     location_block.setIndex(currentToken().value);
+    LOG_DEBUG() << "ConfigBuilder: index -> " << GRN
+                << location_block.getIndex() << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -424,6 +442,8 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     }
 
     location_block.setDirectoryListing(directory_listing);
+    LOG_DEBUG() << "ConfigBuilder: autoindex -> " << GRN
+                << (directory_listing ? "on" : "off") << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -440,6 +460,8 @@ void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     checkBounds("after \"upload_path\", expected path");
 
     location_block.setUploadPath(currentToken().value);
+    LOG_DEBUG() << "ConfigBuilder: upload_path -> " << GRN
+                << location_block.getUploadPath() << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -464,8 +486,8 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     std::string cgi_binary_path = currentToken().value;
 
     location_block.addCgiInterpreter(cgi_extension, cgi_binary_path);
-    LOG_DEBUG() << "ConfigBuilder: cgi -> " << cgi_extension << " => "
-                << cgi_binary_path;
+    LOG_DEBUG() << "ConfigBuilder: cgi -> " << GRN << cgi_extension << " => "
+                << cgi_binary_path << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -491,6 +513,8 @@ void ConfigBuilder::parseReturn(LocationConfig& location_block) {
 
     location_block.setReturnCode(return_code);
     location_block.setReturnUrl(return_path);
+    LOG_DEBUG() << "ConfigBuilder: return -> " << GRN << return_code << " "
+                << return_path << RESET;
 
     index_++;  // advance to ";"
     expectSemicolon();

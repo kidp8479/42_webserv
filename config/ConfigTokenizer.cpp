@@ -174,7 +174,8 @@ void ConfigTokenizer::tokenize() {
     //     LOG_DEBUG() << "line [" << tokens_list_[i].line << "] - token[" << i
     //                 << "] = '" << tokens_list_[i].value << "' ";
     // }
-    // LOG_DEBUG() << "Config: file successfully tokenized";
+    LOG_INFO() << BR_CYN "ConfigTokenizer: tokenization done - "
+               << tokens_list_.size() << " tokens extracted" << RESET;
 }
 
 /**
