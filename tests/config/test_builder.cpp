@@ -44,6 +44,25 @@ TEST(ConfigBuilder_Build, CorrectlyParsesMultipleServerBlocks) {
     EXPECT_EQ(config.getServerBlock()[1].getPort(), 8081);  // real check
 }
 
+/* tests for build() complete server block
+[PASS] => all server-level directives correctly parsed */
+
+TEST(ConfigBuilder_Build, CorrectlyParsesCompleteServerBlock) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/server/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next lines would crash
+    EXPECT_EQ(config.getServerBlock()[0].getHost(), "127.0.0.1");  // real check
+    EXPECT_EQ(config.getServerBlock()[0].getPort(), 8080);         // real check
+    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(),
+              10u * 1048576u);  // real check
+    const std::map<int, std::string>& pages =
+        config.getServerBlock()[0].getErrorPages();
+    ASSERT_EQ(pages.size(), 1u);  // check size before accessing
+    EXPECT_EQ(pages.at(404), "/errors/404.html");  // real check
+}
+
 /* tests for parseServerBlock()
 [FAIL] => "{" missing after "server"
 [FAIL] => block is never closed with "}"
@@ -247,18 +266,113 @@ TEST(ConfigBuilder_ParseLocationBlock, CorrectlyParsesPath) {
 /* tests for parseMethods()
 [FAIL] => invalid method name (not GET/POST/DELETE)
 [FAIL] => ";" missing after methods
-[PASS] => single method correctly stored
 [PASS] => multiple methods correctly stored */
+
+TEST(ConfigBuilder_ParseMethods, ThrowsOnUnknownMethodName) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/invalid_method_name.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseMethods, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/missing_semicolon.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseMethods, CorrectlyStoredAllMethods) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    const std::vector<std::string>& methods =
+        config.getServerBlock()[0].getLocationBlock()[0].getMethods();
+    ASSERT_EQ(methods.size(), 2u);  // check size before accessing by index
+    EXPECT_EQ(methods[0], "GET");
+    EXPECT_EQ(methods[1], "POST");
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getRoot(),
+              "/www/data");
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getIndex(),
+              "index.html");
+    EXPECT_EQ(
+        config.getServerBlock()[0].getLocationBlock()[0].getDirectoryListing(),
+        true);
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getUploadPath(),
+              "/www/uploads");
+    const std::map<std::string, std::string>& cgi =
+        config.getServerBlock()[0].getLocationBlock()[0].getCgiInterpreters();
+    ASSERT_EQ(cgi.size(), 1u);  // check size before accessing
+    EXPECT_EQ(cgi.at(".php"), "/usr/bin/php-cgi");  // real check
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getReturnCode(),
+              301);
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getReturnUrl(),
+              "/new-path");
+}
 
 /* tests for parseRoot()
 [FAIL] => no value after "root" (end of file)
 [FAIL] => ";" missing after value
 [PASS] => root path correctly stored */
 
+TEST(ConfigBuilder_ParseRoot, ThrowsOnMissingValue) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/no_value_after_root.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseRoot, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "root_missing_semicolon.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseRoot, CorrectlyParsesRoot) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getRoot(),
+              "/www/data");  // real check
+}
+
 /* tests for parseIndex()
 [FAIL] => no value after "index" (end of file)
 [FAIL] => ";" missing after value
 [PASS] => index file correctly stored */
+
+TEST(ConfigBuilder_ParseIndex, ThrowsOnMissingValue) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/index_missing_value.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseIndex, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "index_missing_semicolon.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseIndex, CorrectlyParsesIndex) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getIndex(),
+              "index.html");  // real check
+}
 
 /* tests for parseAutoIndex()
 [FAIL] => value is not "on" or "off"
@@ -266,10 +380,72 @@ TEST(ConfigBuilder_ParseLocationBlock, CorrectlyParsesPath) {
 [PASS] => "on" sets directory listing to true
 [PASS] => "off" sets directory listing to false */
 
+TEST(ConfigBuilder_ParseAutoIndex, ThrowsOnInvalidValue) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "autoindex_invalid_value.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseAutoIndex, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "autoindex_missing_semicolon.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseAutoIndex, CorrectlyParsesOn) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    EXPECT_EQ(
+        config.getServerBlock()[0].getLocationBlock()[0].getDirectoryListing(),
+        true);  // real check
+}
+
+TEST(ConfigBuilder_ParseAutoIndex, CorrectlyParsesOff) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_autoindex_off.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    EXPECT_EQ(
+        config.getServerBlock()[0].getLocationBlock()[0].getDirectoryListing(),
+        false);  // real check
+}
+
 /* tests for parseUploadPath()
 [FAIL] => no value after "upload_path" (end of file)
 [FAIL] => ";" missing after value
 [PASS] => upload path correctly stored */
+
+TEST(ConfigBuilder_ParseUploadPath, ThrowsOnMissingValue) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "upload_path_missing_value.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseUploadPath, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "upload_path_missing_semicolon.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseUploadPath, CorrectlyParsesUploadPath) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getUploadPath(),
+              "/www/uploads");  // real check
+}
 
 /* tests for parseCGI()
 [FAIL] => no extension after "cgi" (end of file)
@@ -278,8 +454,92 @@ TEST(ConfigBuilder_ParseLocationBlock, CorrectlyParsesPath) {
 [PASS] => extension and binary correctly stored
 [PASS] => multiple cgi entries correctly stored */
 
+TEST(ConfigBuilder_ParseCGI, ThrowsOnMissingExtension) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/cgi_missing_extension.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseCGI, ThrowsOnMissingBinary) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/cgi_missing_binary.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseCGI, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/cgi_missing_semicolon.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseCGI, CorrectlyParsesSingleEntry) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    const std::map<std::string, std::string>& cgi =
+        config.getServerBlock()[0].getLocationBlock()[0].getCgiInterpreters();
+    ASSERT_EQ(cgi.size(), 1u);  // check size before accessing
+    EXPECT_EQ(cgi.at(".php"), "/usr/bin/php-cgi");  // real check
+}
+
+TEST(ConfigBuilder_ParseCGI, CorrectlyParsesMultipleEntries) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_multiple_cgi.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    const std::map<std::string, std::string>& cgi =
+        config.getServerBlock()[0].getLocationBlock()[0].getCgiInterpreters();
+    ASSERT_EQ(cgi.size(), 2u);  // check size before accessing
+    EXPECT_EQ(cgi.at(".php"), "/usr/bin/php-cgi");  // real check
+    EXPECT_EQ(cgi.at(".py"), "/usr/bin/python3");   // real check
+}
+
 /* tests for parseReturn()
 [FAIL] => no code after "return" (end of file)
 [FAIL] => no url after code (end of file)
 [FAIL] => ";" missing after url
 [PASS] => code and url correctly stored */
+
+TEST(ConfigBuilder_ParseReturn, ThrowsOnMissingCode) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/return_missing_code.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseReturn, ThrowsOnMissingUrl) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/return_missing_url.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseReturn, ThrowsOnMissingSemicolon) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "return_missing_semicolon.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseReturn, CorrectlyParsesCodeAndUrl) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getReturnCode(),
+              301);  // real check
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getReturnUrl(),
+              "/new-path");  // real check
+}
