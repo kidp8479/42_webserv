@@ -266,6 +266,7 @@ TEST(ConfigBuilder_ParseLocationBlock, CorrectlyParsesPath) {
 /* tests for parseMethods()
 [FAIL] => invalid method name (not GET/POST/DELETE)
 [FAIL] => ";" missing after methods
+[FAIL] => empty methods list
 [PASS] => multiple methods correctly stored */
 
 TEST(ConfigBuilder_ParseMethods, ThrowsOnUnknownMethodName) {
@@ -279,6 +280,13 @@ TEST(ConfigBuilder_ParseMethods, ThrowsOnMissingSemicolon) {
     EXPECT_THROW(
         buildFromFile(
             "../config/builder_test_files/location/missing_semicolon.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseMethods, ThrowsOnEmptyMethodsList) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/methods_empty.conf"),
         std::runtime_error);
 }
 

@@ -372,12 +372,13 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
     }
 
     if (collect_methods.empty()) {
-        LOG_WARNING() << "ConfigBuilder: \"methods\" directive is empty";
-    } else {
-        for (size_t i = 0; i < collect_methods.size(); i++) {
-            LOG_DEBUG() << "ConfigBuilder: methods -> " << GRN
-                        << collect_methods[i] << RESET;
-        }
+        configError(
+            "\"methods\" directive requires at least one method (GET POST "
+            "DELETE)");
+    }
+    for (size_t i = 0; i < collect_methods.size(); i++) {
+        LOG_DEBUG() << "ConfigBuilder: methods -> " << GRN << collect_methods[i]
+                    << RESET;
     }
     location_block.setMethods(collect_methods);
 
