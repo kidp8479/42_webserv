@@ -21,13 +21,13 @@ static Config buildFromFile(const std::string& path) {
 TEST(ConfigBuilder_Build, ThrowsIfFirstTokenIsNotServer) {
     EXPECT_THROW(
         buildFromFile(
-            "../config/builder_test_files/server_not_first_token.conf"),
+            "../config/builder_test_files/server/not_first_token.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_Build, NoThrowOnMinimalValidBlock) {
-    EXPECT_NO_THROW(
-        buildFromFile("../config/builder_test_files/valid_minimal.conf"));
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/builder_test_files/server/valid_minimal.conf"));
 }
 
 /* tests for build() multiple server blocks
@@ -35,10 +35,13 @@ TEST(ConfigBuilder_Build, NoThrowOnMinimalValidBlock) {
 
 TEST(ConfigBuilder_Build, CorrectlyParsesMultipleServerBlocks) {
     Config config = buildFromFile(
-        "../config/builder_test_files/valid_multiple_server_blocks.conf");
-    ASSERT_EQ(config.getServerBlock().size(), 2u);
-    EXPECT_EQ(config.getServerBlock()[0].getPort(), 8080);
-    EXPECT_EQ(config.getServerBlock()[1].getPort(), 8081);
+        "../config/builder_test_files/server/"
+        "valid_multiple_server_blocks.conf");
+    ASSERT_EQ(config.getServerBlock().size(),
+              2u);  // check if we have at least 2 server blocks or next lines
+                    // would crash
+    EXPECT_EQ(config.getServerBlock()[0].getPort(), 8080);  // real check
+    EXPECT_EQ(config.getServerBlock()[1].getPort(), 8081);  // real check
 }
 
 /* tests for parseServerBlock()
@@ -49,19 +52,20 @@ TEST(ConfigBuilder_Build, CorrectlyParsesMultipleServerBlocks) {
 TEST(ConfigBuilder_ParseServerBlock, ThrowsOnMissingOpenBrace) {
     EXPECT_THROW(
         buildFromFile(
-            "../config/builder_test_files/server_missing_open_brace.conf"),
+            "../config/builder_test_files/server/missing_open_brace.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseServerBlock, ThrowsOnUnclosedBlock) {
     EXPECT_THROW(buildFromFile(
-                     "../config/builder_test_files/server_unclosed_block.conf"),
+                     "../config/builder_test_files/server/unclosed_block.conf"),
                  std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseServerBlock, ThrowsOnUnknownDirective) {
     EXPECT_THROW(
-        buildFromFile("../config/builder_test_files/unknown_directive.conf"),
+        buildFromFile(
+            "../config/builder_test_files/server/unknown_directive.conf"),
         std::runtime_error);
 }
 
@@ -73,29 +77,32 @@ TEST(ConfigBuilder_ParseServerBlock, ThrowsOnUnknownDirective) {
 
 TEST(ConfigBuilder_ParseListen, ThrowsOnMissingValue) {
     EXPECT_THROW(
-        buildFromFile("../config/builder_test_files/listen_missing_value.conf"),
+        buildFromFile(
+            "../config/builder_test_files/server/listen_missing_value.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseListen, ThrowsOnMissingColon) {
     EXPECT_THROW(
-        buildFromFile("../config/builder_test_files/listen_missing_colon.conf"),
+        buildFromFile(
+            "../config/builder_test_files/server/listen_missing_colon.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseListen, ThrowsOnMissingSemicolon) {
-    EXPECT_THROW(
-        buildFromFile(
-            "../config/builder_test_files/listen_missing_semicolon.conf"),
-        std::runtime_error);
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
+                               "listen_missing_semicolon.conf"),
+                 std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseListen, CorrectlyParsesHostAndPort) {
     Config config =
-        buildFromFile("../config/builder_test_files/valid_minimal.conf");
-    ASSERT_EQ(config.getServerBlock().size(), 1u);
-    EXPECT_EQ(config.getServerBlock()[0].getHost(), "127.0.0.1");
-    EXPECT_EQ(config.getServerBlock()[0].getPort(), 8080);
+        buildFromFile("../config/builder_test_files/server/valid_minimal.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next lines would crash
+    EXPECT_EQ(config.getServerBlock()[0].getHost(), "127.0.0.1");  // real check
+    EXPECT_EQ(config.getServerBlock()[0].getPort(), 8080);         // real check
 }
 
 /* tests for parseClientBodySize()
@@ -107,43 +114,57 @@ TEST(ConfigBuilder_ParseListen, CorrectlyParsesHostAndPort) {
 [PASS] => no unit treated as bytes */
 
 TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnMissingValue) {
-    EXPECT_THROW(buildFromFile("../config/builder_test_files/"
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
                                "client_max_body_size_missing_value.conf"),
                  std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnMissingSemicolon) {
-    EXPECT_THROW(buildFromFile("../config/builder_test_files/"
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
                                "client_max_body_size_missing_semicolon.conf"),
                  std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesKilobytes) {
     Config config = buildFromFile(
-        "../config/builder_test_files/client_max_body_size_kilobytes.conf");
-    ASSERT_EQ(config.getServerBlock().size(), 1u);
-    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 4u * 1024u);
+        "../config/builder_test_files/server/"
+        "client_max_body_size_kilobytes.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(),
+              4u * 1024u);  // real check
 }
 
 TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesMegabytes) {
     Config config = buildFromFile(
-        "../config/builder_test_files/client_max_body_size_megabytes.conf");
-    ASSERT_EQ(config.getServerBlock().size(), 1u);
-    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 10u * 1048576u);
+        "../config/builder_test_files/server/"
+        "client_max_body_size_megabytes.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(),
+              10u * 1048576u);  // real check
 }
 
 TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesGigabytes) {
     Config config = buildFromFile(
-        "../config/builder_test_files/client_max_body_size_gigabytes.conf");
-    ASSERT_EQ(config.getServerBlock().size(), 1u);
-    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 2u * 1073741824u);
+        "../config/builder_test_files/server/"
+        "client_max_body_size_gigabytes.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(),
+              2u * 1073741824u);  // real check
 }
 
 TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesRawBytes) {
     Config config = buildFromFile(
-        "../config/builder_test_files/client_max_body_size_bytes.conf");
-    ASSERT_EQ(config.getServerBlock().size(), 1u);
-    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 512u);
+        "../config/builder_test_files/server/client_max_body_size_bytes.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    EXPECT_EQ(config.getServerBlock()[0].getMaxBodySize(), 512u);  // real check
 }
 
 /* tests for parseErrorPage()
@@ -155,32 +176,33 @@ TEST(ConfigBuilder_ParseClientBodySize, CorrectlyParsesRawBytes) {
 TEST(ConfigBuilder_ParseErrorPage, ThrowsOnMissingCode) {
     EXPECT_THROW(
         buildFromFile(
-            "../config/builder_test_files/error_page_missing_code.conf"),
+            "../config/builder_test_files/server/error_page_missing_code.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseErrorPage, ThrowsOnMissingPath) {
     EXPECT_THROW(
         buildFromFile(
-            "../config/builder_test_files/error_page_missing_path.conf"),
+            "../config/builder_test_files/server/error_page_missing_path.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseErrorPage, ThrowsOnMissingSemicolon) {
-    EXPECT_THROW(
-        buildFromFile(
-            "../config/builder_test_files/error_page_missing_semicolon.conf"),
-        std::runtime_error);
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
+                               "error_page_missing_semicolon.conf"),
+                 std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseErrorPage, CorrectlyParsesCodeAndPath) {
-    Config config =
-        buildFromFile("../config/builder_test_files/error_page_valid.conf");
-    ASSERT_EQ(config.getServerBlock().size(), 1u);
+    Config config = buildFromFile(
+        "../config/builder_test_files/server/error_page_valid.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next lines would crash
     const std::map<int, std::string>& pages =
         config.getServerBlock()[0].getErrorPages();
-    ASSERT_EQ(pages.size(), 1u);
-    EXPECT_EQ(pages.at(404), "/errors/404.html");
+    ASSERT_EQ(pages.size(), 1u);  // same logic for the error pages map
+    EXPECT_EQ(pages.at(404), "/errors/404.html");  // real check
 }
 
 /* tests for parseLocationBlock()
@@ -192,22 +214,34 @@ TEST(ConfigBuilder_ParseErrorPage, CorrectlyParsesCodeAndPath) {
 TEST(ConfigBuilder_ParseLocationBlock, ThrowsOnMissingOpenBrace) {
     EXPECT_THROW(
         buildFromFile(
-            "../config/builder_test_files/location_missing_open_brace.conf"),
+            "../config/builder_test_files/location/missing_open_brace.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseLocationBlock, ThrowsOnUnclosedBlock) {
     EXPECT_THROW(
         buildFromFile(
-            "../config/builder_test_files/location_unclosed_block.conf"),
+            "../config/builder_test_files/location/unclosed_block.conf"),
         std::runtime_error);
 }
 
 TEST(ConfigBuilder_ParseLocationBlock, ThrowsOnUnknownDirective) {
     EXPECT_THROW(
         buildFromFile(
-            "../config/builder_test_files/location_unknown_directive.conf"),
+            "../config/builder_test_files/location/unknown_directive.conf"),
         std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseLocationBlock, CorrectlyParsesPath) {
+    Config config = buildFromFile(
+        "../config/builder_test_files/location/valid_complete.conf");
+    ASSERT_EQ(
+        config.getServerBlock().size(),
+        1u);  // check if we have at least a server or next line would crash
+    ASSERT_EQ(config.getServerBlock()[0].getLocationBlock().size(),
+              1u);  // same logic for location block
+    EXPECT_EQ(config.getServerBlock()[0].getLocationBlock()[0].getPath(),
+              "/upload");  // real check
 }
 
 /* tests for parseMethods()
