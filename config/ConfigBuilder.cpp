@@ -433,6 +433,15 @@ void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses a cgi directive and registers an extension/binary pair.
+ *
+ * @param location_block The LocationConfig to fill
+ * @throws std::runtime_error if the extension or binary path is missing
+ * @note Parses: cgi .php /usr/bin/php-cgi;
+ * @note Can appear multiple times in one location block, each call adds one
+ * entry.
+ */
 void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"cgi\", expected extension + path to binary");
@@ -448,6 +457,15 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     expectSemicolon();
 }
 
+/**
+ * @brief Parses a return directive and sets the redirect code and target URL.
+ *
+ * @param location_block The LocationConfig to fill
+ * @throws std::runtime_error if the code or URL is missing
+ * @note Parses: return 301 /;
+ * @note return_code_ defaults to NO_REDIRECT (-1) if this directive is absent.
+ * Presence is checked by ConfigValidator.
+ */
 void ConfigBuilder::parseReturn(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"return\", expected code + path");
