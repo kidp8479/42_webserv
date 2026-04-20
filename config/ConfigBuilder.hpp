@@ -5,6 +5,7 @@
 #define BYTES_PER_MB 1048576
 #define BYTES_PER_GB 1073741824
 
+#include <cctype>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -26,10 +27,10 @@ private:
     ConfigBuilder& operator=(const ConfigBuilder& other);
 
     void configError(const std::string& msg) const;
-    void unknownDirectiveError(const Token& current_token);
+    void unknownDirectiveError(const Token& current_token) const;
 
     const Token& currentToken() const;
-    void checkBounds(const std::string& context);
+    void checkBounds(const std::string& context) const;
     void expectSemicolon();
     void expectOpenBrace();
     int toInt(const std::string& s) const;
