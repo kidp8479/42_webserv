@@ -3,8 +3,8 @@
 /**
  * @brief Constructs a ConfigBuilder object.
  *
- * @note: initialize index_ to 0 et tokens_list_ to NULL (pointer to a vector of
- * Token), object starts in a clean state.
+ * @note Initializes index_ to 0 and tokens_list_ to NULL (pointer to a vector
+ * of Token), object starts in a clean state.
  */
 ConfigBuilder::ConfigBuilder() : index_(0), tokens_list_(NULL) {
 }
@@ -35,7 +35,7 @@ void ConfigBuilder::configError(const std::string& msg) const {
  * @param current_token The unrecognized token
  * @throws std::runtime_error always
  */
-void ConfigBuilder::unknownDirectiveError(const Token& current_token) {
+void ConfigBuilder::unknownDirectiveError(const Token& current_token) const {
     std::ostringstream oss;
     oss << current_token.line;
     configError("unknown directive \"" + current_token.value + "\" on line " +
@@ -59,7 +59,7 @@ const Token& ConfigBuilder::currentToken() const {
  * @param context Description of where we are, included in the error message
  * @throws std::runtime_error if index_ >= tokens_list_->size()
  */
-void ConfigBuilder::checkBounds(const std::string& context) {
+void ConfigBuilder::checkBounds(const std::string& context) const {
     if (index_ >= tokens_list_->size()) {
         configError("unexpected end of file " + context);
     }
