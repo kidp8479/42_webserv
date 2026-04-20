@@ -15,7 +15,6 @@ public:
 	void					stop(); // close sockets
 	const std::vector<int>& getSockets() const;
 
-    // TODO: comment this out before validatin
     // Grant access to private members to the test fixture
     friend class ServerTestFixture;
 

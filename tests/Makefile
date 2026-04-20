@@ -28,7 +28,7 @@ SRCS = 	\
 		../server/Client.cpp \
 		../http/Request.cpp \
 		../http/Response.cpp \
-		#../server/Server.cpp \
+		../server/Server.cpp \
 		
 
 all: $(BIN_DIR) $(OBJ_DIR) $(GTEST_OBJ) $(GTEST_MAIN_OBJ) $(TEST_BINS)
