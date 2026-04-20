@@ -32,6 +32,8 @@ Response& Client::getResponse() {
 // in partial chunks or split messages - these raw data must be parsed
 // and reconstructed at the HTTP layer (Charlie's part). My job
 // here is just to store the raw data
+// NOTE: at this point the client handles a single request only
+// we will handle multiple requests for a single client in the next PR
 Client::ReadResult Client::read() {
 	char buffer[kBufferSize];
 	ssize_t bytes = recv(fd_.getFd(), buffer, sizeof(buffer), 0);
@@ -40,7 +42,7 @@ Client::ReadResult Client::read() {
 	if (bytes > 0) {
 		// i store the request directly in request object raw_ for Charlie
 		request_.append(buffer, bytes);
-		// charlie then parses the header and body and check to see if the request
+		// we use Charlie's isComplete to check if the request was compelte
 		// isComplete when "\r\n\r\n" is found (+ full body if Content-Length is set)
 		if (request_.isComplete()) {
 			state_ = kWriting;
@@ -61,7 +63,7 @@ Client::ReadResult Client::read() {
 
 Client::WriteResult Client::write() {
 	const std::string response = response_.getRaw(); // copy safe for CGI later
-													 //
+	
 	if (bytes_sent_ >= response.size()) {
 		state_ = kDone;
 		return kWriteDone;
