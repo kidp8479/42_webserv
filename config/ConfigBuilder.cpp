@@ -142,6 +142,9 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     index_ = 0;
     tokens_list_ = &raw_tokens;
 
+    LOG_DEBUG() << "ConfigBuilder: starting build, " << tokens_list_->size()
+                << " tokens";
+
     while (index_ < tokens_list_->size()) {
         const Token& current_token = currentToken();
         if (current_token.value != "server") {
@@ -152,7 +155,8 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
         }
         config.addServerBlock(parseServerBlock());
     }
-    LOG_DEBUG() << "ConfigBuilder: config object successfully filled";
+    LOG_INFO() << "ConfigBuilder: build complete, "
+               << config.getServerBlock().size() << " server block(s) loaded";
     return config;
 }
 
@@ -168,6 +172,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
 
     index_++;  // advance past "server"
     checkBounds("after \"server\", expected \"{\"");
+    LOG_DEBUG() << "ConfigBuilder: parsing server block";
     expectOpenBrace();
 
     // loop through directives until "}" or end of file
@@ -212,6 +217,8 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
 
     server_block.setHost(current_token.value.substr(0, delimiter_pos));
     server_block.setPort(toInt(current_token.value.substr(delimiter_pos + 1)));
+    LOG_DEBUG() << "ConfigBuilder: listen -> " << server_block.getHost() << ":"
+                << server_block.getPort();
 
     index_++;  // advance to ";"
     expectSemicolon();
@@ -294,6 +301,8 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
     checkBounds("after \"location\", expected path");
 
     location_block.setPath(currentToken().value);
+    LOG_DEBUG() << "ConfigBuilder: parsing location block \""
+                << location_block.getPath() << "\"";
     index_++;  // advance to "{"
     checkBounds("after location path, expected \"{\"");
     expectOpenBrace();
@@ -353,6 +362,9 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
         configError("unclosed methods directive, expected \";\"");
     }
 
+    if (collect_methods.empty()) {
+        LOG_WARNING() << "ConfigBuilder: \"methods\" directive is empty";
+    }
     location_block.setMethods(collect_methods);
 
     expectSemicolon();
@@ -452,6 +464,8 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     std::string cgi_binary_path = currentToken().value;
 
     location_block.addCgiInterpreter(cgi_extension, cgi_binary_path);
+    LOG_DEBUG() << "ConfigBuilder: cgi -> " << cgi_extension << " => "
+                << cgi_binary_path;
 
     index_++;  // advance to ";"
     expectSemicolon();
