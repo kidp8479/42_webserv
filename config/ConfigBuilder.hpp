@@ -40,7 +40,7 @@ private:
     void parseClientBodySize(ServerConfig& server_block);
     void parseErrorPage(ServerConfig& server_block);
 
-    void parseLocationBlock(ServerConfig& server_block);
+    LocationConfig parseLocationBlock();
     void parseMethods(LocationConfig& location_block);
     void parseRoot(LocationConfig& location_block);
     void parseIndex(LocationConfig& location_block);

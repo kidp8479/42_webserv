@@ -180,7 +180,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
         } else if (current_token.value == "error_page") {
             parseErrorPage(server_block);
         } else if (current_token.value == "location") {
-            parseLocationBlock(server_block);
+            server_block.addLocationBlock(parseLocationBlock());
         } else {
             unknownDirectiveError(current_token);
         }
@@ -274,14 +274,14 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
 }
 
 /**
- * @brief Parses one location { } block and appends it to the server block.
+ * @brief Parses one location { } block and returns a filled LocationConfig.
  *
- * @param server_block The ServerConfig that owns this location block
+ * @return LocationConfig The parsed location block
  * @throws std::runtime_error on missing braces, unclosed block, or unknown
  * directive
  * @note Parses: location /path { ... }
  */
-void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
+LocationConfig ConfigBuilder::parseLocationBlock() {
     LocationConfig location_block;
 
     index_++;  // advance past "location"
@@ -292,7 +292,6 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
     checkBounds("after location path, expected \"{\"");
     expectOpenBrace();
 
-    // TODO: parse location directives - if/else first - lookup table maybe next
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
         const Token& current_token = currentToken();
 
@@ -318,7 +317,7 @@ void ConfigBuilder::parseLocationBlock(ServerConfig& server_block) {
         configError("unclosed location block, expected \"}\"");
     }
     index_++;  // advance past "}"
-    server_block.addLocationBlock(location_block);
+    return location_block;
 }
 
 /**
