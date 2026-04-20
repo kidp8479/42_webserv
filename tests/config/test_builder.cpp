@@ -127,6 +127,7 @@ TEST(ConfigBuilder_ParseListen, CorrectlyParsesHostAndPort) {
 /* tests for parseClientBodySize()
 [FAIL] => no value after "client_max_body_size" (end of file)
 [FAIL] => ";" missing after value
+[FAIL] => invalid unit suffix (not K/M/G)
 [PASS] => kilobyte unit correctly converted
 [PASS] => megabyte unit correctly converted
 [PASS] => gigabyte unit correctly converted
@@ -141,6 +142,12 @@ TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnMissingValue) {
 TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnMissingSemicolon) {
     EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
                                "client_max_body_size_missing_semicolon.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnInvalidUnit) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
+                               "client_max_body_size_invalid_unit.conf"),
                  std::runtime_error);
 }
 

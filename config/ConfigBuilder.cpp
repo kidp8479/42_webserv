@@ -244,22 +244,31 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     index_++;  // advance past "client_max_body_size"
     checkBounds("after \"client_max_body_size\"");
 
-    const Token& current_token = currentToken();
-    size_t unit_pos = current_token.value.find_first_of("KkMmGg");
+    const std::string& raw = currentToken().value;
+
+    // validate format: digits only, or digits followed by exactly one K/M/G
+    size_t i = 0;
+    while (i < raw.size() && std::isdigit(raw[i])) {
+        i++;
+    }
+    if (i == 0 || (i < raw.size() &&
+                   (raw.size() != i + 1 ||
+                    (raw[i] != 'K' && raw[i] != 'k' && raw[i] != 'M' &&
+                     raw[i] != 'm' && raw[i] != 'G' && raw[i] != 'g')))) {
+        configError("invalid client_max_body_size value \"" + raw +
+                    "\", expected a number with optional K/M/G suffix");
+    }
+
+    size_t numeric = toSizeT(raw.substr(0, i));
     size_t byte_size;
-    if (unit_pos == std::string::npos) {
-        // no unit - treat entire value as bytes, like nginx
-        byte_size = toSizeT(current_token.value);
+    if (i == raw.size()) {
+        byte_size = numeric;  // no unit - treat as bytes, like nginx
+    } else if (raw[i] == 'K' || raw[i] == 'k') {
+        byte_size = numeric * BYTES_PER_KB;
+    } else if (raw[i] == 'M' || raw[i] == 'm') {
+        byte_size = numeric * BYTES_PER_MB;
     } else {
-        size_t raw_size = toSizeT(current_token.value.substr(0, unit_pos));
-        std::string unit = current_token.value.substr(unit_pos);
-        if (unit == "k" || unit == "K") {
-            byte_size = raw_size * BYTES_PER_KB;
-        } else if (unit == "m" || unit == "M") {
-            byte_size = raw_size * BYTES_PER_MB;
-        } else {
-            byte_size = raw_size * BYTES_PER_GB;  // "g" or "G"
-        }
+        byte_size = numeric * BYTES_PER_GB;
     }
 
     server_block.setMaxBodySize(byte_size);
