@@ -6,6 +6,18 @@
 #include <map>
 #include "../config/Config.hpp"
 
+/**
+ * @brief Core server responsible for socket lifecycle and client management.
+ *
+ * Manages listening sockets, accepts clients, and dispatches I/O handling.
+ *
+ * Clients are stored as raw pointers because:
+ * - Client is non-copyable (owns fd and state)
+ * - Server has exclusive ownership responsibility
+ * - Explicit delete ensures controlled lifecycle management
+ *
+ * This avoids accidental copies and ensures clear ownership semantics.
+ */
 class Server {
 public:
 	Server(const Config& config);

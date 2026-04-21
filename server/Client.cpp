@@ -1,6 +1,14 @@
 #include "Client.hpp"
 #include "../logger/Logger.hpp"
 
+/**
+ * @brief Constructs a Client from a socket fd.
+ *
+ * Takes ownership of the file descriptor and initializes the
+ * client in the reading state with a fresh request/response context.
+ *
+ * @param[in] fd Connected socket file descriptor
+ */
 Client::Client(int fd) : fd_(fd), bytes_sent_(0), state_(kReading)
 {
 	LOG_DEBUG() << "fd: " << fd_.getFd() << ", bytes sent: " << bytes_sent_
@@ -9,21 +17,45 @@ Client::Client(int fd) : fd_(fd), bytes_sent_(0), state_(kReading)
 	// response_ object also default constructed automatically
 }
 
+/**
+ * @brief Destroys the Client.
+ *
+ * Releases owned resources (socket managed by Fd).
+ */
 Client::~Client() {}
 
-// getter
+
+/**
+ * @brief Returns the client socket file descriptor.
+ *
+ * @return The underlying socket fd
+ */
 int	Client::getFd() const {
 	return fd_.getFd();
 }
-
+/**
+ * @brief Returns the current client state.
+ *
+ * @return Current state (reading, writing, or done)
+ */
 Client::State Client::getState() const {
 	return state_;
 }
 
+/**
+ * @brief Provides access to the request object.
+ *
+ * @return Reference to the associated Request
+ */
 Request& Client::getRequest() {
 	return request_;
 }
 
+/**
+ * @brief Provides access to the response object.
+ *
+ * @return Reference to the associated Response
+ */
 Response& Client::getResponse() {
 	return response_;
 }
@@ -34,6 +66,26 @@ Response& Client::getResponse() {
 // here is just to store the raw data
 // NOTE: at this point the client handles a single request only
 // we will handle multiple requests for a single client in the next PR
+
+/**
+ * @brief Reads incoming data from the client socket.
+ *
+ * Appends received bytes to the request buffer and checks
+ * whether the HTTP request is complete.
+ *
+ * This implementation currently supports a single HTTP request
+ * per client connection. Persistent connections and multiple
+ * pipelined requests will be handled in a later iteration.
+ *
+ * Transitions:
+ * - kReading -> kWriting when request is complete
+ * - kReading -> kDone on disconnect or error
+ *
+ * @return ReadResult indicating progress or termination
+ *
+ * @note Handles partial reads; request data may arrive in chunks
+ * @see Request::isComplete()
+ */
 Client::ReadResult Client::read() {
 	char buffer[kBufferSize];
 	ssize_t bytes = recv(fd_.getFd(), buffer, sizeof(buffer), 0);
@@ -61,6 +113,22 @@ Client::ReadResult Client::read() {
 	}
 }
 
+/**
+ * @brief Sends the HTTP response to the client socket.
+ *
+ * The response is sent incrementally because send() may write only
+ * part of the buffer in non-blocking mode.
+ *
+ * @note bytes_sent_ tracks partial writes across multiple calls.
+ *
+ * @return WriteResult indicating:
+ * - kWritePending: response partially sent
+ * - kWriteDone: response fully sent
+ * - kWriteError: socket failure or disconnect
+ *
+ * @warning Any send() failure is currently treated as a closed
+ * connection (pre-polling limitation).
+ */
 Client::WriteResult Client::write() {
 	const std::string response = response_.getRaw(); // copy safe for CGI later
 	

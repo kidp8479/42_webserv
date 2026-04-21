@@ -3,6 +3,14 @@
 
 #include <unistd.h>
 
+/**
+ * @brief RAII wrapper managing a file descriptor lifetime.
+ *
+ * Ensures the fd is closed on destruction unless released.
+ * Copying is disabled to prevent double-close (unique ownership).
+ *
+ * @note Explicit constructor avoids implicit int -> Fd conversion.
+ */
 class Fd {
 public:
 	// this is a ctor with a default argument

@@ -7,6 +7,18 @@
 #include "Fd.hpp"
 #include <sys/socket.h>
 
+/**
+ * @brief Represents a connected client and its I/O state.
+ *
+ * Owns the client socket (via Fd) and manages request/response
+ * processing through a simple state machine (reading, writing, done).
+ *
+ * Copying is disabled to enforce unique ownership of the socket and
+ * prevent double-close errors.
+ *
+ * @note The constructor is explicit to avoid implicit int -> Client
+ * conversions that could lead to unintended ownership.
+ */
 class Client {
 public:
 	enum State {
