@@ -177,7 +177,6 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     ServerConfig server_block;
 
     index_++;  // advance past "server"
-    checkBounds("after \"server\", expected \"{\"");
     LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" << RESET;
     expectOpenBrace();
 
@@ -326,7 +325,6 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
     LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing location block \""
                 << location_block.getPath() << "\"" << RESET;
     index_++;  // advance to "{"
-    checkBounds("after location path, expected \"{\"");
     expectOpenBrace();
 
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
