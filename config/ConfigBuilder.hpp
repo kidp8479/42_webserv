@@ -50,10 +50,6 @@ private:
 
     size_t index_;
     const std::vector<Token>* tokens_list_;
-
-    static const size_t BYTES_PER_KB = 1024;
-    static const size_t BYTES_PER_MB = 1048576;
-    static const size_t BYTES_PER_GB = 1073741824;
 };
 
 #endif

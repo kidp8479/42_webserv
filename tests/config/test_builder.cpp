@@ -1,7 +1,4 @@
 #include <gtest/gtest.h>
-#include <sys/stat.h>
-
-#include <cstdio>
 
 #include "../../config/ConfigBuilder.hpp"
 #include "../../config/ConfigTokenizer.hpp"

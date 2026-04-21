@@ -1,5 +1,11 @@
 #include "ConfigBuilder.hpp"
 
+namespace {
+const size_t BYTES_PER_KB = 1024;
+const size_t BYTES_PER_MB = 1048576;
+const size_t BYTES_PER_GB = 1073741824;
+}  // namespace
+
 /**
  * @brief Constructs a ConfigBuilder object.
  *
