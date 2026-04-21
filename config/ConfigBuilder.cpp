@@ -104,12 +104,22 @@ void ConfigBuilder::expectOpenBrace() {
  * @param s The string to convert
  * @return int The converted value
  * @throws std::runtime_error if the string is not a valid integer
+ * @note Rejects strings with trailing characters (ex: "8080abc") by attempting
+ * a second extraction after the number.
  */
 int ConfigBuilder::toInt(const std::string& s) const {
     std::istringstream iss(s);
+    std::string leftover;
     int result;
+
     if (!(iss >> result)) {
         configError("invalid integer value: \"" + s + "\"");
+    }
+    // we check if there is still something to extract after the int part, if
+    // there is, condition will return true, the string to parse was not only
+    // digits
+    if (iss >> leftover) {
+        configError("malformed directive value");
     }
     return result;
 }
@@ -120,12 +130,19 @@ int ConfigBuilder::toInt(const std::string& s) const {
  * @param s The string to convert
  * @return size_t The converted value
  * @throws std::runtime_error if the string is not a valid size
+ * @note Rejects strings with trailing characters (ex: "8080abc") by attempting
+ * a second extraction after the number.
  */
 size_t ConfigBuilder::toSizeT(const std::string& s) const {
     std::istringstream iss(s);
+    std::string leftover;
     size_t result;
+
     if (!(iss >> result)) {
         configError("invalid size value: \"" + s + "\"");
+    }
+    if (iss >> leftover) {
+        configError("malformed directive value");
     }
     return result;
 }
