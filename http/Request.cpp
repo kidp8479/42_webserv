@@ -84,7 +84,7 @@ std::map<std::string, std::string> Request::getHeaders() const {
  * @return true if the raw string constitutes a complete message
  */
 bool Request::isComplete() const {
-	if (!this->raw_.find("\r\n\r\n"))
+	if (this->raw_.find("\r\n\r\n") == std::string::npos)
 		return (false);
 
 	std::string			line, contentLen;
