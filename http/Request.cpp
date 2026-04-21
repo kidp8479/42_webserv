@@ -13,14 +13,6 @@ Request::Request() {
 }
 
  /**
- * @brief Constructor.
- * @param raw Full request message as a string.
- */
-Request::Request(std::string raw)
-	: raw_(raw) {
-}
-
- /**
  * @brief Copy Constructor.
  * @param other Request to copy.
  */
@@ -89,10 +81,57 @@ std::map<std::string, std::string> Request::getHeaders() const {
 /********************************* Checkers *********************************/
  /**
  * @brief Check if request is complete.
- * @return true if the request message is complete
+ * @return true if the raw string constitutes a complete message
  */
 bool Request::isComplete() const {
-	return (false); //WIP!
+	if (!this->raw_.find("\r\n\r\n"))
+		return (false);
+
+	std::string			line, contentLen;
+	std::istringstream	rawStream(this->raw_);
+	bool				atBody = false;
+
+	/*Search for Content-Length header in raw until empty line*/
+	while (!atBody && std::getline(rawStream, line)) {
+		if (!line.empty() && line.at(line.size() - 1) == '\r')
+			line.erase(line.size() - 1);
+		if (!line.empty())
+		{
+			std::string			headerName;
+			std::istringstream	lineStream(line);
+
+			std::getline(lineStream, headerName, ':');
+			if (headerName == "Content-Length") {
+				std::getline(lineStream, contentLen);
+				contentLen.erase(0, contentLen.find_first_not_of(' '));
+			}
+		}
+		else
+			atBody = true;
+	}
+
+	if (!contentLen.empty()) {
+		/*Content Length was found before empty line: get length as a size_t*/
+		size_t				bodySize;
+		std::istringstream	lenStream(contentLen);
+
+		lenStream >> bodySize;
+		if (!lenStream.fail()) {
+			/*Content Length is a valid number: get body as a string*/
+			std::string	tempBody;
+
+			while (std::getline(rawStream, line)) {
+				if (!tempBody.empty())
+					tempBody += '\n';
+				tempBody += line;
+			}
+
+			/*Compare sizes*/
+			return (bodySize == tempBody.size());
+		}
+	}
+
+	return (true);
 }
 
 
@@ -103,16 +142,18 @@ bool Request::isComplete() const {
  * @param len Number of characters to append.
  */
 void Request::append(const char* data, size_t len) {
-	for (size_t i = 0; i < len && data[i] != '\0'; i++)
-		this->raw_ += data[i];
+	this->raw_.append(data, len);
 }
 
  /**
- * @brief Set raw string.
- * @param raw String to set raw string to.
+ * @brief Wipe out all data with the exception of the raw message string
  */
-void Request::setRaw(std::string raw) {
-	this->raw_ = raw;
+void Request::clearData() {
+	this->method_ = kNone;
+	this->target_.clear();
+	this->protocol_.clear();
+	this->headers_.clear();
+	this->body_.clear();
 }
 
 
@@ -127,38 +168,37 @@ void Request::parseMessage() {
 	bool				atStartLine = true;
 	bool				atBody = false;
 
+	this->clearData();
 	while (std::getline(rawStream, line)) {
-		std::istringstream	lineStream(line);
+		if (!atBody) {
+			if (!line.empty() && line.at(line.size() - 1) == '\r')
+				line.erase(line.size() - 1);
+			std::istringstream	lineStream(line);
 
-		if (atStartLine) {
-			/*Parsing request start line*/
-			std::string	strMethod;
-			std::string	methodCheck[3] = {"GET", "POST", "DELETE"};
-			HttpMethod	methodSet[3] = {kGet, kPost, kDelete};
+			if (line.empty())
+				atBody = true;
+			else if (atStartLine) {
+				/*Parsing request start line*/
+				std::string	strMethod;
+				std::string	methodCheck[3] = {"GET", "POST", "DELETE"};
+				HttpMethod	methodSet[3] = {kGet, kPost, kDelete};
 
-			this->method_ = kNone;
-			std::getline(lineStream, strMethod, ' ');
-			for (size_t i = 0; i < 3 && this->method_ == kNone; i++) {
-				if (strMethod == methodCheck[i])
-					this->method_ = methodSet[i];
+				lineStream >> strMethod >> this->target_ >> this->protocol_;
+				for (size_t i = 0; i < 3 && this->method_ == kNone; i++) {
+					if (strMethod == methodCheck[i])
+						this->method_ = methodSet[i];
+				}
+				atStartLine = false;
 			}
-			std::getline(lineStream, this->target_, ' ');
-			std::getline(lineStream, this->protocol_, ' ');
-			atStartLine = false;
-		}
-		else if (!atBody) {
-			/*Parsing headers*/
-			if (line != "") {
+			else if (!atBody) {
+				/*Parsing headers*/
 				std::string	name, value;
 				
 				std::getline(lineStream, name, ':');
 				std::getline(lineStream, value);
 				value.erase(0, value.find_first_not_of(' '));
 				this->headers_[name] = value;
-				std::cout << "Header \'" << name << "' of value " << value << std::endl;
 			}
-			else
-				atBody = true;
 		}
 		else {
 			/*Parsing body*/

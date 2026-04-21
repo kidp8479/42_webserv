@@ -26,9 +26,6 @@ class Request {
 		Request(const Request& other);
 		Request &operator=(const Request& other);
 
-		/* Constructors */
-		Request(std::string raw);
-
 		/* Getters */
 		HttpMethod							getMethod() const;
 		std::string							getTarget() const;
@@ -41,7 +38,7 @@ class Request {
 
 		/* Setters */
 		void	append(const char* data, size_t len);
-		void	setRaw(std::string raw);
+		void	clearData();
 
 		/* Parsing */
 		void	parseMessage();
