@@ -29,17 +29,22 @@ void ConfigBuilder::configError(const std::string& msg) const {
 }
 
 /**
- * @brief Throws a configError for an unknown directive, including its name and
- * line number.
+ * @brief Logs an error with token context and throws a std::runtime_error.
  *
- * @param current_token The unrecognized token
+ * @param token The token that caused the error (provides value and line number)
+ * @param msg Description of the error
  * @throws std::runtime_error always
+ * @note Overload of configError(const std::string&). Use this version when a
+ * token is available, it automatically includes the token value and line number
+ * in the message. Use the string-only version when no token is available (ex:
+ * end of file, conversion errors).
  */
-void ConfigBuilder::unknownDirectiveError(const Token& current_token) const {
+void ConfigBuilder::configError(const Token& token,
+                                const std::string& msg) const {
     std::ostringstream oss;
-    oss << current_token.line;
-    configError("unknown directive \"" + current_token.value + "\" on line " +
-                oss.str());
+    oss << token.line;
+    configError("unexpected token \"" + token.value + "\" on line " +
+                oss.str() + ", " + msg);
 }
 
 /**
@@ -74,9 +79,7 @@ void ConfigBuilder::expectSemicolon() {
     checkBounds("expected \";\"");
     const Token& current_token = currentToken();
     if (current_token.value != ";") {
-        std::ostringstream oss;
-        oss << current_token.line;
-        configError("missing \";\" at line " + oss.str());
+        configError(current_token, "missing \";\"");
     }
     index_++;
 }
@@ -90,10 +93,7 @@ void ConfigBuilder::expectOpenBrace() {
     checkBounds("expected \"{\"");
     const Token& open_brace = currentToken();
     if (open_brace.value != "{") {
-        std::ostringstream oss;
-        oss << open_brace.line;
-        configError("unexpected token \"" + open_brace.value + "\" on line " +
-                    oss.str() + ", expected \"{\"");
+        configError(open_brace, "expected \"{\"");
     }
     index_++;  // advance past "{"
 }
@@ -166,10 +166,7 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     while (index_ < tokens_list_->size()) {
         const Token& current_token = currentToken();
         if (current_token.value != "server") {
-            std::ostringstream oss;
-            oss << current_token.line;
-            configError("unexpected token \"" + current_token.value +
-                        "\" on line " + oss.str() + ", expected \"server\"");
+            configError(current_token, "expected \"server\"");
         }
         config.addServerBlock(parseServerBlock());
     }
@@ -209,7 +206,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
         } else if (current_token.value == "location") {
             server_block.addLocationBlock(parseLocationBlock());
         } else {
-            unknownDirectiveError(current_token);
+            configError(current_token, "unknown directive.");
         }
     }
     if (index_ >= tokens_list_->size()) {
@@ -233,8 +230,7 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
     const Token& current_token = currentToken();
     size_t delimiter_pos = current_token.value.find(":");
     if (delimiter_pos == std::string::npos) {
-        configError("invalid listen value \"" + current_token.value +
-                    "\", expected \"host:port\"");
+        configError(current_token, "expected \"host:port\"");
     }
 
     server_block.setHost(current_token.value.substr(0, delimiter_pos));
@@ -362,7 +358,7 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
         } else if (current_token.value == "return") {
             parseReturn(location_block);
         } else {
-            unknownDirectiveError(current_token);
+            configError(current_token, "unknown directive.");
         }
     }
     if (index_ >= tokens_list_->size()) {
@@ -386,12 +382,13 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
 
     std::vector<std::string> collect_methods;
     while (index_ < tokens_list_->size() && currentToken().value != ";") {
-        if (currentToken().value == "GET" || currentToken().value == "POST" ||
-            currentToken().value == "DELETE") {
-            collect_methods.push_back(currentToken().value);
+        const Token& current_token = currentToken();
+        if (current_token.value == "GET" || current_token.value == "POST" ||
+            current_token.value == "DELETE") {
+            collect_methods.push_back(current_token.value);
         } else {
-            configError(
-                "unexpected token, \"methods\" accepts GET POST DELETE only.");
+            configError(current_token,
+                        "\"methods\" accepts GET POST DELETE only.");
         }
         index_++;
     }
@@ -467,7 +464,7 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     if (currentToken().value == "on") {
         directory_listing = true;
     } else if (currentToken().value != "off") {
-        configError("unexpected token, \"autoindex\" is either on or off.");
+        configError(currentToken(), "\"autoindex\" accepts on or off only.");
     }
 
     location_block.setDirectoryListing(directory_listing);

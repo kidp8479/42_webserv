@@ -26,8 +26,10 @@ private:
     ConfigBuilder(const ConfigBuilder& copy);
     ConfigBuilder& operator=(const ConfigBuilder& other);
 
-    void configError(const std::string& msg) const;
-    void unknownDirectiveError(const Token& current_token) const;
+    void configError(
+        const std::string& msg) const;  // generic configError function
+    void configError(const Token& token, const std::string& msg)
+        const;  // overload for precise msg token + line
 
     const Token& currentToken() const;
     void checkBounds(const std::string& context) const;
