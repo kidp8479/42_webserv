@@ -69,7 +69,7 @@ protected:
     }
 
     void prepareCompleteRequest() {
-        sendToClient("Get / HTTP/1.1\r\n\r\n");
+		sendToClient("GET / HTTP/1.1\r\n\r\n");
         Client::ReadResult result = client->read();
         ASSERT_EQ(Client::kReadComplete, result);
 
