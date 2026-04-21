@@ -93,8 +93,8 @@ TEST_F(ServerTestFixture, Destructor_ClosesSockets) {
 // ---------------------------------------------------------------------------
 
 TEST_F(ServerTestFixture, Stop_ClearsAllSockets) {
-    setupSocket(19997);
-    setupSocket(19998);
+    setupSocket(0);
+    setupSocket(0);
     ASSERT_EQ(sockets().size(), 2);
     server.stop();
     ASSERT_TRUE(sockets().empty());
