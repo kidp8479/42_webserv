@@ -181,7 +181,7 @@ void ConfigTokenizer::tokenize() {
 /**
  * @brief Emits a token from the current accumulated word.
  *
- * If current_word is non-empty, creates a Token and appends it to token_list_,
+ * If current_word is non-empty, creates a Token and appends it to tokens_list_,
  * then resets current_word to "".
  *
  * @param current_word Accumulated characters since the last delimiter (reset on
