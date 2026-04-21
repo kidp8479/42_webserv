@@ -38,7 +38,7 @@ private:
     Server(const Server&);
     Server& operator=(const Server&);
 
-    void setupSocket(int socket);
+    void setupSocket(int port);
     void setNonBlocking(int fd);
     int acceptClient();
     void handleRead(Client& client);
