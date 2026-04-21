@@ -1,6 +1,7 @@
 #include "Response.hpp"
 
-Response::Response() : raw_("") {}
+Response::Response() : raw_("") {
+}
 
 /**
  * @brief Builds a temporary HTTP response from a request.
@@ -15,16 +16,15 @@ Response::Response() : raw_("") {}
  *
  * @param request Parsed HTTP request (currently unused in this stub)
  */
-void Response::buildFrom(const Request& request)
-{
-	(void)request;
+void Response::buildFrom(const Request& request) {
+    (void)request;
 
-	// minimal valid HTTP response
-	raw_ =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Length: 11\r\n"
-		"\r\n"
-		"Hello World";
+    // minimal valid HTTP response
+    raw_ =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Length: 11\r\n"
+        "\r\n"
+        "Hello World";
 }
 
 /**
@@ -36,5 +36,5 @@ void Response::buildFrom(const Request& request)
  * @return Constant reference to the internal raw HTTP response buffer
  */
 const std::string& Response::getRaw() const {
-	return raw_;
+    return raw_;
 }

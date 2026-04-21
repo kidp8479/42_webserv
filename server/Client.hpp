@@ -2,10 +2,11 @@
 #define CLIENT_HPP
 
 #include <stddef.h>
+#include <sys/socket.h>
+
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
 #include "Fd.hpp"
-#include <sys/socket.h>
 
 /**
  * @brief Represents a connected client and its I/O state.
@@ -21,53 +22,40 @@
  */
 class Client {
 public:
-	enum State {
-		kReading,
-		kWriting,
-		kDone
-	};
-	enum ReadResult {
-		kReadPending,
-		kReadComplete,
-		kReadClosed,
-		kReadError
-	};
-	enum WriteResult {
-		kWritePending,
-		kWriteDone,
-		kWriteError
-	};
-	
-	// why this number? 4k is typical page size and still safe on stack
-	// reduces syscall overhead vs 1K
-	static const size_t kBufferSize = 4096;
+    enum State { kReading, kWriting, kDone };
+    enum ReadResult { kReadPending, kReadComplete, kReadClosed, kReadError };
+    enum WriteResult { kWritePending, kWriteDone, kWriteError };
 
-	//avoid unintentional construction by using explict keyword
-	// w/o explicit this is allowed Client c = 42
-	explicit Client(int fd);
-	~Client();
+    // why this number? 4k is typical page size and still safe on stack
+    // reduces syscall overhead vs 1K
+    static const size_t kBufferSize = 4096;
 
-    int			getFd() const;
-	State		getState() const;
-	Request&	getRequest();
-	Response&	getResponse();
+    // avoid unintentional construction by using explict keyword
+    //  w/o explicit this is allowed Client c = 42
+    explicit Client(int fd);
+    ~Client();
 
-	// I/O
-	ReadResult	read();
-	WriteResult	write();
+    int getFd() const;
+    State getState() const;
+    Request& getRequest();
+    Response& getResponse();
+
+    // I/O
+    ReadResult read();
+    WriteResult write();
 
 private:
-	// no copying or assignment allowed, client owns fd
-	// rule of thumb: any class that owns resrouces must not
-	// be copyable
-	Client(const Client&);
-	Client& operator=(const Client&);
+    // no copying or assignment allowed, client owns fd
+    // rule of thumb: any class that owns resrouces must not
+    // be copyable
+    Client(const Client&);
+    Client& operator=(const Client&);
 
-	Fd			fd_;
-	size_t		bytes_sent_;
-	State		state_;
-	Request		request_;
-	Response	response_;
+    Fd fd_;
+    size_t bytes_sent_;
+    State state_;
+    Request request_;
+    Response response_;
 };
 
 #endif

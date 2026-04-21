@@ -1,22 +1,22 @@
+#include <csignal>
 #include <cstdlib>
 
+#include "config/Config.hpp"
 #include "config/ConfigParser.hpp"
 #include "logger/Logger.hpp"
-#include "config/Config.hpp"
 #include "server/Server.hpp"
-#include <csignal>
 
 /* add this when polling is implemented
 volatile sig_atomic_t g_running = 1;
 
 void handleSigInt(int) {
-	g_running = 0;
+    g_running = 0;
 }
 */
 int main(int argc, char** argv) {
-//	uncomment when polling is implemented
-//	signal(SIGINT, handleSigInt);
-//	signal(SIGPIPE, SIG_IGN);
+    //	uncomment when polling is implemented
+    //	signal(SIGINT, handleSigInt);
+    //	signal(SIGPIPE, SIG_IGN);
 
     if (argc > 3) {
         std::cerr << "usage: ./webserv [config file] [log level] (default "
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-	std::string level = (argc == 3) ? argv[2] : "INFO";
+    std::string level = (argc == 3) ? argv[2] : "INFO";
 
     if (!initLogger(level))
         return EXIT_FAILURE;
@@ -39,18 +39,18 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-	Config config;
-	
-	// create one server block
-	ServerConfig server_conf;
-	server_conf.setPort(8080);
+    Config config;
 
-	// add to config
-	config.addServerBlock(server_conf);
+    // create one server block
+    ServerConfig server_conf;
+    server_conf.setPort(8080);
 
-	Server server(config);
-	if (!server.start())
-		return (EXIT_FAILURE);
+    // add to config
+    config.addServerBlock(server_conf);
+
+    Server server(config);
+    if (!server.start())
+        return (EXIT_FAILURE);
 
     return EXIT_SUCCESS;
 }

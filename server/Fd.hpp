@@ -13,25 +13,25 @@
  */
 class Fd {
 public:
-	// this is a ctor with a default argument
-	// at construction time if no fd is specified it is defaulted to -1
-	// ex: Fd a;  fd = -1
-	// Fd b(5); fd = 5
-	// note: default arguments belong in declaration
-	explicit Fd(int fd = -1);
-	~Fd();
+    // this is a ctor with a default argument
+    // at construction time if no fd is specified it is defaulted to -1
+    // ex: Fd a;  fd = -1
+    // Fd b(5); fd = 5
+    // note: default arguments belong in declaration
+    explicit Fd(int fd = -1);
+    ~Fd();
 
-	int		getFd() const;
-	void	reset(int fd = -1);
-	int		release();
-	bool	valid() const;
+    int getFd() const;
+    void reset(int fd = -1);
+    int release();
+    bool valid() const;
 
 private:
-	// no copying allowed
-	Fd(const Fd&);
-	Fd& operator=(const Fd&);
+    // no copying allowed
+    Fd(const Fd&);
+    Fd& operator=(const Fd&);
 
-	int	fd_;
+    int fd_;
 };
 
 #endif

@@ -1,6 +1,8 @@
 #include "Fd.hpp"
-#include "../logger/Logger.hpp"
+
 #include <unistd.h>
+
+#include "../logger/Logger.hpp"
 
 /**
  * @brief Constructs an Fd wrapper.
@@ -10,7 +12,7 @@
  * @param[in] fd File descriptor to manage (-1 means invalid)
  */
 Fd::Fd(int fd) : fd_(fd) {
-	LOG_DEBUG() << "Fd created: " << fd_;
+    LOG_DEBUG() << "Fd created: " << fd_;
 }
 
 /**
@@ -19,10 +21,10 @@ Fd::Fd(int fd) : fd_(fd) {
  * Ensures the owned file descriptor is closed on destruction.
  */
 Fd::~Fd() {
-	if (fd_ >= 0) {
-		LOG_DEBUG() << "Fd closed: " << fd_;
-		close(fd_);
-	}
+    if (fd_ >= 0) {
+        LOG_DEBUG() << "Fd closed: " << fd_;
+        close(fd_);
+    }
 }
 
 /**
@@ -30,8 +32,8 @@ Fd::~Fd() {
  *
  * @return The managed file descriptor value
  */
-int	Fd::getFd() const {
-	return fd_;
+int Fd::getFd() const {
+    return fd_;
 }
 
 /**
@@ -42,15 +44,15 @@ int	Fd::getFd() const {
  *
  * @param[in] new_fd New file descriptor to manage (-1 means invalid)
  */
-void	Fd::reset(int new_fd) {
-	if (fd_ != new_fd) {
-		if (fd_ >= 0) {
-			LOG_DEBUG() << "Fd reset: closing fd " << fd_;
-			close(fd_);
-		}
-		LOG_DEBUG() << "Fd now holds: fd " << new_fd;
-		fd_ = new_fd;
-	}
+void Fd::reset(int new_fd) {
+    if (fd_ != new_fd) {
+        if (fd_ >= 0) {
+            LOG_DEBUG() << "Fd reset: closing fd " << fd_;
+            close(fd_);
+        }
+        LOG_DEBUG() << "Fd now holds: fd " << new_fd;
+        fd_ = new_fd;
+    }
 }
 /**
  * @brief Releases ownership of the file descriptor.
@@ -59,11 +61,11 @@ void	Fd::reset(int new_fd) {
  *
  * @return The previously managed file descriptor
  */
-int Fd::release () {
-	int tmp = fd_;
-	fd_ = -1;
-	LOG_DEBUG() << "Fd released: " << tmp;
-	return tmp;
+int Fd::release() {
+    int tmp = fd_;
+    fd_ = -1;
+    LOG_DEBUG() << "Fd released: " << tmp;
+    return tmp;
 }
 
 /**
@@ -72,5 +74,5 @@ int Fd::release () {
  * @return true if fd >= 0, false otherwise
  */
 bool Fd::valid() const {
-	return fd_ >= 0;
+    return fd_ >= 0;
 }

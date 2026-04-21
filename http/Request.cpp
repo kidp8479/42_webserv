@@ -1,8 +1,10 @@
 #include "Request.hpp"
 
-Request::Request() {}
+Request::Request() {
+}
 
-Request::~Request() {}
+Request::~Request() {
+}
 /**
  * @brief Appends raw incoming data to the HTTP request buffer.
  *

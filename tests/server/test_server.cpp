@@ -1,18 +1,20 @@
-#include "../../server/Server.hpp"
-#include "../../config/Config.hpp"
-#include "../../config/ServerConfig.hpp"
-#include "../../config/LocationConfig.hpp"
-#include "../../logger/Logger.hpp"
-#include <gtest/gtest.h>
-#include <thread>
-#include <chrono>
+#include <arpa/inet.h>  // inet_addr()
 #include <fcntl.h>
+#include <gtest/gtest.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
 #include <cerrno>
+#include <chrono>
 #include <cstring>
-#include <netinet/in.h>
-#include <arpa/inet.h> // inet_addr()
+#include <thread>
+
+#include "../../config/Config.hpp"
+#include "../../config/LocationConfig.hpp"
+#include "../../config/ServerConfig.hpp"
+#include "../../logger/Logger.hpp"
+#include "../../server/Server.hpp"
 
 // Minimal dummy config for testing
 Config createDummyConfig(int port = 8083) {
@@ -20,8 +22,8 @@ Config createDummyConfig(int port = 8083) {
     ServerConfig sconf;
     sconf.setPort(port);
 
-    //LocationConfig loc;
-    //sconf.addLocationBlock(loc);
+    // LocationConfig loc;
+    // sconf.addLocationBlock(loc);
 
     cfg.addServerBlock(sconf);
     return cfg;
@@ -29,18 +31,18 @@ Config createDummyConfig(int port = 8083) {
 
 class ServerTestFixture : public ::testing::Test {
 protected:
-    Config cfg;    // shared config
-    Server server; // server instance
-	
-	ServerTestFixture() :
-		cfg(createDummyConfig()), server(cfg) {}
-	
-	// Wrappers so TEST_F subclasses can reach the private method
+    Config cfg;     // shared config
+    Server server;  // server instance
+
+    ServerTestFixture() : cfg(createDummyConfig()), server(cfg) {
+    }
+
+    // Wrappers so TEST_F subclasses can reach the private method
     void setupSocket(int port) {
         server.setupSocket(port);
     }
 
-	int acceptClient() {
+    int acceptClient() {
         return server.acceptClient();
     }
 
@@ -55,14 +57,14 @@ protected:
     std::map<int, Client*>& clients() {
         return server.clients_;
     }
-	
+
     const std::vector<int>& sockets() const {
         return server.getSockets();
     }
 
-	void setNonBlocking(int fd) {
-		server.setNonBlocking(fd);
-	}
+    void setNonBlocking(int fd) {
+        server.setNonBlocking(fd);
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -72,14 +74,14 @@ protected:
 // Test construction does not throw
 TEST_F(ServerTestFixture, Constructor_InitialStateIsClean) {
     EXPECT_TRUE(sockets().empty());
-	EXPECT_TRUE(clients().empty());
+    EXPECT_TRUE(clients().empty());
 }
 
 TEST_F(ServerTestFixture, Destructor_ClosesSockets) {
     ASSERT_NO_THROW(setupSocket(0));
-	ASSERT_FALSE(sockets().empty());
+    ASSERT_FALSE(sockets().empty());
 
-	int fd = sockets()[0];
+    int fd = sockets()[0];
     server.stop();
 
     ASSERT_EQ(fcntl(fd, F_GETFD), -1);
@@ -112,7 +114,7 @@ TEST_F(ServerTestFixture, Stop_ClearsClientsAndSockets) {
     ASSERT_TRUE(sockets().empty());
     ASSERT_TRUE(clients().empty());
 
-    close(sv[1]); // sv[0] closed by stop()
+    close(sv[1]);  // sv[0] closed by stop()
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +232,7 @@ TEST_F(ServerTestFixture, HandleRead_PartialDataStaysReading) {
     socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
 
     Client client(sv[0]);
-    write(sv[1], "GET / HTTP/1.1\r\n", 16); // no \r\n\r\n yet
+    write(sv[1], "GET / HTTP/1.1\r\n", 16);  // no \r\n\r\n yet
 
     handleRead(client);
     ASSERT_EQ(client.getState(), Client::kReading);
@@ -256,11 +258,10 @@ TEST_F(ServerTestFixture, HandleRead_PeerCloseSetsClientDone) {
     socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
 
     Client client(sv[0]);
-    close(sv[1]); // simulate peer disconnect
+    close(sv[1]);  // simulate peer disconnect
 
     handleRead(client);
     ASSERT_EQ(client.getState(), Client::kDone);
-
 }
 
 // ---------------------------------------------------------------------------
@@ -276,7 +277,7 @@ TEST_F(ServerTestFixture, HandleWrite_EmptyResponseSetsDone) {
     // get client into kWriting naturally
     write(sv[1], "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n", 35);
     handleRead(client);
-    ASSERT_EQ(client.getState(), Client::kWriting); // sanity check
+    ASSERT_EQ(client.getState(), Client::kWriting);  // sanity check
 
     // now test write
     handleWrite(client);
