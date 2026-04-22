@@ -60,6 +60,8 @@ fclean: clean
 re: fclean all
 
 format:
-	find . -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
+	find . -path "./googletest" -prune \
+		-o \( -name "*.cpp" -o -name "*.hpp" \) -print \
+		| xargs clang-format -i
 
-.PHONY: all clean fclean re format test
+.PHONY: all clean fclean re format test test_%
