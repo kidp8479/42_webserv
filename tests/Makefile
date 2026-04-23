@@ -1,5 +1,5 @@
 CXX = c++
-CXXFLAGS = -Wall -Wextra -std=c++14
+CXXFLAGS = -Wall -Wextra -Werror -std=c++14
 LDFLAGS = -lgtest -lgtest_main -pthread
 
 BIN_DIR = bin
@@ -20,6 +20,7 @@ SRCS = 	\
 		../config/Config.cpp \
 		../config/ServerConfig.cpp \
 		../config/LocationConfig.cpp \
+		../http/Request.cpp \
 		# ../server/Server.cpp \
 		
 

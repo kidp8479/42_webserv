@@ -9,7 +9,13 @@
  /**
  * @brief Default Constructor.
  */
-Request::Request() {
+Request::Request() : method_(kNone){
+}
+
+ /**
+ * @brief Default Destructor.
+ */
+Request::~Request() {
 }
 
  /**
@@ -32,12 +38,6 @@ Request	&Request::operator=(const Request& other) {
 	this->headers_ = other.headers_;
 	this->body_ = other.body_;
 	return (*this);
-}
-
- /**
- * @brief Default Destructor.
- */
-Request::~Request() {
 }
 
 
@@ -75,6 +75,50 @@ std::string Request::getBody() const {
  */
 std::map<std::string, std::string> Request::getHeaders() const {
 	return(this->headers_);
+}
+
+/********************************* Setters **********************************/
+ /**
+ * @brief Append string to raw string.
+ * @param data String to append to raw string.
+ * @param len Number of characters to append.
+ */
+void Request::append(const char* data, size_t len) {
+	this->raw_.append(data, len);
+}
+
+ /**
+ * @brief Wipe out all data with the exception of the raw message string
+ */
+void Request::clearData() {
+	this->method_ = kNone;
+	this->target_.clear();
+	this->protocol_.clear();
+	this->headers_.clear();
+	this->body_.clear();
+}
+
+/****************************** Parsing Utils *******************************/
+static std::string	setToLower(std::string& s) {
+	for (std::string::iterator sIt = s.begin(); sIt != s.end(); sIt++) {
+		sIt[0] = tolower(sIt[0]);
+	}
+	return (s);
+}
+
+static std::string	trimL(std::string& s, const char* t = " \t\n\r\f\v") {
+	s.erase(0, s.find_first_not_of(t));
+	return (s);
+}
+
+static std::string	trimR(std::string& s, const char* t = " \t\n\r\f\v") {
+	s.erase(s.find_last_not_of(t) + 1);
+	return (s);
+}
+
+static std::string	trim(std::string& s, const char* t = " \t\n\r\f\v") {
+	trimL(s, t);
+	return (trimR(s, t));
 }
 
 
@@ -132,51 +176,6 @@ bool Request::isComplete() const {
 	}
 
 	return (true);
-}
-
-
-/********************************* Setters **********************************/
- /**
- * @brief Append string to raw string.
- * @param data String to append to raw string.
- * @param len Number of characters to append.
- */
-void Request::append(const char* data, size_t len) {
-	this->raw_.append(data, len);
-}
-
- /**
- * @brief Wipe out all data with the exception of the raw message string
- */
-void Request::clearData() {
-	this->method_ = kNone;
-	this->target_.clear();
-	this->protocol_.clear();
-	this->headers_.clear();
-	this->body_.clear();
-}
-
-/****************************** Parsing Utils *******************************/
-static std::string	setToLower(std::string& s) {
-	for (std::string::iterator sIt = s.begin(); sIt != s.end(); sIt++) {
-		sIt[0] = tolower(sIt[0]);
-	}
-	return (s);
-}
-
-static std::string	trimL(std::string& s, const char* t = " \t\n\r\f\v") {
-	s.erase(0, s.find_first_not_of(t));
-	return (s);
-}
-
-static std::string	trimR(std::string& s, const char* t = " \t\n\r\f\v") {
-	s.erase(s.find_last_not_of(t) + 1);
-	return (s);
-}
-
-static std::string	trim(std::string& s, const char* t = " \t\n\r\f\v") {
-	trimL(s, t);
-	return (trimR(s, t));
 }
 
 

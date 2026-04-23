@@ -33,12 +33,12 @@ class Request {
 		std::string							getBody() const;
 		std::map<std::string, std::string>	getHeaders() const;
 
-		/* Checkers */
-		bool								isComplete() const;
-
 		/* Setters */
 		void	append(const char* data, size_t len);
 		void	clearData();
+
+		/* Checkers */
+		bool								isComplete() const;
 
 		/* Parsing */
 		void	parseMessage();
