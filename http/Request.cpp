@@ -156,6 +156,29 @@ void Request::clearData() {
 	this->body_.clear();
 }
 
+/****************************** Parsing Utils *******************************/
+static std::string	setToLower(std::string& s) {
+	for (std::string::iterator sIt = s.begin(); sIt != s.end(); sIt++) {
+		sIt[0] = tolower(sIt[0]);
+	}
+	return (s);
+}
+
+static std::string	trimL(std::string& s, const char* t = " \t\n\r\f\v") {
+	s.erase(0, s.find_first_not_of(t));
+	return (s);
+}
+
+static std::string	trimR(std::string& s, const char* t = " \t\n\r\f\v") {
+	s.erase(s.find_last_not_of(t) + 1);
+	return (s);
+}
+
+static std::string	trim(std::string& s, const char* t = " \t\n\r\f\v") {
+	trimL(s, t);
+	return (trimR(s, t));
+}
+
 
 /********************************* Parsing **********************************/
 
@@ -195,9 +218,11 @@ void Request::parseMessage() {
 				std::string	name, value;
 				
 				std::getline(lineStream, name, ':');
+				setToLower(name);
 				std::getline(lineStream, value);
-				value.erase(0, value.find_first_not_of(' '));
+				trim(value);
 				this->headers_[name] = value;
+				std::cout << name << ": " << value << std::endl;
 			}
 		}
 		else {
