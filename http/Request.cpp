@@ -222,7 +222,6 @@ void Request::parseMessage() {
 				std::getline(lineStream, value);
 				trim(value);
 				this->headers_[name] = value;
-				std::cout << name << ": " << value << std::endl;
 			}
 		}
 		else {
