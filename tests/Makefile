@@ -1,5 +1,5 @@
 CXX = c++
-CXXFLAGS = -Wall -Wextra -std=c++17 -pthread
+CXXFLAGS = -Wall -Wextra -Werror -std=c++17 -pthread
 LDFLAGS = -pthread
 
 BIN_DIR = bin
