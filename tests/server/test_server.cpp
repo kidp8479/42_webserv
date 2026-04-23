@@ -95,7 +95,7 @@ TEST_F(ServerTestFixture, Destructor_ClosesSockets) {
 TEST_F(ServerTestFixture, Stop_ClearsAllSockets) {
     setupSocket(0);
     setupSocket(0);
-    ASSERT_EQ(sockets().size(), 2);
+    ASSERT_EQ(sockets().size(), 2u);
     server.stop();
     ASSERT_TRUE(sockets().empty());
     ASSERT_TRUE(clients().empty());
@@ -129,7 +129,7 @@ TEST_F(ServerTestFixture, SetupSocket_DuplicatePortFails) {
 TEST_F(ServerTestFixture, SetupSocket_MultiplePortsSucceeds) {
     setupSocket(19998);
     setupSocket(19999);
-    ASSERT_EQ(sockets().size(), 2);
+    ASSERT_EQ(sockets().size(), 2u);
 }
 
 // invalid port 0 — OS assigns random port, should succeed
