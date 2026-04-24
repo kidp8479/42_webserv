@@ -3,7 +3,7 @@
 NAME = webserv
 
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -MMD -MP
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -MMD -MP -g
 
 # ─── Directories ──────────────────────────────────────────────────────────────
 
@@ -13,6 +13,7 @@ OBJ_DIR = obj
 
 SRCS = main.cpp \
        config/Config.cpp \
+	   config/ConfigBuilder.cpp \
 	   config/ConfigParser.cpp \
 	   config/ConfigTokenizer.cpp \
        config/ServerConfig.cpp \
