@@ -171,7 +171,7 @@ bool Request::isComplete() const {
 			}
 
 			/*Compare sizes*/
-			return (bodySize == tempBody.size());
+			return (bodySize <= tempBody.size());
 		}
 	}
 
@@ -187,8 +187,10 @@ bool Request::isComplete() const {
 void Request::parseMessage() {
 	std::string			line;
 	std::istringstream	rawStream(this->raw_);
+	bool				allowEmptyStart = true;
 	bool				atStartLine = true;
 	bool				atBody = false;
+	size_t				bodySize = 0;
 
 	this->clearData();
 	while (std::getline(rawStream, line)) {
@@ -197,8 +199,12 @@ void Request::parseMessage() {
 				line.erase(line.size() - 1);
 			std::istringstream	lineStream(line);
 
-			if (line.empty())
-				atBody = true;
+			if (line.empty()) {
+				if (atStartLine && allowEmptyStart)
+					allowEmptyStart = false;
+				else
+					atBody = true;
+			}
 			else if (atStartLine) {
 				/*Parsing request start line*/
 				std::string	strMethod;
@@ -212,7 +218,7 @@ void Request::parseMessage() {
 				}
 				atStartLine = false;
 			}
-			else if (!atBody) {
+			else {
 				/*Parsing headers*/
 				std::string	name, value;
 				
@@ -221,6 +227,15 @@ void Request::parseMessage() {
 				std::getline(lineStream, value);
 				trim(value);
 				this->headers_[name] = value;
+
+				/*Check for Content-Length and get body size*/
+				if (name == "content-length") {
+					size_t				lenValue;
+					std::istringstream	lenStream(value);
+					lenStream >> lenValue;
+					if (!lenStream.fail())
+						bodySize = lenValue;
+				}
 			}
 		}
 		else {
@@ -230,4 +245,8 @@ void Request::parseMessage() {
 			this->body_ += line;
 		}
 	}
+
+	/*Cut body down if it exceeds the extracted body size*/
+	if (this->body_.size() > bodySize)
+		this->body_.erase(bodySize);
 }
