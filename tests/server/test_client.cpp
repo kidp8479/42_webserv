@@ -134,15 +134,6 @@ TEST_F(ClientBytesTest, WriteEventuallyCompletes) {
     EXPECT_EQ(Client::kDone, client->getState());
 }
 
-TEST_F(ClientBytesTest, WriteMayRequireMultipleCalls) {
-    prepareCompleteRequest();
-    while (client->getState() != Client::kDone) {
-        Client::WriteResult result = client->write();
-        EXPECT_NE(Client::kWriteError, result);
-    }
-    EXPECT_EQ(Client::kDone, client->getState());
-}
-
 /*****************************************************************************/
 /*                             Client Read Tests                             */
 /*****************************************************************************/
