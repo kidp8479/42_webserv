@@ -1,5 +1,5 @@
 CXX = c++
-CXXFLAGS = -Wall -Wextra -std=c++17 -pthread
+CXXFLAGS = -Wall -Wextra -Werror -std=c++17 -pthread
 LDFLAGS = -pthread
 
 BIN_DIR = bin
@@ -20,7 +20,7 @@ VPATH := $(sort $(dir $(TEST_SRCS)))
 # shared sources
 SRCS = \
     ../config/ConfigTokenizer.cpp \
-		../config/ConfigBuilder.cpp \
+	../config/ConfigBuilder.cpp \
     ../logger/Logger.cpp \
     ../config/Config.cpp \
     ../config/ServerConfig.cpp \
