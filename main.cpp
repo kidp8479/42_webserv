@@ -35,22 +35,13 @@ int main(int argc, char** argv) {
     try {
         ConfigParser parser;
         Config config = parser.parse(file_path);
+
+		Server server(config);
+		if (!server.start())
+			return (EXIT_FAILURE);
     } catch (const std::exception& e) {
         return EXIT_FAILURE;
     }
-
-    Config config;
-
-    // create one server block
-    ServerConfig server_conf;
-    server_conf.setPort(8080);
-
-    // add to config
-    config.addServerBlock(server_conf);
-
-    Server server(config);
-    if (!server.start())
-        return (EXIT_FAILURE);
 
     return EXIT_SUCCESS;
 }
