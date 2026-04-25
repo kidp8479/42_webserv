@@ -13,12 +13,19 @@ static Config buildFromFile(const std::string& path) {
 
 /* tests for build() dispatcher
 [FAIL] => first token is not "server"
+[FAIL] => config file contains only comments (no server block)
 [PASS] => minimal valid server block */
 
 TEST(ConfigBuilder_Build, ThrowsIfFirstTokenIsNotServer) {
     EXPECT_THROW(
         buildFromFile(
             "../config/builder_test_files/server/not_first_token.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_Build, ThrowsOnNoServerBlock) {
+    EXPECT_THROW(
+        buildFromFile("../config/builder_test_files/server/comments_only.conf"),
         std::runtime_error);
 }
 
@@ -125,6 +132,7 @@ TEST(ConfigBuilder_ParseListen, CorrectlyParsesHostAndPort) {
 [FAIL] => no value after "client_max_body_size" (end of file)
 [FAIL] => ";" missing after value
 [FAIL] => invalid unit suffix (not K/M/G)
+[FAIL] => value overflows size_t after unit multiplication
 [PASS] => kilobyte unit correctly converted
 [PASS] => megabyte unit correctly converted
 [PASS] => gigabyte unit correctly converted
@@ -145,6 +153,12 @@ TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnMissingSemicolon) {
 TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnInvalidUnit) {
     EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
                                "client_max_body_size_invalid_unit.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseClientBodySize, ThrowsOnOverflow) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/server/"
+                               "client_max_body_size_overflow.conf"),
                  std::runtime_error);
 }
 
@@ -271,6 +285,7 @@ TEST(ConfigBuilder_ParseLocationBlock, CorrectlyParsesPath) {
 [FAIL] => invalid method name (not GET/POST/DELETE)
 [FAIL] => ";" missing after methods
 [FAIL] => empty methods list
+[FAIL] => duplicate method in list
 [PASS] => multiple methods correctly stored */
 
 TEST(ConfigBuilder_ParseMethods, ThrowsOnUnknownMethodName) {
@@ -291,6 +306,13 @@ TEST(ConfigBuilder_ParseMethods, ThrowsOnEmptyMethodsList) {
     EXPECT_THROW(
         buildFromFile(
             "../config/builder_test_files/location/methods_empty.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseMethods, ThrowsOnDuplicateMethod) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/methods_duplicate.conf"),
         std::runtime_error);
 }
 
@@ -463,6 +485,7 @@ TEST(ConfigBuilder_ParseUploadPath, CorrectlyParsesUploadPath) {
 [FAIL] => no extension after "cgi" (end of file)
 [FAIL] => no binary after extension (end of file)
 [FAIL] => ";" missing after binary
+[FAIL] => extension does not start with '.'
 [PASS] => extension and binary correctly stored
 [PASS] => multiple cgi entries correctly stored */
 
@@ -484,6 +507,13 @@ TEST(ConfigBuilder_ParseCGI, ThrowsOnMissingSemicolon) {
     EXPECT_THROW(
         buildFromFile(
             "../config/builder_test_files/location/cgi_missing_semicolon.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigBuilder_ParseCGI, ThrowsOnExtensionWithoutDot) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/builder_test_files/location/cgi_extension_no_dot.conf"),
         std::runtime_error);
 }
 

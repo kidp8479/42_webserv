@@ -176,6 +176,9 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
         }
         config.addServerBlock(parseServerBlock());
     }
+    if (config.getServerBlock().empty()) {
+        configError("config file contains no server block");
+    }
     size_t total_locations = 0;
     for (size_t i = 0; i < config.getServerBlock().size(); i++) {
         total_locations += config.getServerBlock()[i].getLocationBlock().size();
@@ -286,10 +289,19 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     if (i == raw.size()) {
         byte_size = numeric;  // no unit - treat as bytes, like nginx
     } else if (raw[i] == 'K' || raw[i] == 'k') {
+        if (numeric > std::numeric_limits<size_t>::max() / BYTES_PER_KB) {
+            configError("client_max_body_size value overflows");
+        }
         byte_size = numeric * BYTES_PER_KB;
     } else if (raw[i] == 'M' || raw[i] == 'm') {
+        if (numeric > std::numeric_limits<size_t>::max() / BYTES_PER_MB) {
+            configError("client_max_body_size value overflows");
+        }
         byte_size = numeric * BYTES_PER_MB;
     } else {
+        if (numeric > std::numeric_limits<size_t>::max() / BYTES_PER_GB) {
+            configError("client_max_body_size value overflows");
+        }
         byte_size = numeric * BYTES_PER_GB;
     }
 
@@ -391,6 +403,10 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
         const Token& current_token = currentToken();
         if (current_token.value == "GET" || current_token.value == "POST" ||
             current_token.value == "DELETE") {
+            if (std::find(collect_methods.begin(), collect_methods.end(),
+                          current_token.value) != collect_methods.end()) {
+                configError(current_token, "duplicate method");
+            }
             collect_methods.push_back(current_token.value);
         } else {
             configError(current_token,
@@ -514,6 +530,10 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     checkBounds("after \"cgi\", expected extension + path to binary");
 
     std::string cgi_extension = currentToken().value;
+    if (cgi_extension.empty() || cgi_extension[0] != '.') {
+        configError(currentToken(),
+                    "cgi extension must start with '.' (ex: \".php\")");
+    }
     index_++;
     checkBounds("after cgi extension (ex:\".php\") expected binary path");
     std::string cgi_binary_path = currentToken().value;
