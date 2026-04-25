@@ -123,3 +123,39 @@ TEST(RequestTest, IsComplete_ContentLenghtMixedcaseReturnsTrue) {
 
 	EXPECT_TRUE(req.isComplete());
 }
+
+TEST(RequestTest, IsComplete_EmptyStringReturnsFalse) {
+	const char* raw = "";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_FALSE(req.isComplete());
+}
+
+TEST(RequestTest, IsComplete_PartialRequestReturnsFalse) {
+	const char* raw = "GET / HTTP/1.1";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_FALSE(req.isComplete());
+}
+
+TEST(RequestTest, IsComplete_HeadersButNoTerminatorReturnsFalse) {
+	const char* raw = "GET / HTTP/1.1\r\nHost: localhost";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_FALSE(req.isComplete());
+}
+
+TEST(RequestTest, IsComplete_BodyLargerThanContentLengthReturnsTrue) {
+	const char* raw = "POST / HTTP/1.1\r\nContent-Length: 3\r\n\r\nhello";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_TRUE(req.isComplete());
+}
