@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include <sstream>
 
 static const std::string HEADER_TERMINATOR = "\r\n\r\n";
 
@@ -76,7 +77,7 @@ static bool extractContentLength(const std::string& data,
  * search for a 3rd? because now we're counting that as a malicious intent,
  * headers should normally have only ONE content length anyway.
  */
-bool isComplete() const {
+bool Request::isComplete() const {
 	size_t header_end = raw_.find(HEADER_TERMINATOR);
 	if (header_end == std::string::npos)
 		return false;
@@ -98,7 +99,7 @@ bool isComplete() const {
 	if (cl2_pos != std::string::npos) {
 		size_t endline2 = raw_.find("\r\n", cl2_pos);
 		size_t cl2_value;
-		if (!extractContentLength(raw_, cl2_pos, endline2, cl2_value) {
+		if (!extractContentLength(raw_, cl2_pos, endline2, cl2_value)) {
 			return false;
 		}
 		if (cl1_value != cl2_value) {
