@@ -159,3 +159,39 @@ TEST(RequestTest, IsComplete_BodyLargerThanContentLengthReturnsTrue) {
 
 	EXPECT_TRUE(req.isComplete());
 }
+
+TEST(RequestTest, IsComplete_ContentLengthWithLeadingSpacesReturnsTrue) {
+	const char* raw = "POST / HTTP/1.1\r\nContent-Length:   5\r\n\r\nhello";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_TRUE(req.isComplete());
+}
+
+TEST(RequestTest, IsComplete_ContentLengthWithTrailingSpacesAfterNumberReturnsTrue) {
+	const char* raw = "POST / HTTP/1.1\r\nContent-Length: 5   \r\n\r\nhello";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_TRUE(req.isComplete());
+}
+
+
+TEST(RequestTest, IsComplete_InvalidContentLengthReturnsFalse) {
+	const char* raw = "POST / HTTP/1.1\r\nContent-Length: abc\r\n\r\n";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_FALSE(req.isComplete());
+}
+TEST(RequestTest, IsComplete_ContentLengthWithLettersAfterNumberReturnsFalse) {
+	const char* raw = "POST / HTTP/1.1\r\nContent-Length: 5abc\r\n\r\n";
+
+	Request req;
+	req.append(raw, strlen(raw));
+
+	EXPECT_FALSE(req.isComplete());
+}
