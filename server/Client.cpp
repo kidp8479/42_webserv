@@ -1,12 +1,13 @@
 #include "Client.hpp"
 
-#include "../logger/Logger.hpp"
-
 #include <sys/socket.h>
 #include <unistd.h>
+
 #include <cerrno>
 #include <cstring>
 #include <string>
+
+#include "../logger/Logger.hpp"
 /**
  * @brief Constructs a Client from a socket fd.
  *

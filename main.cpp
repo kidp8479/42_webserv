@@ -36,9 +36,9 @@ int main(int argc, char** argv) {
         ConfigParser parser;
         Config config = parser.parse(file_path);
 
-		Server server(config);
-		if (!server.start())
-			return (EXIT_FAILURE);
+        Server server(config);
+        if (!server.start())
+            return (EXIT_FAILURE);
     } catch (const std::exception& e) {
         return EXIT_FAILURE;
     }
