@@ -1,7 +1,7 @@
 #include "ServerConfig.hpp"
 
 ServerConfig::ServerConfig()
-    : port_(PORT_NOT_SET), max_body_size_(DEFAULT_MAX_BODY_SIZE) {
+    : port_(kPortNotSet), max_body_size_(kDefaultMaxBodySize) {
 }
 
 ServerConfig::ServerConfig(const ServerConfig& copy)

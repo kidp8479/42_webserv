@@ -1,9 +1,23 @@
+#include <csignal>
 #include <cstdlib>
 
+#include "config/Config.hpp"
 #include "config/ConfigParser.hpp"
 #include "logger/Logger.hpp"
+#include "server/Server.hpp"
 
+/* add this when polling is implemented
+volatile sig_atomic_t g_running = 1;
+
+void handleSigInt(int) {
+    g_running = 0;
+}
+*/
 int main(int argc, char** argv) {
+    //	uncomment when polling is implemented
+    //	signal(SIGINT, handleSigInt);
+    //	signal(SIGPIPE, SIG_IGN);
+
     if (argc > 3) {
         std::cerr << "usage: ./webserv [config file] [log level] (default "
                      "config: conf/default.conf)\n";
@@ -21,6 +35,10 @@ int main(int argc, char** argv) {
     try {
         ConfigParser parser;
         Config config = parser.parse(file_path);
+
+        Server server(config);
+        if (!server.start())
+            return (EXIT_FAILURE);
     } catch (const std::exception& e) {
         return EXIT_FAILURE;
     }

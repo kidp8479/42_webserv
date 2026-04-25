@@ -18,7 +18,12 @@ SRCS = main.cpp \
 	   config/ConfigTokenizer.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
+	   http/Request.cpp \
+	   http/Response.cpp \
 	   logger/Logger.cpp \
+	   server/Client.cpp \
+	   server/Fd.cpp \
+	   server/Server.cpp \
 
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS = $(OBJS:.o=.d)
