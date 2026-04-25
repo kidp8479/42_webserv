@@ -72,7 +72,8 @@ bool Server::start() {
     LOG_INFO() << "Server starting...";
     try {
         const std::vector<ServerConfig>& servers = config_.getServerBlock();
-
+		// TODO: remove after parsing phase 3 is complete otherwise we will have a
+		// double check and double log print.
         if (servers.empty()) {
             serverError("No servers configured");
         }
@@ -108,7 +109,7 @@ bool Server::start() {
 
                 // handle client based on its current state
                 if (client.getState() == Client::kReading) {
-                    // read incoming data (append to requeest buffer)
+                    // read incoming data (append to request buffer)
                     handleRead(client);
                 } else if (client.getState() == Client::kWriting) {
                     // send response data (may be partial, tracked by
@@ -231,7 +232,7 @@ void Server::setupSocket(int port) {
     // fd will go out of scope after this function ends and it will close the
     // fd automatically, which is what we dont want. release() saves current
     // fd in tmp and sets the current fd to -1. and the tmp fd goes into
-    // sockets_ which will need to be closed manually in close()
+    // sockets_ which will need to be closed manually in stop()
     // this method adds a bit more complexity, but the trade-off is that
     // we dont need to keep track of closing the fd at each error path.
     sockets_.push_back(server_fd.release());
@@ -286,7 +287,7 @@ int Server::acceptClient() {
     sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    // Single-socket, single-threaded setup for now: we only listen on
+    // TODO: Single-socket, single-threaded setup for now: we only listen on
     // sockets_[0]. This will be extended later (e.g. with poll/epoll) to handle
     // multiple listening sockets and concurrent client readiness.
     Fd client_fd(
