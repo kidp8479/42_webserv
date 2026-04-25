@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "../config/ServerConfig.hpp"
 #include "../logger/Logger.hpp"
 #include "Client.hpp"
 
@@ -72,8 +73,8 @@ bool Server::start() {
     LOG_INFO() << "Server starting...";
     try {
         const std::vector<ServerConfig>& servers = config_.getServerBlock();
-		// TODO: remove after parsing phase 3 is complete otherwise we will have a
-		// double check and double log print.
+        // TODO: remove after parsing phase 3 is complete otherwise we will have
+        // a double check and double log print.
         if (servers.empty()) {
             serverError("No servers configured");
         }
@@ -81,7 +82,7 @@ bool Server::start() {
         for (size_t i = 0; i < servers.size(); i++) {
             int port = servers[i].getPort();
 
-            if (port == PORT_NOT_SET) {
+            if (port == ServerConfig::kPortNotSet) {
                 serverError("Port not set");
             }
 

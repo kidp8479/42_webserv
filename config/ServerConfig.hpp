@@ -7,9 +7,6 @@
 
 #include "LocationConfig.hpp"
 
-#define PORT_NOT_SET -1
-#define DEFAULT_MAX_BODY_SIZE 1048576  // 1MB
-
 /**
  * @brief Holds the parsed content of one server { } block.
  *
@@ -18,6 +15,9 @@
  */
 class ServerConfig {
 public:
+    static const int kPortNotSet = -1;
+    static const size_t kDefaultMaxBodySize = 1048576;  // 1MB
+
     ServerConfig();
     ServerConfig(const ServerConfig& copy);
     ServerConfig& operator=(const ServerConfig& other);
