@@ -105,47 +105,32 @@ static bool extractContentLength(const std::string& data,
 }
 
 /**
- * @brief Determines whether the HTTP request is fully received.
+ * @brief Checks whether the HTTP request is fully received.
  *
- * This function operates on the raw request buffer and checks:
- * 1. Presence of end-of-headers marker (\r\n\r\n)
- * 2. Optional Content-Length header(s)
- * 3. Whether the body size matches the expected length
+ * Determines request completeness based on raw stream data:
+ * - End of headers marker (\r\n\r\n)
+ * - Optional Content-Length (CL) header(s)
+ * - Sufficient body bytes received
  *
- * @design_choice
- * - Operates directly on the raw buffer without copying or normalization
- *   for performance reasons.
- * - Uses case-insensitive matching for HTTP header keys.
+ * @design
+ * This function operates directly on the raw buffer for performance.
+ * It uses case-insensitive matching for headers but does NOT parse or
+ * validate HTTP structure.
  *
- * @important
- * This function does NOT perform HTTP parsing or validation:
- * - parse headers into structured key/value pairs
- * - validate HTTP syntax
- * - enforce protocol correctness
- *
- * Its sole responsibility is to determine stream completeness at the I/O level.
+ * @note cl = Content-Length
  *
  * @content_length_handling
- * There may be multiple Content-Length headers in the raw request.
- * If multiple values exist, they must be identical to be considered valid
- * for computing body size.
+ * Multiple CL headers are allowed only if identical.
+ * Only the first valid CL value is used for completeness checking here.
+ * Additional occurrences are ignored at this layer and handled during
+ * full HTTP parsing/validation.
  *
- * Only the first valid Content-Length value is used for completeness checking
- * in this layer. Additional occurrences are ignored here by design.
+ * @layering
+ * This function is strictly I/O level:
+ * - checks stream completeness only
+ * - defers parsing and validation to HTTP layer
  *
- * Detection of malformed requests (e.g. multiple differing Content-Length
- * headers) is deferred to the HTTP parsing/validation layer.
- *
- * @security_note
- * Only valid header-line matches are considered (not substrings inside values),
- * reducing risk of header injection tricks.
- *
- * @layering_note
- * This separation ensures a clean architecture:
- * - This function handles transport-level completeness (stream logic)
- * - The parser handles semantic correctness and malicious input detection
- *
- * @return true if the request buffer contains a complete HTTP message
+ * @return true if the request is fully received
  */
 bool Request::isComplete() const {
 	size_t header_end = raw_.find(HEADER_TERMINATOR);
