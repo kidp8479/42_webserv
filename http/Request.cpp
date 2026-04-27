@@ -243,7 +243,7 @@ void Request::parseMessage() {
 			size_t				len_value;
 			std::istringstream	len_stream(this->headers_.at("content-length"));
 			len_stream >> len_value;
-			if (!len_stream.fail() && len_value >= 0)
+			if (!len_stream.fail())
 				body_size = std::min(len_value, this->max_body_size_);
 		}
 
