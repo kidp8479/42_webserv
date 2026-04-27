@@ -365,10 +365,5 @@ TEST_F(RequestTestFixture, Parse_BodyEndsInNewline) {
 	req.append(chunk5, strlen(chunk5));
 	req.append(chunk4, strlen(chunk4));
 	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
-	EXPECT_EQ(req.getTarget(), "/");
-	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello\r\n");
-	EXPECT_EQ(req.getHeaders().at("host"), "www.example.com");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "5");
 }

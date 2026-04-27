@@ -20,6 +20,8 @@ enum HttpMethod {
  */
 class Request {
 	public:
+		static const size_t kDefaultMaxBodySize = 1048576;  // 1MB
+
 		/* Orthodox Canonical Form */
 		Request();
 		~Request();
@@ -36,6 +38,7 @@ class Request {
 		/* Setters */
 		void	append(const char* data, size_t len);
 		void	clearData();
+		void	setMaxBodySize(size_t max_body_size);
 
 		/* Checkers */
 		bool								isComplete() const;
@@ -50,6 +53,7 @@ class Request {
 		std::string							protocol_;
 		std::map<std::string, std::string>	headers_;
 		std::string							body_;
+		size_t								max_body_size_;
 };
 
 #endif

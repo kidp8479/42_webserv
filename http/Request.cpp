@@ -9,7 +9,7 @@
  /**
  * @brief Default Constructor.
  */
-Request::Request() : method_(kNone){
+Request::Request() : method_(kNone), max_body_size_(kDefaultMaxBodySize){
 }
 
  /**
@@ -37,6 +37,7 @@ Request	&Request::operator=(const Request& other) {
 	this->protocol_ = other.protocol_;
 	this->headers_ = other.headers_;
 	this->body_ = other.body_;
+	this->max_body_size_ = other.max_body_size_;
 	return (*this);
 }
 
@@ -98,10 +99,14 @@ void Request::clearData() {
 	this->body_.clear();
 }
 
+void Request::setMaxBodySize(size_t max_body_size) {
+	this->max_body_size_ = max_body_size;
+}
+
 /****************************** Parsing Utils *******************************/
 static std::string	setToLower(std::string& s) {
-	for (std::string::iterator sIt = s.begin(); sIt != s.end(); sIt++) {
-		sIt[0] = tolower(sIt[0]);
+	for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
+		s_it[0] = tolower(s_it[0]);
 	}
 	return (s);
 }
@@ -131,47 +136,47 @@ bool Request::isComplete() const {
 	if (this->raw_.find("\r\n\r\n") == std::string::npos)
 		return (false);
 
-	std::string			line, contentLen;
-	std::istringstream	rawStream(this->raw_);
-	bool				atBody = false;
+	std::string			line, content_len;
+	std::istringstream	raw_stream(this->raw_);
+	bool				at_body = false;
 
 	/*Search for Content-Length header in raw until empty line*/
-	while (!atBody && std::getline(rawStream, line)) {
+	while (!at_body && std::getline(raw_stream, line)) {
 		if (!line.empty() && line.at(line.size() - 1) == '\r')
 			line.erase(line.size() - 1);
 		if (!line.empty())
 		{
-			std::string			headerName;
-			std::istringstream	lineStream(line);
+			std::string			header_name;
+			std::istringstream	line_stream(line);
 
-			std::getline(lineStream, headerName, ':');
-			if (headerName == "Content-Length") {
-				std::getline(lineStream, contentLen);
-				contentLen.erase(0, contentLen.find_first_not_of(' '));
+			std::getline(line_stream, header_name, ':');
+			if (header_name == "Content-Length") {
+				std::getline(line_stream, content_len);
+				content_len.erase(0, content_len.find_first_not_of(' '));
 			}
 		}
 		else
-			atBody = true;
+			at_body = true;
 	}
 
-	if (!contentLen.empty()) {
+	if (!content_len.empty()) {
 		/*Content Length was found before empty line: get length as a size_t*/
-		size_t				bodySize;
-		std::istringstream	lenStream(contentLen);
+		size_t				body_size;
+		std::istringstream	len_stream(content_len);
 
-		lenStream >> bodySize;
-		if (!lenStream.fail()) {
+		len_stream >> body_size;
+		if (!len_stream.fail()) {
 			/*Content Length is a valid number: get body as a string*/
-			std::string	tempBody;
+			std::string	temp_body;
 
-			while (std::getline(rawStream, line)) {
-				if (!tempBody.empty())
-					tempBody += '\n';
-				tempBody += line;
+			while (std::getline(raw_stream, line)) {
+				if (!temp_body.empty())
+					temp_body += '\n';
+				temp_body += line;
 			}
 
 			/*Compare sizes*/
-			return (bodySize <= tempBody.size());
+			return (body_size <= temp_body.size());
 		}
 	}
 
@@ -186,67 +191,63 @@ bool Request::isComplete() const {
  */
 void Request::parseMessage() {
 	std::string			line;
-	std::istringstream	rawStream(this->raw_);
-	bool				allowEmptyStart = true;
-	bool				atStartLine = true;
-	bool				atBody = false;
-	size_t				bodySize = 0;
+	std::istringstream	raw_stream(this->raw_);
+	bool				allow_empty_start = true;
+	bool				at_start_line = true;
+	bool				at_body = false;
 
 	this->clearData();
-	while (std::getline(rawStream, line)) {
-		if (!atBody) {
-			if (!line.empty() && line.at(line.size() - 1) == '\r')
-				line.erase(line.size() - 1);
-			std::istringstream	lineStream(line);
+	while (!at_body && std::getline(raw_stream, line)) {
+		if (!line.empty() && line.at(line.size() - 1) == '\r')
+			line.erase(line.size() - 1);
+		std::istringstream	line_stream(line);
 
-			if (line.empty()) {
-				if (atStartLine && allowEmptyStart)
-					allowEmptyStart = false;
-				else
-					atBody = true;
-			}
-			else if (atStartLine) {
-				/*Parsing request start line*/
-				std::string	strMethod;
-				std::string	methodCheck[3] = {"GET", "POST", "DELETE"};
-				HttpMethod	methodSet[3] = {kGet, kPost, kDelete};
+		if (line.empty()) {
+			if (at_start_line && allow_empty_start)
+				allow_empty_start = false;
+			else
+				at_body = true;
+		}
+		else if (at_start_line) {
+			/*Parsing request start line*/
+			std::string	str_method;
+			std::string	method_check[3] = {"GET", "POST", "DELETE"};
+			HttpMethod	method_set[3] = {kGet, kPost, kDelete};
 
-				lineStream >> strMethod >> this->target_ >> this->protocol_;
-				for (size_t i = 0; i < 3 && this->method_ == kNone; i++) {
-					if (strMethod == methodCheck[i])
-						this->method_ = methodSet[i];
-				}
-				atStartLine = false;
+			line_stream >> str_method >> this->target_ >> this->protocol_;
+			for (size_t i = 0; i < 3 && this->method_ == kNone; i++) {
+				if (str_method == method_check[i])
+					this->method_ = method_set[i];
 			}
-			else {
-				/*Parsing headers*/
-				std::string	name, value;
-				
-				std::getline(lineStream, name, ':');
-				setToLower(name);
-				std::getline(lineStream, value);
-				trim(value);
-				this->headers_[name] = value;
-
-				/*Check for Content-Length and get body size*/
-				if (name == "content-length") {
-					size_t				lenValue;
-					std::istringstream	lenStream(value);
-					lenStream >> lenValue;
-					if (!lenStream.fail())
-						bodySize = lenValue;
-				}
-			}
+			at_start_line = false;
 		}
 		else {
-			/*Parsing body*/
-			if (!this->body_.empty())
-				this->body_ += '\n';
-			this->body_ += line;
+			/*Parsing headers*/
+			std::string	name, value;
+			
+			std::getline(line_stream, name, ':');
+			setToLower(name);
+			std::getline(line_stream, value);
+			trim(value);
+			this->headers_[name] = value;
 		}
 	}
 
-	/*Cut body down if it exceeds the extracted body size*/
-	if (this->body_.size() > bodySize)
-		this->body_.erase(bodySize);
+	if (at_body) {
+		/*Parsing body*/
+		char	c;
+		size_t	body_size = 0;
+
+		/*Check for Content-Length and get body size*/
+		if (this->headers_.count("content-length")) {
+			size_t				len_value;
+			std::istringstream	len_stream(this->headers_.at("content-length"));
+			len_stream >> len_value;
+			if (!len_stream.fail() && len_value >= 0)
+				body_size = std::min(len_value, this->max_body_size_);
+		}
+
+		while (this->body_.size() < body_size && raw_stream.get(c))
+			this->body_ += c;
+	}
 }
