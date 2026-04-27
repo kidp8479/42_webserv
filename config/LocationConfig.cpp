@@ -2,7 +2,7 @@
 
 LocationConfig::LocationConfig()
     : directory_listing_(false),
-      return_code_(NO_REDIRECT) {  // sentinel: handler checks != NO_REDIRECT
+      return_code_(kNoRedirect) {  // sentinel: handler checks != NO_REDIRECT
                                    // before applying redirect
 }
 

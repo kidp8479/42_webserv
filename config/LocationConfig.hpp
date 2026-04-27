@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-#define NO_REDIRECT -1
-
 /**
  * @brief Holds the parsed content of one location { } block.
  *
@@ -14,6 +12,8 @@
  */
 class LocationConfig {
 public:
+    static const int kNoRedirect = -1;
+
     LocationConfig();
     LocationConfig(const LocationConfig& copy);
     LocationConfig& operator=(const LocationConfig& other);
