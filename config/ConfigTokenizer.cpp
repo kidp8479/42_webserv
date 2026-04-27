@@ -34,7 +34,7 @@ const std::vector<Token>& ConfigTokenizer::getTokenList() const {
  * prefix.
  *
  * @param msg The error message (without the "Config: " prefix)
- * @throws std::runtime_error Always
+ * @throws std::runtime_error always
  */
 void ConfigTokenizer::configError(const std::string& msg) const {
     std::string full = "Config: " + msg;
