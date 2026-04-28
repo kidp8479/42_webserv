@@ -41,10 +41,7 @@ void ConfigValidator::serverChecks(const Config& config) const {
         checkServerErrorCodes(*it);
         checkDuplicatePath(*it);
 
-        const std::vector<LocationConfig>& location_block =
-            it->getLocationBlock();
-        (void)location_block;
-        // locationChecks(*it);
+        locationChecks(*it);
     }
 }
 
