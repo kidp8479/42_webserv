@@ -50,7 +50,15 @@ void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
 }
 
 void ConfigValidator::checkPort(const ServerConfig& server) const {
-    (void)server;
+    int port = server.getPort();
+
+    if (port == ServerConfig::kPortNotSet) {
+        configError("server listening port not set.");
+    }
+    if (port < 1 || port > 65535) {
+        configError("invalid range for server listening port - [1-65535]");
+    }
+    LOG_DEBUG() << "valid listening server port.";
 }
 
 void ConfigValidator::checkHost(const ServerConfig& server) const {
