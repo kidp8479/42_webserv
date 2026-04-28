@@ -1,7 +1,5 @@
 #include "ConfigValidator.hpp"
 
-#include <sstream>
-
 namespace {
 const int kMinPort = 1;
 const int kMaxPort = 65535;
@@ -72,7 +70,37 @@ void ConfigValidator::checkPort(const ServerConfig& server) const {
 }
 
 void ConfigValidator::checkHost(const ServerConfig& server) const {
-    (void)server;
+    std::string host = server.getHost();
+    if (host == "localhost") {
+        return;
+    }
+
+    std::istringstream iss(host);
+    std::string segment;
+    size_t count = 0;
+    while (std::getline(iss, segment, '.')) {
+        if (segment.empty()) {
+            configError("invalid host format. IP member is empty.");
+        }
+
+        for (size_t i = 0; i < segment.size(); i++) {
+            if (!isdigit(segment[i])) {
+                configError("invalid host format. IP must be digits only.");
+            }
+        }
+
+        std::istringstream segment_iss(segment);
+        int value;
+        segment_iss >> value;
+        if (value < 0 || value > 255) {
+            configError(
+                "invalid host format. IP member must be in range [0-255]");
+        }
+        count++;
+    }
+    if (count != 4) {
+        configError("invalid host format. Misconstructed IP address.");
+    }
 }
 
 void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {

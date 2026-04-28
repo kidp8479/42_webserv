@@ -8,9 +8,12 @@
 // helper: tokenize a file, run build() and validate() on the result
 static Config buildFromFile(const std::string& path) {
     Config config;
+
     ConfigTokenizer tokenizer(path);
+
     ConfigBuilder builder;
     config = builder.build(tokenizer.getTokenList());
+
     ConfigValidator validator;
     validator.validate(config);
     return config;
@@ -59,4 +62,47 @@ TEST(ConfigValidator_checkPort, NoThrowsValidPort) {
 TEST(ConfigValidator_checkPort, NoThrowsValidPortLimits) {
     EXPECT_NO_THROW(buildFromFile(
         "../config/validator_test_files/server/valid_port_limits.conf"));
+}
+
+/* tests for checkHost()
+[FAIL] => host is an invalid string (not localhost)
+[FAIL] => IP address is not in range [0-255]
+[FAIL] => IP adress contains empty members
+[PASS] => host is localhost
+[PASS] => host is a valid IP address = 4 members from [0-255] range
+[PASS] => host is a valid IP address = 4 members from [0-255] range limits
+*/
+
+TEST(ConfigValidator_checkHost, ThrowsIfHostIsInvalidString) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/validator_test_files/server/invalid_host_string.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigValidator_checkHost, ThrowsIfHostIPIsOutOfRange) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/server/"
+                               "invalid_host_ip_out_of_range.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkHost, ThrowsIfHostIPHasEmptyMember) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/server/"
+                               "invalid_host_ip_empty_member.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkHost, NoThrowsIfHostIsLocalhost) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/server/valid_host_localhost.conf"));
+}
+
+TEST(ConfigValidator_checkHost, NoThrowsIfHostHasValidIp) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/server/valid_host_ip.conf"));
+}
+
+TEST(ConfigValidator_checkHost, NoThrowsIfHostHasValidIpLimits) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/server/valid_host_up_limits.conf"));
 }

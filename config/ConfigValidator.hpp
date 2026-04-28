@@ -1,6 +1,8 @@
 #ifndef CONFIG_VALIDATOR_HPP
 #define CONFIG_VALIDATOR_HPP
 
+#include <sstream>
+
 #include "../logger/Logger.hpp"
 #include "Config.hpp"
 
