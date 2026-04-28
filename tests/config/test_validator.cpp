@@ -72,7 +72,6 @@ TEST(ConfigValidator_checkPort, NoThrowsValidPortLimits) {
 [PASS] => host is a valid IP address = 4 members from [0-255] range
 [PASS] => host is a valid IP address = 4 members from [0-255] range limits
 */
-
 TEST(ConfigValidator_checkHost, ThrowsIfHostIsInvalidString) {
     EXPECT_THROW(
         buildFromFile(
@@ -105,4 +104,20 @@ TEST(ConfigValidator_checkHost, NoThrowsIfHostHasValidIp) {
 TEST(ConfigValidator_checkHost, NoThrowsIfHostHasValidIpLimits) {
     EXPECT_NO_THROW(buildFromFile(
         "../config/validator_test_files/server/valid_host_up_limits.conf"));
+}
+
+/* tests for checkErrorCode()
+[FAIL] => error code is not in range [400-599]
+[PASS] => error code is in range [400-599]
+*/
+TEST(ConfigValidator_checkErrorCode, ThrowsIfErrorCodeInvalid) {
+    EXPECT_THROW(
+        buildFromFile(
+            "../config/validator_test_files/server/invalid_error_code.conf"),
+        std::runtime_error);
+}
+
+TEST(ConfigValidator_checkErrorCode, NoThrowsIfErroCodeValid) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/server/valid_error_code.conf"));
 }

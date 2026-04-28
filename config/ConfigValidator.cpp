@@ -3,6 +3,11 @@
 namespace {
 const int kMinPort = 1;
 const int kMaxPort = 65535;
+const int kMinIpOctet = 0;
+const int kMaxIpOctet = 255;
+const int kIpOctetCount = 4;
+const int kMinErrorPage = 400;
+const int kMaxErrorPage = 599;
 }  // namespace
 
 ConfigValidator::ConfigValidator() {
@@ -92,19 +97,29 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
         std::istringstream segment_iss(segment);
         int value;
         segment_iss >> value;
-        if (value < 0 || value > 255) {
+        if (value < kMinIpOctet || value > kMaxIpOctet) {
             configError(
                 "invalid host format. IP member must be in range [0-255]");
         }
         count++;
     }
-    if (count != 4) {
+    if (count != kIpOctetCount) {
         configError("invalid host format. Misconstructed IP address.");
     }
 }
 
 void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
-    (void)server;
+    std::map<int, std::string> error_pages = server.getErrorPages();
+    std::map<int, std::string>::const_iterator it;
+
+    for (it = error_pages.begin(); it != error_pages.end(); ++it) {
+        int error_code = it->first;
+        if (error_code < kMinErrorPage || error_code > kMaxErrorPage) {
+            configError(
+                "Error code is out of range. Client/Server error code must be "
+                "in range [400-599]");
+        }
+    }
 }
 
 void ConfigValidator::checkDuplicatePath(const ServerConfig& server) const {
