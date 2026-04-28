@@ -323,7 +323,12 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     index_++;
     checkBounds("after \"error_page\"");
 
-    int code = toInt(currentToken().value);
+    const Token& code_token = currentToken();
+    int code = toInt(code_token.value);
+    if (server_block.getErrorPages().find(code) !=
+        server_block.getErrorPages().end()) {
+        configError(code_token, "duplicate error_page code");
+    }
 
     index_++;
     checkBounds("after error_page code");
@@ -397,6 +402,9 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"methods\", expected GET and/or POST and/or DELETE");
 
+    if (!location_block.getMethods().empty()) {
+        configError(currentToken(), "duplicate \"methods\" directive");
+    }
     std::vector<std::string> collect_methods;
     while (index_ < tokens_list_->size() && currentToken().value != ";") {
         const Token& current_token = currentToken();
@@ -442,6 +450,9 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"root\", expected path");
 
+    if (!location_block.getRoot().empty()) {
+        configError(currentToken(), "duplicate \"root\" directive");
+    }
     location_block.setRoot(currentToken().value);
     LOG_DEBUG() << "ConfigBuilder: root -> " << GRN << location_block.getRoot()
                 << RESET;
@@ -461,6 +472,9 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"index\", expected path");
 
+    if (!location_block.getIndex().empty()) {
+        configError(currentToken(), "duplicate \"index\" directive");
+    }
     location_block.setIndex(currentToken().value);
     LOG_DEBUG() << "ConfigBuilder: index -> " << GRN
                 << location_block.getIndex() << RESET;
@@ -507,6 +521,9 @@ void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"upload_path\", expected path");
 
+    if (!location_block.getUploadPath().empty()) {
+        configError(currentToken(), "duplicate \"upload_path\" directive");
+    }
     location_block.setUploadPath(currentToken().value);
     LOG_DEBUG() << "ConfigBuilder: upload_path -> " << GRN
                 << location_block.getUploadPath() << RESET;
@@ -528,10 +545,15 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"cgi\", expected extension + path to binary");
 
-    std::string cgi_extension = currentToken().value;
+    const Token& ext_token = currentToken();
+    std::string cgi_extension = ext_token.value;
     if (cgi_extension.empty() || cgi_extension[0] != '.') {
-        configError(currentToken(),
+        configError(ext_token,
                     "cgi extension must start with '.' (ex: \".php\")");
+    }
+    if (location_block.getCgiInterpreters().find(cgi_extension) !=
+        location_block.getCgiInterpreters().end()) {
+        configError(ext_token, "duplicate cgi extension");
     }
     index_++;
     checkBounds("after cgi extension (ex:\".php\") expected binary path");
@@ -558,6 +580,9 @@ void ConfigBuilder::parseReturn(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"return\", expected code + path");
 
+    if (location_block.getReturnCode() != LocationConfig::kNoRedirect) {
+        configError(currentToken(), "duplicate \"return\" directive");
+    }
     int return_code = toInt(currentToken().value);
     index_++;
     checkBounds("after \"return code\", expected path");
