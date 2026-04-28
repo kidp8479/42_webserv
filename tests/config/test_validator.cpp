@@ -121,3 +121,26 @@ TEST(ConfigValidator_checkErrorCode, NoThrowsIfErroCodeValid) {
     EXPECT_NO_THROW(buildFromFile(
         "../config/validator_test_files/server/valid_error_code.conf"));
 }
+
+/* tests for checkDuplicateHostPort()
+[FAIL] => two server blocks with identical host:port
+[PASS] => two server blocks with same host, different ports
+[PASS] => two server blocks with different hosts, same port
+*/
+TEST(ConfigValidator_checkDuplicateHostPort, ThrowsIfDuplicateHostPort) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/server/"
+                               "invalid_duplicate_host_port.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkDuplicateHostPort, NoThrowsIfSameHostDifferentPort) {
+    EXPECT_NO_THROW(
+        buildFromFile("../config/validator_test_files/server/"
+                      "valid_same_host_different_port.conf"));
+}
+
+TEST(ConfigValidator_checkDuplicateHostPort, NoThrowsIfDifferentHostSamePort) {
+    EXPECT_NO_THROW(
+        buildFromFile("../config/validator_test_files/server/"
+                      "valid_different_host_same_port.conf"));
+}

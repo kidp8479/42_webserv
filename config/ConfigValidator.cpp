@@ -44,7 +44,7 @@ void ConfigValidator::serverChecks(const Config& config) const {
     std::vector<ServerConfig>::const_iterator it;
 
     for (it = server_block.begin(); it != server_block.end(); ++it) {
-        LOG_DEBUG() << "server block found, validating data...";
+        LOG_DEBUG() << "Server block found, validating data...";
 
         checkPort(*it);
         checkHost(*it);
@@ -55,23 +55,19 @@ void ConfigValidator::serverChecks(const Config& config) const {
     }
 }
 
-void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
-    (void)server;
-}
-
 void ConfigValidator::checkPort(const ServerConfig& server) const {
     int port = server.getPort();
 
     if (port == ServerConfig::kPortNotSet) {
-        configError("server listening port not set.");
+        configError("Server listening port not set.");
     }
     if (port < kMinPort || port > kMaxPort) {
         std::ostringstream oss;
-        oss << "invalid port: " << port << " - valid range [" << kMinPort << "-"
+        oss << "Invalid port: " << port << " - valid range [" << kMinPort << "-"
             << kMaxPort << "]";
         configError(oss.str());
     }
-    LOG_DEBUG() << "valid listening server port.";
+    LOG_DEBUG() << "Valid listening server port.";
 }
 
 void ConfigValidator::checkHost(const ServerConfig& server) const {
@@ -85,12 +81,12 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
     size_t count = 0;
     while (std::getline(iss, segment, '.')) {
         if (segment.empty()) {
-            configError("invalid host format. IP member is empty.");
+            configError("Invalid host format. IP member is empty.");
         }
 
         for (size_t i = 0; i < segment.size(); i++) {
             if (!isdigit(segment[i])) {
-                configError("invalid host format. IP must be digits only.");
+                configError("Invalid host format. IP must be digits only.");
             }
         }
 
@@ -98,14 +94,17 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
         int value;
         segment_iss >> value;
         if (value < kMinIpOctet || value > kMaxIpOctet) {
-            configError(
-                "invalid host format. IP member must be in range [0-255]");
+            std::ostringstream oss;
+            oss << "Invalid host format. IP octet " << value
+                << " out of range [0-255]";
+            configError(oss.str());
         }
         count++;
     }
     if (count != kIpOctetCount) {
-        configError("invalid host format. Misconstructed IP address.");
+        configError("Invalid host format. Misconstructed IP address.");
     }
+    LOG_DEBUG() << "Valid host format.";
 }
 
 void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
@@ -115,9 +114,29 @@ void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
     for (it = error_pages.begin(); it != error_pages.end(); ++it) {
         int error_code = it->first;
         if (error_code < kMinErrorPage || error_code > kMaxErrorPage) {
-            configError(
-                "Error code is out of range. Client/Server error code must be "
-                "in range [400-599]");
+            std::ostringstream oss;
+            oss << "Invalid error page code: " << error_code
+                << " - must be in range [400-599]";
+            configError(oss.str());
+        }
+    }
+    LOG_DEBUG() << "Valid error code(s).";
+}
+
+void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
+    const std::vector<ServerConfig>& server_blocks = server.getServerBlock();
+    std::vector<ServerConfig>::const_iterator it1;
+    std::vector<ServerConfig>::const_iterator it2;
+
+    for (it1 = server_blocks.begin(); it1 < server_blocks.end(); ++it1) {
+        for (it2 = it1 + 1; it2 < server_blocks.end(); ++it2) {
+            if ((*it1).getHost() == (*it2).getHost() &&
+                (*it1).getPort() == (*it2).getPort()) {
+                std::ostringstream oss;
+                oss << "Duplicate listen: " << (*it1).getHost() << ":"
+                    << (*it1).getPort();
+                configError(oss.str());
+            }
         }
     }
 }
