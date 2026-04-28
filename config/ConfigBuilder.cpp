@@ -233,6 +233,10 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
     checkBounds("after \"listen\"");
 
     const Token& current_token = currentToken();
+    if (server_block.getPort() != ServerConfig::kPortNotSet) {
+        configError(current_token, "duplicate \"listen\" directive");
+    }
+
     size_t delimiter_pos = current_token.value.find(":");
     if (delimiter_pos == std::string::npos) {
         configError(current_token, "expected \"host:port\"");
