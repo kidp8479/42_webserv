@@ -1,5 +1,7 @@
 #include "ConfigValidator.hpp"
 
+#include <sstream>
+
 namespace {
 const int kMinPort = 1;
 const int kMaxPort = 65535;
@@ -8,6 +10,8 @@ const int kMaxIpOctet = 255;
 const int kIpOctetCount = 4;
 const int kMinErrorPage = 400;
 const int kMaxErrorPage = 599;
+const int kMinRedirectPage = 300;
+const int kMaxRedirectPage = 399;
 }  // namespace
 
 ConfigValidator::ConfigValidator() {
@@ -66,8 +70,8 @@ void ConfigValidator::serverChecks(const Config& config) const {
 /**
  * @brief Checks that no two server blocks share the same host:port combination.
  */
-void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
-    const std::vector<ServerConfig>& server_blocks = server.getServerBlock();
+void ConfigValidator::checkDuplicateHostPort(const Config& config) const {
+    const std::vector<ServerConfig>& server_blocks = config.getServerBlock();
     std::vector<ServerConfig>::const_iterator it1;
     std::vector<ServerConfig>::const_iterator it2;
 
@@ -200,7 +204,6 @@ void ConfigValidator::locationChecks(const ServerConfig& server) const {
 
         checkPath(*it);
         checkReturnCode(*it);
-        checkUrl(*it);
     }
 }
 
@@ -212,8 +215,7 @@ void ConfigValidator::checkPath(const LocationConfig& location) const {
     std::string path = location.getPath();
 
     if (path.empty() || path[0] != '/') {
-        configError(
-            "Invalid location path format. path should start by \"/\" ");
+        configError("Invalid location path format. Path must start with '/'");
     }
     LOG_DEBUG() << "Location path is valid";
 }
@@ -221,14 +223,31 @@ void ConfigValidator::checkPath(const LocationConfig& location) const {
 /**
  * @brief If return_code_ is set, checks it is in range [300-399] and that
  * return_url_ is not empty.
+ * @note return_url.empty() should not happen, rejected at phase 2 if a return
+ * code is set. Defensive check.
  */
 void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
-    (void)location;
-}
+    int return_code = location.getReturnCode();
+    const std::string& return_url = location.getReturnUrl();
 
-/**
- * @brief If return_url_ is set, checks that return_code_ is also set.
- */
-void ConfigValidator::checkUrl(const LocationConfig& location) const {
-    (void)location;
+    // @Charlie: if return_code_ != kNoRedirect, send redirect response with
+    // return_code_ and return_url_
+    // @Charlie: if return_code_ == kNoRedirect, no return directive set, serve
+    // normally
+    if (return_code == LocationConfig::kNoRedirect) {
+        LOG_DEBUG() << "No return directive set, skipping return code check.";
+        return;
+    }
+
+    if (return_code < kMinRedirectPage || return_code > kMaxRedirectPage) {
+        std::ostringstream oss;
+        oss << "Invalid return page code: " << return_code
+            << " - must be in range [300-399]";
+        configError(oss.str());
+    }
+
+    if (return_url.empty()) {
+        configError("Return code set. A valid return url must be set");
+    }
+    LOG_DEBUG() << "Valid return code.";
 }

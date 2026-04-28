@@ -175,3 +175,25 @@ TEST(ConfigValidator_checkPath, NoThrowsIfValidPath) {
     EXPECT_NO_THROW(buildFromFile(
         "../config/validator_test_files/location/valid_path.conf"));
 }
+
+/* tests for checkReturnCode()
+[FAIL] => return_code set but out of range [300-399]
+[FAIL] => return_code set but return_url is empty
+[PASS] => no return directive (kNoRedirect)
+[PASS] => return_code in range [300-399] with valid url
+*/
+TEST(ConfigValidator_checkReturnCode, ThrowsIfReturnCodeOutOfRange) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/location/"
+                               "invalid_return_code_out_of_range.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkReturnCode, NoThrowsIfNoReturnDirective) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/location/valid_path.conf"));
+}
+
+TEST(ConfigValidator_checkReturnCode, NoThrowsIfValidReturn) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/location/valid_return.conf"));
+}
