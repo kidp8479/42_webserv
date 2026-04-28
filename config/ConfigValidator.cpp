@@ -1,5 +1,12 @@
 #include "ConfigValidator.hpp"
 
+#include <sstream>
+
+namespace {
+const int kMinPort = 1;
+const int kMaxPort = 65535;
+}  // namespace
+
 ConfigValidator::ConfigValidator() {
 }
 
@@ -55,8 +62,11 @@ void ConfigValidator::checkPort(const ServerConfig& server) const {
     if (port == ServerConfig::kPortNotSet) {
         configError("server listening port not set.");
     }
-    if (port < 1 || port > 65535) {
-        configError("invalid range for server listening port - [1-65535]");
+    if (port < kMinPort || port > kMaxPort) {
+        std::ostringstream oss;
+        oss << "invalid port: " << port << " - valid range [" << kMinPort << "-"
+            << kMaxPort << "]";
+        configError(oss.str());
     }
     LOG_DEBUG() << "valid listening server port.";
 }
