@@ -34,7 +34,7 @@ void ConfigValidator::serverChecks(const Config& config) const {
     std::vector<ServerConfig>::const_iterator it;
 
     for (it = server_block.begin(); it != server_block.end(); ++it) {
-        LOG_DEBUG() << "one server block found";
+        LOG_DEBUG() << "server block found, validating data...";
 
         checkPort(*it);
         checkHost(*it);
