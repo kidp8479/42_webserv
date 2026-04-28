@@ -29,16 +29,24 @@ void ConfigValidator::configError(const std::string& msg) const {
     throw std::runtime_error(full);
 }
 
-// high level validation, serverChecks will validate every server block
-// location block validation is triggered inside the serverChecks, we go to
-// high level checks to the lowest levels checks
-// checkDuplicateHostPort needs to compare between all valid server blocks,
-// hence the high level
+/**
+ * @brief Validates all server and location blocks in the Config.
+ * Orchestrates checks from high level (cross-server) to low level (per
+ * location). checkDuplicateHostPort compares across all server blocks and
+ * runs after serverChecks, which validates each block and its locations.
+ *
+ * @param config The Config object to validate (produced by ConfigBuilder)
+ * @throws std::runtime_error If any semantic error is found
+ */
 void ConfigValidator::validate(const Config& config) const {
     serverChecks(config);
     checkDuplicateHostPort(config);
+    LOG_INFO() << BR_CYN "ConfigValidator: Config object fully validated" RESET;
 }
 
+/**
+ * @brief Iterates all server blocks and runs per-block and per-location checks.
+ */
 void ConfigValidator::serverChecks(const Config& config) const {
     const std::vector<ServerConfig>& server_block = config.getServerBlock();
     std::vector<ServerConfig>::const_iterator it;
@@ -55,6 +63,9 @@ void ConfigValidator::serverChecks(const Config& config) const {
     }
 }
 
+/**
+ * @brief Checks that port_ is set and in range [1-65535].
+ */
 void ConfigValidator::checkPort(const ServerConfig& server) const {
     int port = server.getPort();
 
@@ -70,9 +81,14 @@ void ConfigValidator::checkPort(const ServerConfig& server) const {
     LOG_DEBUG() << "Valid listening server port.";
 }
 
+/**
+ * @brief Checks that host_ is "localhost" or a valid IPv4 address (4 octets,
+ * each in [0-255]). Host reachability is not checked here.
+ */
 void ConfigValidator::checkHost(const ServerConfig& server) const {
     std::string host = server.getHost();
     if (host == "localhost") {
+        LOG_DEBUG() << "Valid host format.";
         return;
     }
 
@@ -107,6 +123,10 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
     LOG_DEBUG() << "Valid host format.";
 }
 
+/**
+ * @brief Checks that all error_pages_ codes are in range [400-599].
+ * File existence is not checked here, only at runtime.
+ */
 void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
     std::map<int, std::string> error_pages = server.getErrorPages();
     std::map<int, std::string>::const_iterator it;
@@ -123,6 +143,9 @@ void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
     LOG_DEBUG() << "Valid error code(s).";
 }
 
+/**
+ * @brief Checks that no two server blocks share the same host:port combination.
+ */
 void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
     const std::vector<ServerConfig>& server_blocks = server.getServerBlock();
     std::vector<ServerConfig>::const_iterator it1;
@@ -139,24 +162,42 @@ void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
             }
         }
     }
+    LOG_DEBUG() << "No duplicated host:port pairs.";
 }
 
+/**
+ * @brief Checks that no two location blocks in the same server share the same
+ * path_.
+ */
 void ConfigValidator::checkDuplicatePath(const ServerConfig& server) const {
     (void)server;
 }
 
+/**
+ * @brief Iterates all location blocks of a server and runs per-location checks.
+ */
 void ConfigValidator::locationChecks(const ServerConfig& server) const {
     (void)server;
 }
 
+/**
+ * @brief Checks that path_ starts with '/'.
+ */
 void ConfigValidator::checkPath(const LocationConfig& location) const {
     (void)location;
 }
 
+/**
+ * @brief If return_code_ is set, checks it is in range [300-399] and that
+ * return_url_ is not empty.
+ */
 void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
     (void)location;
 }
 
+/**
+ * @brief If return_url_ is set, checks that return_code_ is also set.
+ */
 void ConfigValidator::checkUrl(const LocationConfig& location) const {
     (void)location;
 }

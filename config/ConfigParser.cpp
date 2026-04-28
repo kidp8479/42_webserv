@@ -26,7 +26,8 @@ Config ConfigParser::parse(const std::string& file_path) {
     ConfigBuilder builder;
     config = builder.build(tokenizer.getTokenList());
 
-    LOG_DEBUG() << BR_YEL "ConfigParser: validating Config object - WIP" RESET;
+    LOG_DEBUG() << BR_YEL
+        "ConfigParser: parsing phase 3 - validating Config object" RESET;
     ConfigValidator validator;
     validator.validate(config);
     LOG_INFO() << BR_CYN "Config: " << file_path << " fully parsed" << RESET;

@@ -13,6 +13,13 @@
 #include "ConfigTokenizer.hpp"
 #include "LocationConfig.hpp"
 
+/**
+ * @brief Phase 2 of the config parsing pipeline. Validates token sequence
+ * structure and fills a Config object from a vector of tokens produced by
+ * ConfigTokenizer.
+ *
+ * Throws std::runtime_error on the first structural error found.
+ */
 class ConfigBuilder {
 public:
     ConfigBuilder();

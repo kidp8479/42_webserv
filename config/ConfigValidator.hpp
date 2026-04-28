@@ -6,6 +6,13 @@
 #include "../logger/Logger.hpp"
 #include "Config.hpp"
 
+/**
+ * @brief Phase 3 of the config parsing pipeline. Validates the semantic
+ * correctness of a Config object produced by ConfigBuilder.
+ *
+ * Throws std::runtime_error on the first invalid value found. If validate()
+ * returns without throwing, the Config is guaranteed fully valid.
+ */
 class ConfigValidator {
 public:
     ConfigValidator();
