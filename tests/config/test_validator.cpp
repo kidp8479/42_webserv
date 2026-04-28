@@ -159,3 +159,19 @@ TEST(ConfigValidator_checkDuplicatePath, NoThrowsIfDifferentLocationPath) {
     EXPECT_NO_THROW(buildFromFile(
         "../config/validator_test_files/location/valid_path_different.conf"));
 }
+
+/* tests for checkPath()
+[FAIL] => path does not start with '/'
+[FAIL] => path is empty
+[PASS] => path starts with '/'
+*/
+TEST(ConfigValidator_checkPath, ThrowsIfPathMissingSlash) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/location/"
+                               "invalid_path_no_slash.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkPath, NoThrowsIfValidPath) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/location/valid_path.conf"));
+}

@@ -48,10 +48,10 @@ void ConfigValidator::validate(const Config& config) const {
  * @brief Iterates all server blocks and runs per-block and per-location checks.
  */
 void ConfigValidator::serverChecks(const Config& config) const {
-    const std::vector<ServerConfig>& server_block = config.getServerBlock();
+    const std::vector<ServerConfig>& server_blocks = config.getServerBlock();
     std::vector<ServerConfig>::const_iterator it;
 
-    for (it = server_block.begin(); it != server_block.end(); ++it) {
+    for (it = server_blocks.begin(); it != server_blocks.end(); ++it) {
         LOG_DEBUG() << "Server block found, validating data...";
 
         checkPort(*it);
@@ -61,6 +61,28 @@ void ConfigValidator::serverChecks(const Config& config) const {
 
         locationChecks(*it);
     }
+}
+
+/**
+ * @brief Checks that no two server blocks share the same host:port combination.
+ */
+void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
+    const std::vector<ServerConfig>& server_blocks = server.getServerBlock();
+    std::vector<ServerConfig>::const_iterator it1;
+    std::vector<ServerConfig>::const_iterator it2;
+
+    for (it1 = server_blocks.begin(); it1 < server_blocks.end(); ++it1) {
+        for (it2 = it1 + 1; it2 < server_blocks.end(); ++it2) {
+            if ((*it1).getHost() == (*it2).getHost() &&
+                (*it1).getPort() == (*it2).getPort()) {
+                std::ostringstream oss;
+                oss << "Duplicate listen: " << (*it1).getHost() << ":"
+                    << (*it1).getPort();
+                configError(oss.str());
+            }
+        }
+    }
+    LOG_DEBUG() << "No duplicated host:port pairs.";
 }
 
 /**
@@ -144,28 +166,6 @@ void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
 }
 
 /**
- * @brief Checks that no two server blocks share the same host:port combination.
- */
-void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
-    const std::vector<ServerConfig>& server_blocks = server.getServerBlock();
-    std::vector<ServerConfig>::const_iterator it1;
-    std::vector<ServerConfig>::const_iterator it2;
-
-    for (it1 = server_blocks.begin(); it1 < server_blocks.end(); ++it1) {
-        for (it2 = it1 + 1; it2 < server_blocks.end(); ++it2) {
-            if ((*it1).getHost() == (*it2).getHost() &&
-                (*it1).getPort() == (*it2).getPort()) {
-                std::ostringstream oss;
-                oss << "Duplicate listen: " << (*it1).getHost() << ":"
-                    << (*it1).getPort();
-                configError(oss.str());
-            }
-        }
-    }
-    LOG_DEBUG() << "No duplicated host:port pairs.";
-}
-
-/**
  * @brief Checks that no two location blocks in the same server share the same
  * path_.
  */
@@ -191,14 +191,31 @@ void ConfigValidator::checkDuplicatePath(const ServerConfig& server) const {
  * @brief Iterates all location blocks of a server and runs per-location checks.
  */
 void ConfigValidator::locationChecks(const ServerConfig& server) const {
-    (void)server;
+    const std::vector<LocationConfig>& location_blocks =
+        server.getLocationBlock();
+    std::vector<LocationConfig>::const_iterator it;
+
+    for (it = location_blocks.begin(); it != location_blocks.end(); ++it) {
+        LOG_DEBUG() << "Location block found, validating data...";
+
+        checkPath(*it);
+        checkReturnCode(*it);
+        checkUrl(*it);
+    }
 }
 
 /**
- * @brief Checks that path_ starts with '/'.
+ * @brief Checks that path_ is not empty and starts with '/'.
+ * @note Tokenizer should not produce empty path token. Defensive check.
  */
 void ConfigValidator::checkPath(const LocationConfig& location) const {
-    (void)location;
+    std::string path = location.getPath();
+
+    if (path.empty() || path[0] != '/') {
+        configError(
+            "Invalid location path format. path should start by \"/\" ");
+    }
+    LOG_DEBUG() << "Location path is valid";
 }
 
 /**
