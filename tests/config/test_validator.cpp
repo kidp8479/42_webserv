@@ -144,3 +144,18 @@ TEST(ConfigValidator_checkDuplicateHostPort, NoThrowsIfDifferentHostSamePort) {
         buildFromFile("../config/validator_test_files/server/"
                       "valid_different_host_same_port.conf"));
 }
+
+/* tests for checkDuplicatePath()
+[FAIL] => two location blocks (inside the same server block) with identical path
+[PASS] => two location blocks (inside the same server block) with different path
+*/
+TEST(ConfigValidator_checkDuplicatePath, ThrowsIfSameLocationPath) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/location/"
+                               "invalid_path_duplicate.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkDuplicatePath, NoThrowsIfDifferentLocationPath) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/location/valid_path_different.conf"));
+}

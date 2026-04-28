@@ -128,7 +128,7 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
  * File existence is not checked here, only at runtime.
  */
 void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
-    std::map<int, std::string> error_pages = server.getErrorPages();
+    const std::map<int, std::string>& error_pages = server.getErrorPages();
     std::map<int, std::string>::const_iterator it;
 
     for (it = error_pages.begin(); it != error_pages.end(); ++it) {
@@ -170,7 +170,21 @@ void ConfigValidator::checkDuplicateHostPort(const Config& server) const {
  * path_.
  */
 void ConfigValidator::checkDuplicatePath(const ServerConfig& server) const {
-    (void)server;
+    const std::vector<LocationConfig>& location_blocks =
+        server.getLocationBlock();
+    std::vector<LocationConfig>::const_iterator it1;
+    std::vector<LocationConfig>::const_iterator it2;
+
+    for (it1 = location_blocks.begin(); it1 < location_blocks.end(); ++it1) {
+        for (it2 = it1 + 1; it2 < location_blocks.end(); ++it2) {
+            if ((*it1).getPath() == (*it2).getPath()) {
+                std::ostringstream oss;
+                oss << "Duplicated location path: " << (*it1).getPath();
+                configError(oss.str());
+            }
+        }
+    }
+    LOG_DEBUG() << "No duplicated location path.";
 }
 
 /**
