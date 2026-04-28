@@ -11,7 +11,7 @@ ConfigParser::~ConfigParser() {
  *
  * @param file_path Path to the .conf file (absolute or relative)
  * @return Fully populated and validated Config object
- * @throws std::runtime_error If the file is invalid or contains errors
+ * @throws std::runtime_error if the file is invalid or contains errors
  */
 Config ConfigParser::parse(const std::string& file_path) {
     Config config;

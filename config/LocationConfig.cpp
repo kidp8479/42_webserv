@@ -36,7 +36,6 @@ LocationConfig& LocationConfig::operator=(const LocationConfig& other) {
 LocationConfig::~LocationConfig() {
 }
 
-// getters
 const std::string& LocationConfig::getPath() const {
     return this->path_;
 }
@@ -74,7 +73,6 @@ const std::string& LocationConfig::getReturnUrl() const {
     return this->return_url_;
 }
 
-// setters
 void LocationConfig::setPath(const std::string& path) {
     this->path_ = path;
 }

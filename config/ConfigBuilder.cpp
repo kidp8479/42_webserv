@@ -101,7 +101,7 @@ void ConfigBuilder::expectOpenBrace() {
     if (open_brace.value != "{") {
         configError(open_brace, "expected \"{\"");
     }
-    index_++;  // advance past "{"
+    index_++;
 }
 
 /**
@@ -121,9 +121,6 @@ int ConfigBuilder::toInt(const std::string& s) const {
     if (!(iss >> result)) {
         configError("invalid integer value: \"" + s + "\"");
     }
-    // we check if there is still something to extract after the int part, if
-    // there is, condition will return true, the string to parse was not only
-    // digits
     if (iss >> leftover) {
         configError("malformed directive value");
     }
@@ -199,11 +196,10 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
 ServerConfig ConfigBuilder::parseServerBlock() {
     ServerConfig server_block;
 
-    index_++;  // advance past "server"
+    index_++;
     LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" << RESET;
     expectOpenBrace();
 
-    // loop through directives until "}" or end of file
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
         const Token& current_token = currentToken();
         if (current_token.value == "listen") {
@@ -221,7 +217,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     if (index_ >= tokens_list_->size()) {
         configError("unclosed server block, expected \"}\"");
     }
-    index_++;  // advance past "}"
+    index_++;
     return server_block;
 }
 
@@ -233,7 +229,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
  * @note Parses: listen 127.0.0.1:8080;
  */
 void ConfigBuilder::parseListen(ServerConfig& server_block) {
-    index_++;  // advance past "listen"
+    index_++;
     checkBounds("after \"listen\"");
 
     const Token& current_token = currentToken();
@@ -247,7 +243,7 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
     LOG_DEBUG() << "ConfigBuilder: listen -> " << GRN << server_block.getHost()
                 << ":" << server_block.getPort() << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -263,12 +259,11 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
  * @note Parses: client_max_body_size 10M;
  */
 void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
-    index_++;  // advance past "client_max_body_size"
+    index_++;
     checkBounds("after \"client_max_body_size\"");
 
     const std::string& raw = currentToken().value;
 
-    // validate format: digits only, or digits followed by exactly one K/M/G
     size_t i = 0;
     while (i < raw.size() && std::isdigit(raw[i])) {
         i++;
@@ -287,7 +282,7 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     size_t numeric = toSizeT(raw.substr(0, i));
     size_t byte_size;
     if (i == raw.size()) {
-        byte_size = numeric;  // no unit - treat as bytes, like nginx
+        byte_size = numeric;
     } else if (raw[i] == 'K' || raw[i] == 'k') {
         if (numeric > std::numeric_limits<size_t>::max() / BYTES_PER_KB) {
             configError("client_max_body_size value overflows");
@@ -309,7 +304,7 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     LOG_DEBUG() << "ConfigBuilder: client_max_body_size -> " << GRN << byte_size
                 << " bytes" << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -321,12 +316,12 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
  * @note Parses: error_page 404 /errors/404.html;
  */
 void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
-    index_++;  // advance past "error_page"
+    index_++;
     checkBounds("after \"error_page\"");
 
     int code = toInt(currentToken().value);
 
-    index_++;  // advance to path
+    index_++;
     checkBounds("after error_page code");
 
     const std::string& path = currentToken().value;
@@ -334,7 +329,7 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     LOG_DEBUG() << "ConfigBuilder: error_page -> " << GRN << code << " " << path
                 << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -349,13 +344,13 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
 LocationConfig ConfigBuilder::parseLocationBlock() {
     LocationConfig location_block;
 
-    index_++;  // advance past "location"
+    index_++;
     checkBounds("after \"location\", expected path");
 
     location_block.setPath(currentToken().value);
     LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing location block \""
                 << location_block.getPath() << "\"" << RESET;
-    index_++;  // advance to "{"
+    index_++;
     expectOpenBrace();
 
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
@@ -382,7 +377,7 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
     if (index_ >= tokens_list_->size()) {
         configError("unclosed location block, expected \"}\"");
     }
-    index_++;  // advance past "}"
+    index_++;
     return location_block;
 }
 
@@ -447,7 +442,7 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: root -> " << GRN << location_block.getRoot()
                 << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -466,7 +461,7 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: index -> " << GRN
                 << location_block.getIndex() << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -493,7 +488,7 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: autoindex -> " << GRN
                 << (directory_listing ? "on" : "off") << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -512,7 +507,7 @@ void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: upload_path -> " << GRN
                 << location_block.getUploadPath() << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -542,7 +537,7 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: cgi -> " << GRN << cgi_extension << " => "
                 << cgi_binary_path << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -569,6 +564,6 @@ void ConfigBuilder::parseReturn(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: return -> " << GRN << return_code << " "
                 << return_path << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }

@@ -26,7 +26,6 @@ ServerConfig& ServerConfig::operator=(const ServerConfig& other) {
 ServerConfig::~ServerConfig() {
 }
 
-// getters
 const std::string& ServerConfig::getHost() const {
     return this->host_;
 }
@@ -47,7 +46,6 @@ const std::vector<LocationConfig>& ServerConfig::getLocationBlock() const {
     return this->location_block_;
 }
 
-// setters
 void ServerConfig::setHost(const std::string& host) {
     this->host_ = host;
 }

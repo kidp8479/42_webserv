@@ -16,12 +16,10 @@ Config& Config::operator=(const Config& other) {
 Config::~Config() {
 }
 
-// getter
 const std::vector<ServerConfig>& Config::getServerBlock() const {
     return this->server_block_;
 }
 
-// add
 void Config::addServerBlock(const ServerConfig& server_block) {
     this->server_block_.push_back(server_block);
 }
