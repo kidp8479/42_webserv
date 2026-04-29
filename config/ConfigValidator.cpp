@@ -204,6 +204,7 @@ void ConfigValidator::locationChecks(const ServerConfig& server) const {
 
         checkPath(*it);
         checkReturnCode(*it);
+        checkCgiBinaryPaths(*it);
     }
 }
 
@@ -250,4 +251,25 @@ void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
         configError("Return code set. A valid return url must be set");
     }
     LOG_DEBUG() << "Valid return code.";
+}
+
+/**
+ * @brief Checks that all CGI binary paths start with '/'.
+ * @note execve() requires an absolute path. A relative path always fails at
+ * runtime regardless of the environment.
+ */
+void ConfigValidator::checkCgiBinaryPaths(
+    const LocationConfig& location) const {
+    const std::map<std::string, std::string>& cgi =
+        location.getCgiInterpreters();
+    std::map<std::string, std::string>::const_iterator it;
+
+    for (it = cgi.begin(); it != cgi.end(); ++it) {
+        const std::string& binary_path = it->second;
+        if (binary_path.empty() || binary_path[0] != '/') {
+            configError("Invalid CGI binary path \"" + binary_path +
+                        "\". Path must be absolute (start with '/')");
+        }
+    }
+    LOG_DEBUG() << "Valid CGI binary path(s).";
 }
