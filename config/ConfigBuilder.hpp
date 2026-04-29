@@ -43,14 +43,14 @@ private:
 
     ServerConfig parseServerBlock();
     void parseListen(ServerConfig& server_block);
-    void parseClientBodySize(ServerConfig& server_block);
+    void parseClientBodySize(ServerConfig& server_block, bool& seen);
     void parseErrorPage(ServerConfig& server_block);
 
     LocationConfig parseLocationBlock();
     void parseMethods(LocationConfig& location_block);
     void parseRoot(LocationConfig& location_block);
     void parseIndex(LocationConfig& location_block);
-    void parseAutoIndex(LocationConfig& location_block);
+    void parseAutoIndex(LocationConfig& location_block, bool& seen);
     void parseUploadPath(LocationConfig& location_block);
     void parseCGI(LocationConfig& location_block);
     void parseReturn(LocationConfig& location_block);

@@ -195,6 +195,7 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
  */
 ServerConfig ConfigBuilder::parseServerBlock() {
     ServerConfig server_block;
+    bool max_body_size_seen = false;
 
     index_++;
     LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" << RESET;
@@ -205,7 +206,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
         if (current_token.value == "listen") {
             parseListen(server_block);
         } else if (current_token.value == "client_max_body_size") {
-            parseClientBodySize(server_block);
+            parseClientBodySize(server_block, max_body_size_seen);
         } else if (current_token.value == "error_page") {
             parseErrorPage(server_block);
         } else if (current_token.value == "location") {
@@ -256,15 +257,24 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
  * bytes.
  *
  * @param server_block The ServerConfig to fill
+ * @param seen Flag tracking whether this directive has already been parsed in
+ * this server block. Passed by reference from parseServerBlock.
  * @throws std::runtime_error if the value is missing or not a valid number
  * @note Accepts an optional unit suffix: K/k (kilobytes), M/m (megabytes), G/g
  * (gigabytes). No suffix is treated as raw bytes, consistent with nginx
  * behavior.
  * @note Parses: client_max_body_size 10M;
  */
-void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
+void ConfigBuilder::parseClientBodySize(ServerConfig& server_block,
+                                        bool& seen) {
     index_++;
     checkBounds("after \"client_max_body_size\"");
+
+    if (seen) {
+        configError(currentToken(),
+                    "duplicate \"client_max_body_size\" directive");
+    }
+    seen = true;
 
     const std::string& raw = currentToken().value;
 
@@ -352,6 +362,7 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
  */
 LocationConfig ConfigBuilder::parseLocationBlock() {
     LocationConfig location_block;
+    bool autoindex_seen = false;
 
     index_++;
     checkBounds("after \"location\", expected path");
@@ -372,7 +383,7 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
         } else if (current_token.value == "index") {
             parseIndex(location_block);
         } else if (current_token.value == "autoindex") {
-            parseAutoIndex(location_block);
+            parseAutoIndex(location_block, autoindex_seen);
         } else if (current_token.value == "upload_path") {
             parseUploadPath(location_block);
         } else if (current_token.value == "cgi") {
@@ -488,12 +499,19 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
  * listing.
  *
  * @param location_block The LocationConfig to fill
+ * @param seen Flag tracking whether this directive has already been parsed in
+ * this location block. Passed by reference from parseLocationBlock.
  * @throws std::runtime_error if the value is not "on" or "off"
  * @note Parses: autoindex on;
  */
-void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
+void ConfigBuilder::parseAutoIndex(LocationConfig& location_block, bool& seen) {
     index_++;
     checkBounds("after \"autoindex\", expected on or off");
+
+    if (seen) {
+        configError(currentToken(), "duplicate \"autoindex\" directive");
+    }
+    seen = true;
     bool directory_listing = false;
 
     if (currentToken().value == "on") {
