@@ -20,7 +20,8 @@ enum HttpMethod {
  */
 class Request {
 	public:
-		static const size_t kDefaultMaxBodySize = 1048576;  // 1MB
+		static const size_t kDefaultMaxHeaderSize = 8192;	// 8KB
+		static const size_t kDefaultMaxBodySize = 1048576;	// 1MB
 
 		/* Orthodox Canonical Form */
 		Request();
@@ -38,10 +39,11 @@ class Request {
 		/* Setters */
 		void	append(const char* data, size_t len);
 		void	clearData();
+		void	setMaxHeaderSize(size_t max_header_size);
 		void	setMaxBodySize(size_t max_body_size);
 
 		/* Checkers */
-		bool								isComplete() const;
+		bool	isComplete() const;
 
 		/* Parsing */
 		void	parseMessage();
@@ -53,7 +55,16 @@ class Request {
 		std::string							protocol_;
 		std::map<std::string, std::string>	headers_;
 		std::string							body_;
+
+		size_t								max_header_size_;
 		size_t								max_body_size_;
+
+		bool								complete_;
+		bool								error_;
+
+		/* Private parsing tools */
+		void	parseBodyCL(std::istringstream& raw_ss, std::string len);
+		void	parseBodyChunked(std::istringstream& raw_ss);
 };
 
 #endif

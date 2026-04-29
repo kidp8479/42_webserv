@@ -9,7 +9,12 @@
  /**
  * @brief Default Constructor.
  */
-Request::Request() : method_(kNone), max_body_size_(kDefaultMaxBodySize){
+Request::Request() :
+method_(kNone),
+max_header_size_(kDefaultMaxHeaderSize),
+max_body_size_(kDefaultMaxBodySize),
+complete_(false),
+error_(false) {
 }
 
  /**
@@ -37,7 +42,10 @@ Request	&Request::operator=(const Request& other) {
 	this->protocol_ = other.protocol_;
 	this->headers_ = other.headers_;
 	this->body_ = other.body_;
+	this->max_header_size_ = other.max_header_size_;
 	this->max_body_size_ = other.max_body_size_;
+	this->complete_ = other.complete_;
+	this->error_ = other.error_;
 	return (*this);
 }
 
@@ -97,6 +105,13 @@ void Request::clearData() {
 	this->protocol_.clear();
 	this->headers_.clear();
 	this->body_.clear();
+
+	this->complete_ = false;
+	this->error_ = false;
+}
+
+void Request::setMaxHeaderSize(size_t max_header_size) {
+	this->max_header_size_ = max_header_size;
 }
 
 void Request::setMaxBodySize(size_t max_body_size) {
@@ -106,7 +121,7 @@ void Request::setMaxBodySize(size_t max_body_size) {
 /****************************** Parsing Utils *******************************/
 static std::string	setToLower(std::string& s) {
 	for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
-		s_it[0] = tolower(s_it[0]);
+		s_it[0] = std::tolower(s_it[0]);
 	}
 	return (s);
 }
@@ -126,6 +141,29 @@ static std::string	trim(std::string& s, const char* t = " \t\n\r\f\v") {
 	return (trimR(s, t));
 }
 
+static std::string	removeCR(std::string& s) {
+	if (!s.empty() && s.at(s.size() - 1) == '\r')
+		s.erase(s.size() - 1);
+	return (s);
+}
+
+static bool	isOnlyDigits(std::string s) {
+	for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
+		if (!std::isdigit(s_it[0]))
+			return (false);
+	}
+	return (true);
+}
+
+static bool isOnlyHexDigits(std::string s) {
+	for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
+		if (!std::isdigit(s_it[0]) && !(std::tolower(s_it[0]) >= 'a'
+			&& std::tolower(s_it[0]) >= 'f'))
+			return (false);
+	}
+	return (true);
+}
+
 
 /********************************* Checkers *********************************/
  /**
@@ -142,8 +180,7 @@ bool Request::isComplete() const {
 
 	/*Search for Content-Length header in raw until empty line*/
 	while (!at_body && std::getline(raw_stream, line)) {
-		if (!line.empty() && line.at(line.size() - 1) == '\r')
-			line.erase(line.size() - 1);
+		removeCR(line);
 		if (!line.empty())
 		{
 			std::string			header_name;
@@ -185,7 +222,6 @@ bool Request::isComplete() const {
 
 
 /********************************* Parsing **********************************/
-
  /**
  * @brief Parse the stored raw string to extract request data.
  */
@@ -198,8 +234,7 @@ void Request::parseMessage() {
 
 	this->clearData();
 	while (!at_body && std::getline(raw_stream, line)) {
-		if (!line.empty() && line.at(line.size() - 1) == '\r')
-			line.erase(line.size() - 1);
+		removeCR(line);
 		std::istringstream	line_stream(line);
 
 		if (line.empty()) {
@@ -229,25 +264,90 @@ void Request::parseMessage() {
 			setToLower(name);
 			std::getline(line_stream, value);
 			trim(value);
+			if (value.size() > this->max_header_size_)
+				value.erase(this->max_header_size_);
 			this->headers_[name] = value;
 		}
 	}
 
 	if (at_body) {
 		/*Parsing body*/
-		char	c;
-		size_t	body_size = 0;
+		if (this->headers_.count("transfer-encoding") > 0
+			&& this->headers_.at("transfer-encoding") == "chunked") {
+			parseBodyChunked(raw_stream);
+		}
+		else if (this->headers_.count("content-length") > 0)
+			parseBodyCL(raw_stream, this->headers_.at("content-length"));
+	}
+}
 
-		/*Check for Content-Length and get body size*/
-		if (this->headers_.count("content-length")) {
-			size_t				len_value;
-			std::istringstream	len_stream(this->headers_.at("content-length"));
-			len_stream >> len_value;
-			if (!len_stream.fail())
-				body_size = std::min(len_value, this->max_body_size_);
+ /**
+ * @brief Parse body using Content-Length.
+ * @param raw_stream stream poitning to body start point.
+ * @param len value in Content-Length header.
+ */
+void Request::parseBodyCL(std::istringstream& raw_ss, std::string len) {
+	if (!isOnlyDigits(len)) {
+		this->error_ = true;
+		return ; //WIP
+	}
+
+	size_t				body_size = 0;
+	size_t				len_value;
+	std::istringstream	len_stream(len);
+
+	len_stream >> len_value;
+	if (!len_stream.fail())
+		body_size = std::min(len_value, this->max_body_size_);
+
+	char		c;
+	std::string	content;
+	while (content.size() < body_size && raw_ss.get(c))
+		content += c;
+	this->body_ += content;
+}
+
+ /**
+ * @brief Parse body using Transfer-Encoding chunked method.
+ * @param raw_stream stream pointing to body start point.
+ */
+void Request::parseBodyChunked(std::istringstream& raw_ss) {
+	std::string	chunk_size, content;
+
+	while (std::getline(raw_ss, chunk_size)) {
+		removeCR(chunk_size);
+		if (!isOnlyHexDigits(chunk_size)) {
+			this->error_ = true;
+			return ; //WIP
 		}
 
-		while (this->body_.size() < body_size && raw_stream.get(c))
-			this->body_ += c;
+		size_t				len_value;
+		std::istringstream	len_stream(chunk_size);
+
+		/*Convert hexadecimal chunk size to size_t*/
+		len_stream >> std::hex >> len_value;
+		if (!len_stream.fail()) {
+			char		c;
+			std::string	chunk_data, chunk_end;
+
+			while (chunk_data.size() < len_value && raw_ss.get(c))
+				chunk_data += c;
+
+			/*Check for CR LF termination after chunk*/
+			char	c_end = '\0';
+			while (c_end != '\n') {
+				if (!raw_ss.get(c_end) || (c_end != '\r' && c_end != '\n'))
+					return ; //WIP should be error
+			}
+
+			content += chunk_data;
+			if (len_value == 0) {
+				/*Reached null chunk - body parsing finished*/
+				if (content.size() > this->max_body_size_)
+					content.erase(this->max_body_size_);
+				this->body_ += content;
+				return ;
+			}
+		}
 	}
 }
