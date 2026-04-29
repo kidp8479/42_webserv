@@ -197,3 +197,18 @@ TEST(ConfigValidator_checkReturnCode, NoThrowsIfValidReturn) {
     EXPECT_NO_THROW(buildFromFile(
         "../config/validator_test_files/location/valid_return.conf"));
 }
+
+/* tests for checkCgiBinaryPaths()
+[FAIL] => CGI binary path is relative (no leading '/')
+[PASS] => CGI binary path is absolute
+*/
+TEST(ConfigValidator_checkCgiBinaryPaths, ThrowsIfCgiBinaryPathIsRelative) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/location/"
+                               "invalid_cgi_binary_relative.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkCgiBinaryPaths, NoThrowsIfCgiBinaryPathIsAbsolute) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/location/valid_cgi_binary.conf"));
+}
