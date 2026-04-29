@@ -46,6 +46,7 @@ Request	&Request::operator=(const Request& other) {
 	this->max_body_size_ = other.max_body_size_;
 	this->complete_ = other.complete_;
 	this->error_ = other.error_;
+	this->error_code_ = other.error_code_;
 	return (*this);
 }
 
@@ -108,6 +109,7 @@ void Request::clearData() {
 
 	this->complete_ = false;
 	this->error_ = false;
+	this->error_code_.clear();
 }
 
 void Request::setMaxHeaderSize(size_t max_header_size) {
@@ -116,6 +118,15 @@ void Request::setMaxHeaderSize(size_t max_header_size) {
 
 void Request::setMaxBodySize(size_t max_body_size) {
 	this->max_body_size_ = max_body_size;
+}
+
+ /**
+ * @brief Sets error to true along with error message.
+ * @param flag Error message to set error_code_ to.
+ */
+void Request::setError(std::string flag) {
+	this->error_ = true;
+	this->error_code_ = flag;
 }
 
 /****************************** Parsing Utils *******************************/
@@ -145,6 +156,14 @@ static std::string	removeCR(std::string& s) {
 	if (!s.empty() && s.at(s.size() - 1) == '\r')
 		s.erase(s.size() - 1);
 	return (s);
+}
+
+static bool	findWhitespace(std::string s) {
+	for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
+		if (std::isspace(s_it[0]))
+			return (true);
+	}
+	return (false);
 }
 
 static bool	isOnlyDigits(std::string s) {
@@ -261,11 +280,13 @@ void Request::parseMessage() {
 			std::string	name, value;
 			
 			std::getline(line_stream, name, ':');
+			if (findWhitespace(name))
+				return (setError("400 Bad Request"));
 			setToLower(name);
 			std::getline(line_stream, value);
 			trim(value);
 			if (value.size() > this->max_header_size_)
-				value.erase(this->max_header_size_);
+				return (setError("431 Request Header Fields Too Large"));
 			this->headers_[name] = value;
 		}
 	}
@@ -278,6 +299,8 @@ void Request::parseMessage() {
 		}
 		else if (this->headers_.count("content-length") > 0)
 			parseBodyCL(raw_stream, this->headers_.at("content-length"));
+		else
+			this->complete_ = true;
 	}
 }
 
@@ -287,24 +310,27 @@ void Request::parseMessage() {
  * @param len value in Content-Length header.
  */
 void Request::parseBodyCL(std::istringstream& raw_ss, std::string len) {
-	if (!isOnlyDigits(len)) {
-		this->error_ = true;
-		return ; //WIP
-	}
+	if (!isOnlyDigits(len))
+		return (setError("400 Bad Request"));
 
-	size_t				body_size = 0;
-	size_t				len_value;
+	size_t				len_value = 0;
 	std::istringstream	len_stream(len);
 
 	len_stream >> len_value;
-	if (!len_stream.fail())
-		body_size = std::min(len_value, this->max_body_size_);
+	if (len_stream.fail())
+		return (setError("400 Bad Request"));
 
 	char		c;
 	std::string	content;
-	while (content.size() < body_size && raw_ss.get(c))
+	while (content.size() < len_value && raw_ss.get(c))
 		content += c;
-	this->body_ += content;
+
+	if (content.size() != len_value)
+		return ;//Reached end of stream - incomplete body
+	if (content.size() > this->max_body_size_)
+		return (setError("413 Content Too Large"));
+	this->body_ = content;
+	this->complete_ = true;
 }
 
  /**
@@ -316,38 +342,43 @@ void Request::parseBodyChunked(std::istringstream& raw_ss) {
 
 	while (std::getline(raw_ss, chunk_size)) {
 		removeCR(chunk_size);
-		if (!isOnlyHexDigits(chunk_size)) {
-			this->error_ = true;
-			return ; //WIP
-		}
+		if (!isOnlyHexDigits(chunk_size))
+			return (setError("400 Bad Request"));
 
 		size_t				len_value;
 		std::istringstream	len_stream(chunk_size);
 
 		/*Convert hexadecimal chunk size to size_t*/
 		len_stream >> std::hex >> len_value;
-		if (!len_stream.fail()) {
-			char		c;
-			std::string	chunk_data, chunk_end;
+		if (len_stream.fail())
+			return (setError("400 Bad Request"));
+		
+		char		c;
+		std::string	chunk_data, chunk_end;
 
-			while (chunk_data.size() < len_value && raw_ss.get(c))
-				chunk_data += c;
+		while (chunk_data.size() < len_value && raw_ss.get(c))
+			chunk_data += c;
 
-			/*Check for CR LF termination after chunk*/
-			char	c_end = '\0';
-			while (c_end != '\n') {
-				if (!raw_ss.get(c_end) || (c_end != '\r' && c_end != '\n'))
-					return ; //WIP should be error
-			}
+		if (chunk_data.size() != len_value)
+			return ; //Reached end of stream - incomplete body
 
-			content += chunk_data;
-			if (len_value == 0) {
-				/*Reached null chunk - body parsing finished*/
-				if (content.size() > this->max_body_size_)
-					content.erase(this->max_body_size_);
-				this->body_ += content;
-				return ;
-			}
+		/*Check for CR LF termination after chunk*/
+		char	c_end = '\0';
+		while (c_end != '\n') {
+			if (!raw_ss.get(c_end))
+				return ; //Reached end of stream - incomplete body
+			if (c_end != '\r' && c_end != '\n')
+				return (setError("400 Bad Request"));
+		}
+
+		content += chunk_data;
+		if (len_value == 0) {
+			/*Reached null chunk - body parsing finished*/
+			if (content.size() > this->max_body_size_)
+				return (setError("413 Content Too Large"));
+			this->body_ = content;
+			this->complete_ = true;
+			return ;
 		}
 	}
 }

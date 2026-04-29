@@ -61,10 +61,12 @@ class Request {
 
 		bool								complete_;
 		bool								error_;
+		std::string							error_code_;
 
 		/* Private parsing tools */
 		void	parseBodyCL(std::istringstream& raw_ss, std::string len);
 		void	parseBodyChunked(std::istringstream& raw_ss);
+		void	setError(std::string flag);
 };
 
 #endif
