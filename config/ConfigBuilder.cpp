@@ -604,7 +604,11 @@ void ConfigBuilder::parseReturn(LocationConfig& location_block) {
     int return_code = toInt(currentToken().value);
     index_++;
     checkBounds("after \"return code\", expected path");
-    std::string return_path = currentToken().value;
+    const Token& url_token = currentToken();
+    if (url_token.value == ";") {
+        configError(url_token, "expected URL after return code, got \";\"");
+    }
+    const std::string& return_path = url_token.value;
 
     location_block.setReturnCode(return_code);
     location_block.setReturnUrl(return_path);
