@@ -178,7 +178,6 @@ TEST(ConfigValidator_checkPath, NoThrowsIfValidPath) {
 
 /* tests for checkReturnCode()
 [FAIL] => return_code set but out of range [300-399]
-[FAIL] => return_code set but return_url is empty
 [PASS] => no return directive (kNoRedirect)
 [PASS] => return_code in range [300-399] with valid url
 */
