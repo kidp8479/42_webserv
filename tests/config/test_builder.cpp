@@ -566,6 +566,12 @@ TEST(ConfigBuilder_ParseReturn, ThrowsOnMissingUrl) {
         std::runtime_error);
 }
 
+TEST(ConfigBuilder_ParseReturn, ThrowsOnSemicolonAsUrl) {
+    EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
+                               "return_semicolon_as_url.conf"),
+                 std::runtime_error);
+}
+
 TEST(ConfigBuilder_ParseReturn, ThrowsOnMissingSemicolon) {
     EXPECT_THROW(buildFromFile("../config/builder_test_files/location/"
                                "return_missing_semicolon.conf"),

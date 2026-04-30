@@ -8,8 +8,12 @@
  * @brief Phase 3 of the config parsing pipeline. Validates the semantic
  * correctness of a Config object produced by ConfigBuilder.
  *
- * Throws std::runtime_error on the first invalid value found. If validate()
+ * @throws std::runtime_error on the first invalid value found. If validate()
  * returns without throwing, the Config is guaranteed fully valid.
+ *
+ * @note Format policy: filesystem paths (root, upload_path, index) are not
+ * format-checked relative paths are valid in this self-contained project.
+ * CGI binary paths are the exception: execve() requires an absolute path.
  */
 class ConfigValidator {
 public:

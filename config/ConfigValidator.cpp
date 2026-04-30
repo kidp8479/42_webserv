@@ -247,6 +247,8 @@ void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
         configError(oss.str());
     }
 
+    // unreachable via normal pipeline: Builder always sets both fields
+    // together. Guards against direct LocationConfig instantiation.
     if (return_url.empty()) {
         configError("Return code set. A valid return url must be set");
     }
