@@ -565,7 +565,7 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
 
     const Token& ext_token = currentToken();
     std::string cgi_extension = ext_token.value;
-    if (cgi_extension.empty() || cgi_extension[0] != '.') {
+    if (cgi_extension.size() < 2 || cgi_extension[0] != '.') {
         configError(ext_token,
                     "cgi extension must start with '.' (ex: \".php\")");
     }
