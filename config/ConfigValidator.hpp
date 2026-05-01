@@ -12,7 +12,7 @@
  * returns without throwing, the Config is guaranteed fully valid.
  *
  * @note Format policy: filesystem paths (root, upload_path, index) are not
- * format-checked relative paths are valid in this self-contained project.
+ * format-checked, relative paths are valid in this self-contained project.
  * CGI binary paths are the exception: execve() requires an absolute path.
  */
 class ConfigValidator {

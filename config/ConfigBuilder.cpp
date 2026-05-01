@@ -591,7 +591,7 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
  * @param location_block The LocationConfig to fill
  * @throws std::runtime_error if the code or URL is missing
  * @note Parses: return 301 /;
- * @note return_code_ defaults to NO_REDIRECT (-1) if this directive is absent.
+ * @note return_code_ defaults to kNoRedirect (-1) if this directive is absent.
  * Presence is checked by ConfigValidator.
  */
 void ConfigBuilder::parseReturn(LocationConfig& location_block) {

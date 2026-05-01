@@ -9,6 +9,11 @@
  * @brief Holds the parsed content of one location { } block.
  *
  * Pure data container, no validation logic.
+ *
+ * @note return_code_ uses kNoRedirect (-1) as a sentinel. To use:
+ * if return_code_ != kNoRedirect, send a redirect response with return_code_
+ * and return_url_. If return_code_ == kNoRedirect, no return directive was
+ * set, serve normally.
  */
 class LocationConfig {
 public:
@@ -48,7 +53,7 @@ private:
     std::string upload_path_;
 
     std::map<std::string, std::string> cgi_interpreters_;
-    int return_code_;  // NO_REDIRECT (-1) if no return directive is set
+    int return_code_;  // kNoRedirect (-1) if no return directive is set
     std::string return_url_;
 };
 

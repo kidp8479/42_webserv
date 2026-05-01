@@ -23,7 +23,6 @@ ConfigTokenizer::~ConfigTokenizer() {
 
 /**
  * @brief Returns the list of tokens produced by tokenization.
- * @note ConfigBuilder (config file parsing phase 2) will need it
  */
 const std::vector<Token>& ConfigTokenizer::getTokenList() const {
     return tokens_list_;

@@ -14,11 +14,17 @@
 #include "LocationConfig.hpp"
 
 /**
- * @brief Phase 2 of the config parsing pipeline. Validates token sequence
- * structure and fills a Config object from a vector of tokens produced by
- * ConfigTokenizer.
+ * @brief Phase 2 of the config parsing pipeline. Converts a flat token list
+ * produced by ConfigTokenizer into a fully populated Config object.
  *
- * Throws std::runtime_error on the first structural error found.
+ * Handles structural errors: token sequence order, missing semicolons or
+ * braces, unknown directives, and duplicate directives within a block.
+ * Semantic validation (port range, valid host, duplicate host:port) is
+ * deferred to ConfigValidator (phase 3).
+ *
+ * @throws std::runtime_error on the first structural error found.
+ *
+ * @note Copy and assignment are disabled: this class is not meant to be copied.
  */
 class ConfigBuilder {
 public:
