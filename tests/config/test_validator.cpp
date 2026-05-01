@@ -25,6 +25,7 @@ static Config buildFromFile(const std::string& path) {
 [FAIL] => port is more than 65535
 [FAIL] => port is not set
 [PASS] => port is in range [1-65535]
+[PASS] => port is at the limits of [1-65535]
 */
 TEST(ConfigValidator_checkPort, ThrowsIfPortIs0) {
     EXPECT_THROW(
@@ -106,18 +107,18 @@ TEST(ConfigValidator_checkHost, NoThrowsIfHostHasValidIpLimits) {
         "../config/validator_test_files/server/valid_host_up_limits.conf"));
 }
 
-/* tests for checkErrorCode()
+/* tests for checkServerErrorCodes()
 [FAIL] => error code is not in range [400-599]
 [PASS] => error code is in range [400-599]
 */
-TEST(ConfigValidator_checkErrorCode, ThrowsIfErrorCodeInvalid) {
+TEST(ConfigValidator_checkServerErrorCodes, ThrowsIfErrorCodeInvalid) {
     EXPECT_THROW(
         buildFromFile(
             "../config/validator_test_files/server/invalid_error_code.conf"),
         std::runtime_error);
 }
 
-TEST(ConfigValidator_checkErrorCode, NoThrowsIfErroCodeValid) {
+TEST(ConfigValidator_checkServerErrorCodes, NoThrowsIfErrorCodeValid) {
     EXPECT_NO_THROW(buildFromFile(
         "../config/validator_test_files/server/valid_error_code.conf"));
 }
@@ -162,7 +163,6 @@ TEST(ConfigValidator_checkDuplicatePath, NoThrowsIfDifferentLocationPath) {
 
 /* tests for checkPath()
 [FAIL] => path does not start with '/'
-[FAIL] => path is empty
 [PASS] => path starts with '/'
 */
 TEST(ConfigValidator_checkPath, ThrowsIfPathMissingSlash) {
