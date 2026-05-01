@@ -136,8 +136,12 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
         }
 
         std::istringstream segment_iss(segment);
-        int value;
-        segment_iss >> value;
+        int value = 0;
+        std::string leftover;
+        if (!(segment_iss >> value) || (segment_iss >> leftover)) {
+            configError("Invalid host format. IP octet \"" + segment +
+                        "\" is not a valid integer.");
+        }
         if (value < kMinIpOctet || value > kMaxIpOctet) {
             std::ostringstream oss;
             oss << "Invalid host format. IP octet " << value
