@@ -72,8 +72,9 @@ void ConfigTokenizer::checkPathExists() {
     struct stat file_info;
 
     if (stat(file_path_.c_str(), &file_info) == 0) {
-        if (S_ISDIR(file_info.st_mode))
+        if (S_ISDIR(file_info.st_mode)) {
             configError(file_path_ + " is a directory");
+        }
     } else {
         configError("path error: " + file_path_ + ": " + std::strerror(errno));
     }
@@ -88,8 +89,9 @@ void ConfigTokenizer::checkPathExists() {
 void ConfigTokenizer::checkReadable() {
     std::ifstream config_file(file_path_.c_str());
 
-    if (!config_file.is_open())
+    if (!config_file.is_open()) {
         configError("cannot read: " + file_path_ + ": " + std::strerror(errno));
+    }
     LOG_DEBUG() << "Config: " << file_path_ << " opened successfully";
 }
 
@@ -107,16 +109,19 @@ void ConfigTokenizer::checkExtension() {
                                ? file_path_.substr(slash_pos + 1)
                                : file_path_;
 
-    if (std::count(filename.begin(), filename.end(), '.') != 1)
+    if (std::count(filename.begin(), filename.end(), '.') != 1) {
         configError("filename must have exactly one dot");
+    }
 
     std::string::size_type dot_position = filename.rfind('.');
 
-    if (dot_position == 0 || dot_position >= filename.length() - 1)
+    if (dot_position == 0 || dot_position >= filename.length() - 1) {
         configError("no valid extension found");
+    }
     std::string extension = filename.substr(dot_position + 1);
-    if (extension != "conf")
+    if (extension != "conf") {
         configError("wrong file extension");
+    }
     LOG_DEBUG() << "Config: correct file extension";
 }
 
@@ -128,8 +133,9 @@ void ConfigTokenizer::checkExtension() {
 void ConfigTokenizer::checkNotEmpty() {
     std::ifstream config_file(file_path_.c_str());
 
-    if (config_file.peek() == std::ifstream::traits_type::eof())
+    if (config_file.peek() == std::ifstream::traits_type::eof()) {
         configError(file_path_ + " is empty");
+    }
     LOG_DEBUG() << "Config: file is not empty";
 }
 
