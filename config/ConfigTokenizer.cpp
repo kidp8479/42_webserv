@@ -175,13 +175,11 @@ void ConfigTokenizer::tokenize() {
         line_number++;
     }
 
-    if (Logger::get().threshold() <= Logger::DEBUG) {
-        for (size_t i = 0; i < tokens_list_.size(); i++) {
-            LOG_DEBUG() << "line [" << tokens_list_[i].line << "] - token[" << i
-                        << "] = '" << GRN << tokens_list_[i].value << RESET
-                        << "'";
-        }
-    }
+    // for (size_t i = 0; i < tokens_list_.size(); i++) {
+    //     LOG_DEBUG() << "line [" << tokens_list_[i].line << "] - token[" << i
+    //                 << "] = '" << GRN << tokens_list_[i].value << RESET <<
+    //                 "'";
+    // }
     LOG_INFO() << BR_CYN "ConfigTokenizer: tokenization done - "
                << tokens_list_.size() << " tokens extracted" << RESET;
 }
