@@ -17,9 +17,9 @@ Config::~Config() {
 }
 
 const std::vector<ServerConfig>& Config::getServerBlock() const {
-    return this->server_block_;
+    return server_block_;
 }
 
 void Config::addServerBlock(const ServerConfig& server_block) {
-    this->server_block_.push_back(server_block);
+    server_block_.push_back(server_block);
 }

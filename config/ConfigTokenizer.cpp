@@ -26,7 +26,7 @@ ConfigTokenizer::~ConfigTokenizer() {
  * @note ConfigBuilder (config file parsing phase 2) will need it
  */
 const std::vector<Token>& ConfigTokenizer::getTokenList() const {
-    return this->tokens_list_;
+    return tokens_list_;
 }
 
 /**

@@ -37,75 +37,75 @@ LocationConfig::~LocationConfig() {
 }
 
 const std::string& LocationConfig::getPath() const {
-    return this->path_;
+    return path_;
 }
 
 const std::vector<std::string>& LocationConfig::getMethods() const {
-    return this->methods_;
+    return methods_;
 }
 
 const std::string& LocationConfig::getRoot() const {
-    return this->root_;
+    return root_;
 }
 
 const std::string& LocationConfig::getIndex() const {
-    return this->index_;
+    return index_;
 }
 
 bool LocationConfig::getDirectoryListing() const {
-    return this->directory_listing_;
+    return directory_listing_;
 }
 
 const std::string& LocationConfig::getUploadPath() const {
-    return this->upload_path_;
+    return upload_path_;
 }
 
 const std::map<std::string, std::string>& LocationConfig::getCgiInterpreters()
     const {
-    return this->cgi_interpreters_;
+    return cgi_interpreters_;
 }
 
 int LocationConfig::getReturnCode() const {
-    return this->return_code_;
+    return return_code_;
 }
 
 const std::string& LocationConfig::getReturnUrl() const {
-    return this->return_url_;
+    return return_url_;
 }
 
 void LocationConfig::setPath(const std::string& path) {
-    this->path_ = path;
+    path_ = path;
 }
 
 void LocationConfig::setMethods(const std::vector<std::string>& methods) {
-    this->methods_ = methods;
+    methods_ = methods;
 }
 
 void LocationConfig::setRoot(const std::string& root) {
-    this->root_ = root;
+    root_ = root;
 }
 
 void LocationConfig::setIndex(const std::string& index) {
-    this->index_ = index;
+    index_ = index;
 }
 
 void LocationConfig::setDirectoryListing(bool directory_listing) {
-    this->directory_listing_ = directory_listing;
+    directory_listing_ = directory_listing;
 }
 
 void LocationConfig::setUploadPath(const std::string& upload_path) {
-    this->upload_path_ = upload_path;
+    upload_path_ = upload_path;
 }
 
 void LocationConfig::addCgiInterpreter(const std::string& extension,
                                        const std::string& binary) {
-    this->cgi_interpreters_[extension] = binary;
+    cgi_interpreters_[extension] = binary;
 }
 
 void LocationConfig::setReturnCode(int return_code) {
-    this->return_code_ = return_code;
+    return_code_ = return_code;
 }
 
 void LocationConfig::setReturnUrl(const std::string& return_url) {
-    this->return_url_ = return_url;
+    return_url_ = return_url;
 }
