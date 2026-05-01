@@ -1,6 +1,7 @@
 #include "ConfigValidator.hpp"
 
 #include <sstream>
+#include <stdexcept>
 
 namespace {
 const int kMinPort = 1;
