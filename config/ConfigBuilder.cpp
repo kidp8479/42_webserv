@@ -163,7 +163,7 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     index_ = 0;
     tokens_list_ = &raw_tokens;
 
-    LOG_DEBUG() << BR_CYN "ConfigBuilder: starting build, "
+    LOG_DEBUG() << BR_YEL "ConfigBuilder: starting build, "
                 << tokens_list_->size() << " tokens" << RESET;
 
     while (index_ < tokens_list_->size()) {
@@ -198,7 +198,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     bool max_body_size_seen = false;
 
     index_++;
-    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" << RESET;
+    LOG_DEBUG() << BR_YEL "ConfigBuilder: parsing server block" << RESET;
     expectOpenBrace();
 
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
@@ -368,7 +368,7 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
     checkBounds("after \"location\", expected path");
 
     location_block.setPath(currentToken().value);
-    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing location block \""
+    LOG_DEBUG() << BR_YEL "ConfigBuilder: parsing location block \""
                 << location_block.getPath() << "\"" << RESET;
     index_++;
     expectOpenBrace();
