@@ -239,10 +239,6 @@ void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
     int return_code = location.getReturnCode();
     const std::string& return_url = location.getReturnUrl();
 
-    // @Charlie: if return_code_ != kNoRedirect, send redirect response with
-    // return_code_ and return_url_
-    // @Charlie: if return_code_ == kNoRedirect, no return directive set, serve
-    // normally
     if (return_code == LocationConfig::kNoRedirect) {
         LOG_DEBUG() << "ConfigValidator: no return directive set, skipping "
                        "return code check.";
