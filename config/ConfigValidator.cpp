@@ -1,5 +1,6 @@
 #include "ConfigValidator.hpp"
 
+#include <cctype>
 #include <sstream>
 #include <stdexcept>
 
@@ -129,7 +130,7 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
         }
 
         for (size_t i = 0; i < segment.size(); i++) {
-            if (!isdigit(segment[i])) {
+            if (!std::isdigit(static_cast<unsigned char>(segment[i]))) {
                 configError("Invalid host format. IP must be digits only.");
             }
         }
