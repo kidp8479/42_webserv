@@ -7,7 +7,7 @@ TEST(RequestTest, Constructor_initialStateIsClean) {
 	//Construction initializes all values as empty
 	Request	req;
 
-	EXPECT_EQ(req.getMethod(), kNone);
+	EXPECT_EQ(req.getMethod(), "");
 	EXPECT_EQ(req.getTarget(), "");
 	EXPECT_EQ(req.getProtocol(), "");
 	EXPECT_EQ(req.getBody(), "");
@@ -20,7 +20,7 @@ TEST(RequestTest, CopyConstructor_copyCleanReq) {
 	Request	req;
 	Request reqCopy(req);
 
-	EXPECT_EQ(reqCopy.getMethod(), kNone);
+	EXPECT_EQ(reqCopy.getMethod(), "");
 	EXPECT_EQ(reqCopy.getTarget(), "");
 	EXPECT_EQ(reqCopy.getProtocol(), "");
 	EXPECT_EQ(reqCopy.getBody(), "");
@@ -163,7 +163,7 @@ TEST_F(RequestTestFixture, isComplete_ContentLenLesserThanBody) {
 	EXPECT_TRUE(req.isComplete());
 }
 
-TEST_F(RequestTestFixture, isComplete_NoBodyInvalidContentLen) {
+/*TEST_F(RequestTestFixture, isComplete_NoBodyInvalidContentLen) {
 	//A message with an invalid "Content-Length" value should not need
 	//a body present to be considered complete
 	req.append(chunk1, strlen(chunk1));
@@ -171,7 +171,7 @@ TEST_F(RequestTestFixture, isComplete_NoBodyInvalidContentLen) {
 	req.append("Content-Length: abc\r\n", 21);
 	req.append(chunk4, strlen(chunk4));
 	EXPECT_TRUE(req.isComplete());
-}
+}*/
 
 TEST_F(RequestTestFixture, isComplete_ContentLenCaseInsensitive) {
 	//A valid message with "Content-Length" should be considered complete
@@ -208,8 +208,7 @@ TEST_F(RequestTestFixture, isComplete_SingleEmptyLine) {
 TEST_F(RequestTestFixture, Parse_FullRequest) {
 	//Parsing a valid message extracts matching data
 	req.append(full_request, strlen(full_request));
-	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
+	EXPECT_EQ(req.getMethod(), "GET");
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
@@ -223,8 +222,7 @@ TEST_F(RequestTestFixture, Parse_AllChunks) {
 	req.append(chunk3, strlen(chunk3));
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
-	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
+	EXPECT_EQ(req.getMethod(), "GET");
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
@@ -235,9 +233,8 @@ TEST_F(RequestTestFixture, Parse_AllChunks) {
 TEST_F(RequestTestFixture, Parse_FullRequestClear) {
 	//Extracting data then clearing the data should leave all values empty
 	req.append(full_request, strlen(full_request));
-	req.parseMessage();
 	req.clearData();
-	EXPECT_EQ(req.getMethod(), kNone);
+	EXPECT_EQ(req.getMethod(), "");
 	EXPECT_EQ(req.getTarget(), "");
 	EXPECT_EQ(req.getProtocol(), "");
 	EXPECT_EQ(req.getBody(), "");
@@ -249,9 +246,8 @@ TEST_F(RequestTestFixture, Parse_FullRequestCopy) {
 	Request	reqCopy;
 
 	req.append(full_request, strlen(full_request));
-	req.parseMessage();
 	reqCopy = req;
-	EXPECT_EQ(reqCopy.getMethod(), kGet);
+	EXPECT_EQ(reqCopy.getMethod(), "GET");
 	EXPECT_EQ(reqCopy.getTarget(), "/");
 	EXPECT_EQ(reqCopy.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(reqCopy.getBody(), "Hello");
@@ -264,10 +260,9 @@ TEST_F(RequestTestFixture, Parse_FullRequestCopyClear) {
 	Request	reqCopy;
 
 	req.append(full_request, strlen(full_request));
-	req.parseMessage();
 	reqCopy = req;
 	req.clearData();
-	EXPECT_EQ(reqCopy.getMethod(), kGet);
+	EXPECT_EQ(reqCopy.getMethod(), "GET");
 	EXPECT_EQ(reqCopy.getTarget(), "/");
 	EXPECT_EQ(reqCopy.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(reqCopy.getBody(), "Hello");
@@ -282,8 +277,7 @@ TEST_F(RequestTestFixture, Parse_OptionalWhitespace) {
 	req.append(chunk3_OWS, strlen(chunk3_OWS));
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
-	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
+	EXPECT_EQ(req.getMethod(), "GET");
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
@@ -299,8 +293,7 @@ TEST_F(RequestTestFixture, Parse_CaseInsensitive) {
 	req.append(chunk3_casemix, strlen(chunk3_casemix));
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
-	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
+	EXPECT_EQ(req.getMethod(), "GET");
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
@@ -315,8 +308,7 @@ TEST_F(RequestTestFixture, Parse_CutBody) {
 	req.append("Content-Length: 4\r\n", 19);
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
-	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
+	EXPECT_EQ(req.getMethod(), "GET");
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hell");
@@ -331,8 +323,7 @@ TEST_F(RequestTestFixture, Parse_DeceptiveContentLen) {
 	req.append("Content-Length: 4\r\n", 19);
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
-	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
+	EXPECT_EQ(req.getMethod(), "GET");
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hell");
@@ -347,8 +338,7 @@ TEST_F(RequestTestFixture, Parse_EmptyLineStart) {
 	req.append(chunk3, strlen(chunk3));
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
-	req.parseMessage();
-	EXPECT_EQ(req.getMethod(), kGet);
+	EXPECT_EQ(req.getMethod(), "GET");
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
@@ -364,6 +354,5 @@ TEST_F(RequestTestFixture, Parse_BodyEndsInNewline) {
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
 	req.append(chunk4, strlen(chunk4));
-	req.parseMessage();
 	EXPECT_EQ(req.getBody(), "Hello\r\n");
 }

@@ -16,7 +16,7 @@ complete_(false),
 error_(false),
 allow_empty_start_(true),
 at_start_line_(true),
-at_body_(true) {
+at_body_(false) {
 }
 
  /**
@@ -148,7 +148,7 @@ void Request::clearData() {
 
 	allow_empty_start_ = true;
 	at_start_line_ = true;
-	at_body_ = true;
+	at_body_ = false;
 }
 
 void Request::setMaxHeaderSize(size_t max_header_size) {
@@ -332,7 +332,7 @@ void Request::parseBodyContentLen(std::string len) {
 
 	/*Appending raw content to body*/
 	while (body_.size() < len_value && !raw_.empty()) {
-		body_ += raw_.front();
+		body_ += raw_[0];
 		raw_.erase(0, 1);
 	}
 	if (body_.size() != len_value)
@@ -371,17 +371,17 @@ void Request::parseBodyChunked() {
 		/*Append chunk to body*/
 		std::string	chunk_data;
 		while (chunk_data.size() < len_value) {
-			chunk_data += raw_.front();
+			chunk_data += raw_[0];
 			raw_.erase(0, 1);
 		}
 		body_ += chunk_data;
 
 		/*Erase chunk newline*/
-		char	c_end = raw_.front();
+		char	c_end = raw_[0];
 		while (raw_.size() > 0 && (c_end == '\r' || c_end == '\n')) {
 			raw_.erase(0, 1);
 			if (raw_.size() > 0)
-				c_end = raw_.front();
+				c_end = raw_[0];
 		}
 
 		if (len_value == 0) {
