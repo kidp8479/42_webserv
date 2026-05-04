@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include "../utils/HttpConstants.hpp"
 #include <iostream>
 #include <sstream>
 
@@ -10,8 +11,8 @@
  * @brief Default Constructor.
  */
 Request::Request() :
-max_header_size_(kDefaultMaxHeaderSize),
-max_body_size_(kDefaultMaxBodySize),
+max_header_size_(HttpConstants::kDefaultMaxHeaderSize),
+max_body_size_(HttpConstants::kDefaultMaxBodySize),
 complete_(false),
 error_(false),
 allow_empty_start_(true),

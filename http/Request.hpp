@@ -12,9 +12,6 @@
  */
 class Request {
 	public:
-		static const size_t kDefaultMaxHeaderSize = 8192;	// 8KB
-		static const size_t kDefaultMaxBodySize = 1048576;	// 1MB
-
 		/* Orthodox Canonical Form */
 
 		Request();
