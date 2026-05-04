@@ -5,18 +5,11 @@
 #include "config/ConfigParser.hpp"
 #include "logger/Logger.hpp"
 #include "server/Server.hpp"
+#include "server/Signal.hpp"
 
-/* add this when polling is implemented
-volatile sig_atomic_t g_running = 1;
-
-void handleSigInt(int) {
-    g_running = 0;
-}
-*/
 int main(int argc, char** argv) {
-    //	uncomment when polling is implemented
-    //	signal(SIGINT, handleSigInt);
-    //	signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, handleSigInt);
+    signal(SIGPIPE, SIG_IGN);
 
     if (argc > 3) {
         std::cerr << "usage: ./webserv [config file] [log level] (default "
@@ -40,6 +33,7 @@ int main(int argc, char** argv) {
         if (!server.start())
             return (EXIT_FAILURE);
     } catch (const std::exception& e) {
+		LOG_ERROR() << "Fatal error: " << e.what();
         return EXIT_FAILURE;
     }
 
