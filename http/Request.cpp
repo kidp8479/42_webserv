@@ -10,11 +10,13 @@
  * @brief Default Constructor.
  */
 Request::Request() :
-method_(kNone),
 max_header_size_(kDefaultMaxHeaderSize),
 max_body_size_(kDefaultMaxBodySize),
 complete_(false),
-error_(false) {
+error_(false),
+allow_empty_start_(true),
+at_start_line_(true),
+at_body_(true) {
 }
 
  /**
@@ -36,88 +38,125 @@ Request::Request(const Request& other) {
  * @param other Request to copy.
  */
 Request	&Request::operator=(const Request& other) {
-	this->raw_ = other.raw_;
-	this->method_ = other.method_;
-	this->target_ = other.target_;
-	this->protocol_ = other.protocol_;
-	this->headers_ = other.headers_;
-	this->body_ = other.body_;
-	this->max_header_size_ = other.max_header_size_;
-	this->max_body_size_ = other.max_body_size_;
-	this->complete_ = other.complete_;
-	this->error_ = other.error_;
-	this->error_code_ = other.error_code_;
+	raw_ = other.raw_;
+	method_ = other.method_;
+	target_ = other.target_;
+	protocol_ = other.protocol_;
+	headers_ = other.headers_;
+	body_ = other.body_;
+
+	max_header_size_ = other.max_header_size_;
+	max_body_size_ = other.max_body_size_;
+
+	complete_ = other.complete_;
+	error_ = other.error_;
+	error_code_ = other.error_code_;
+
+	allow_empty_start_ = other.allow_empty_start_;
+	at_start_line_ = other.at_start_line_;
+	at_body_ = other.at_body_;
 	return (*this);
 }
 
 
 /********************************* Getters **********************************/
+
  /**
  * @brief Get Request Method.
  */
-HttpMethod Request::getMethod() const {
-	return(this->method_);
+std::string Request::getMethod() const {
+	return(method_);
 }
 
  /**
  * @brief Get Request Target.
  */
 std::string Request::getTarget() const {
-	return(this->target_);
+	return(target_);
 }
 
  /**
  * @brief Get Request Protocol.
  */
 std::string Request::getProtocol() const {
-	return(this->protocol_);
+	return(protocol_);
 }
 
  /**
  * @brief Get Request Body.
  */
 std::string Request::getBody() const {
-	return(this->body_);
+	return(body_);
 }
 
  /**
  * @brief Get Request Headers.
  */
 std::map<std::string, std::string> Request::getHeaders() const {
-	return(this->headers_);
+	return(headers_);
 }
 
+ /**
+ * @brief Check if request is complete.
+ */
+bool Request::isComplete() const {
+	return (complete_);
+}
+
+ /**
+ * @brief Check if Request returned an error.
+ */
+bool Request::isError() const {
+	return(error_);
+}
+
+ /**
+ * @brief Get error code.
+ */
+std::string Request::getErrorCode() const {
+	return(error_code_);
+}
+
+
 /********************************* Setters **********************************/
+
  /**
  * @brief Append string to raw string.
  * @param data String to append to raw string.
  * @param len Number of characters to append.
  */
 void Request::append(const char* data, size_t len) {
-	this->raw_.append(data, len);
+	raw_.append(data, len);
+	parseStartLine();
+	parseHeaders();
+	parseBody();
 }
 
  /**
  * @brief Wipe out all data with the exception of the raw message string
  */
 void Request::clearData() {
-	this->method_ = kNone;
-	this->target_.clear();
-	this->protocol_.clear();
-	this->headers_.clear();
-	this->body_.clear();
+	method_.clear();
+	target_.clear();
+	protocol_.clear();
+	headers_.clear();
+	body_.clear();
 
-	this->complete_ = false;
-	this->error_ = false;
-	this->error_code_.clear();
+	complete_ = false;
+	error_ = false;
+	error_code_.clear();
+
+	allow_empty_start_ = true;
+	at_start_line_ = true;
+	at_body_ = true;
 }
 
 void Request::setMaxHeaderSize(size_t max_header_size) {
-	this->max_header_size_ = max_header_size;
+	max_header_size_ = max_header_size;
 }
 
 void Request::setMaxBodySize(size_t max_body_size) {
-	this->max_body_size_ = max_body_size;
+	max_body_size_ = max_body_size;
 }
 
  /**
@@ -125,11 +164,13 @@ void Request::setMaxBodySize(size_t max_body_size) {
  * @param flag Error message to set error_code_ to.
  */
 void Request::setError(std::string flag) {
-	this->error_ = true;
-	this->error_code_ = flag;
+	error_ = true;
+	error_code_ = flag;
 }
 
+
 /****************************** Parsing Utils *******************************/
+
 static std::string	setToLower(std::string& s) {
 	for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
 		s_it[0] = std::tolower(s_it[0]);
@@ -184,132 +225,99 @@ static bool isOnlyHexDigits(std::string s) {
 }
 
 
-/********************************* Checkers *********************************/
- /**
- * @brief Check if request is complete.
- * @return true if the raw string constitutes a complete message
- */
-bool Request::isComplete() const {
-	if (this->raw_.find("\r\n\r\n") == std::string::npos)
-		return (false);
-
-	std::string			line, content_len;
-	std::istringstream	raw_stream(this->raw_);
-	bool				at_body = false;
-
-	/*Search for Content-Length header in raw until empty line*/
-	while (!at_body && std::getline(raw_stream, line)) {
-		removeCR(line);
-		if (!line.empty())
-		{
-			std::string			header_name;
-			std::istringstream	line_stream(line);
-
-			std::getline(line_stream, header_name, ':');
-			if (header_name == "Content-Length") {
-				std::getline(line_stream, content_len);
-				content_len.erase(0, content_len.find_first_not_of(' '));
-			}
-		}
-		else
-			at_body = true;
-	}
-
-	if (!content_len.empty()) {
-		/*Content Length was found before empty line: get length as a size_t*/
-		size_t				body_size;
-		std::istringstream	len_stream(content_len);
-
-		len_stream >> body_size;
-		if (!len_stream.fail()) {
-			/*Content Length is a valid number: get body as a string*/
-			std::string	temp_body;
-
-			while (std::getline(raw_stream, line)) {
-				if (!temp_body.empty())
-					temp_body += '\n';
-				temp_body += line;
-			}
-
-			/*Compare sizes*/
-			return (body_size <= temp_body.size());
-		}
-	}
-
-	return (true);
-}
-
-
 /********************************* Parsing **********************************/
+
  /**
- * @brief Parse the stored raw string to extract request data.
+ * @brief Parse the start line.
  */
-void Request::parseMessage() {
-	std::string			line;
-	std::istringstream	raw_stream(this->raw_);
-	bool				allow_empty_start = true;
-	bool				at_start_line = true;
-	bool				at_body = false;
+void Request::parseStartLine() {
+	if (error_)
+		return;
 
-	this->clearData();
-	while (!at_body && std::getline(raw_stream, line)) {
+	while (at_start_line_ && raw_.find('\n') != std::string::npos) {
+		std::string	line = raw_.substr(0, raw_.find('\n'));
+		raw_.erase(0, raw_.find('\n') + 1);
 		removeCR(line);
-		std::istringstream	line_stream(line);
-
+		
 		if (line.empty()) {
-			if (at_start_line && allow_empty_start)
-				allow_empty_start = false;
+			/*Allow one empty line before start*/
+			if (allow_empty_start_)
+				allow_empty_start_ = false;
 			else
-				at_body = true;
-		}
-		else if (at_start_line) {
-			/*Parsing request start line*/
-			std::string	str_method;
-			std::string	method_check[3] = {"GET", "POST", "DELETE"};
-			HttpMethod	method_set[3] = {kGet, kPost, kDelete};
-
-			line_stream >> str_method >> this->target_ >> this->protocol_;
-			for (size_t i = 0; i < 3 && this->method_ == kNone; i++) {
-				if (str_method == method_check[i])
-					this->method_ = method_set[i];
-			}
-			at_start_line = false;
+				return (setError("400 Bad Request"));
 		}
 		else {
-			/*Parsing headers*/
-			std::string	name, value;
-			
-			std::getline(line_stream, name, ':');
-			if (findWhitespace(name))
-				return (setError("400 Bad Request"));
-			setToLower(name);
-			std::getline(line_stream, value);
-			trim(value);
-			if (value.size() > this->max_header_size_)
-				return (setError("431 Request Header Fields Too Large"));
-			this->headers_[name] = value;
-		}
-	}
+			/*Parsing request start line*/
+			std::istringstream	line_stream(line);
+			line_stream >> method_ >> target_ >> protocol_;
 
-	if (at_body) {
-		/*Parsing body*/
-		if (this->headers_.count("transfer-encoding") > 0
-			&& this->headers_.at("transfer-encoding") == "chunked") {
-			parseBodyChunked(raw_stream);
+			/*Check for missing or malformed tokens*/
+			if (method_.empty() || target_.empty() || protocol_.empty())
+				return (setError("400 Bad Request"));
+			if (protocol_ != "HTTP/1.1")
+				return (setError("505 HTTP Version Not Supported"));
+
+			at_start_line_ = false;
 		}
-		else if (this->headers_.count("content-length") > 0)
-			parseBodyCL(raw_stream, this->headers_.at("content-length"));
-		else
-			this->complete_ = true;
 	}
+}
+
+/**
+ * @brief Parse the header fields.
+ */
+void Request::parseHeaders() {
+	if (at_start_line_ || error_)
+		return ;
+
+	while (!at_body_ && raw_.find('\n') != std::string::npos) {
+		std::string	line = raw_.substr(0, raw_.find('\n'));
+		raw_.erase(0, raw_.find('\n') + 1);
+		removeCR(line);
+
+		if (line.empty()) {
+			at_body_ = true;
+			return ;
+		}
+
+		std::istringstream	line_stream(line);
+		std::string			name, value;
+
+		std::getline(line_stream, name, ':');
+		if (findWhitespace(name))
+			return (setError("400 Bad Request"));
+		setToLower(name);
+
+		std::getline(line_stream, value);
+		trim(value);
+		if (value.size() > max_header_size_)
+			return (setError("431 Request Header Fields Too Large"));
+		headers_[name] = value;
+	}
+}
+
+/**
+ * @brief Parse the body.
+ */
+void Request::parseBody() {
+	if (at_start_line_ || !at_body_ || error_)
+		return ;
+
+	/*Check if a header indicates a body exists*/
+	if (headers_.count("transfer-encoding") > 0
+		&& headers_.at("transfer-encoding") == "chunked") {
+		parseBodyChunked();
+	}
+	else if (headers_.count("content-length") > 0)
+		parseBodyContentLen(headers_.at("content-length"));
+	else
+		complete_ = true;
 }
 
  /**
  * @brief Parse body using Content-Length.
- * @param raw_stream stream poitning to body start point.
  * @param len value in Content-Length header.
  */
-void Request::parseBodyCL(std::istringstream& raw_ss, std::string len) {
+void Request::parseBodyContentLen(std::string len) {
 	if (!isOnlyDigits(len))
 		return (setError("400 Bad Request"));
 
@@ -319,29 +327,29 @@ void Request::parseBodyCL(std::istringstream& raw_ss, std::string len) {
 	len_stream >> len_value;
 	if (len_stream.fail())
 		return (setError("400 Bad Request"));
-
-	char		c;
-	std::string	content;
-	while (content.size() < len_value && raw_ss.get(c))
-		content += c;
-
-	if (content.size() != len_value)
-		return ;//Reached end of stream - incomplete body
-	if (content.size() > this->max_body_size_)
+	if (len_value > max_body_size_)
 		return (setError("413 Content Too Large"));
-	this->body_ = content;
-	this->complete_ = true;
+
+	/*Appending raw content to body*/
+	while (body_.size() < len_value && !raw_.empty()) {
+		body_ += raw_.front();
+		raw_.erase(0, 1);
+	}
+	if (body_.size() != len_value)
+		return ;//Reached end of stream - incomplete body
+	complete_ = true;
 }
 
  /**
  * @brief Parse body using Transfer-Encoding chunked method.
- * @param raw_stream stream pointing to body start point.
  */
-void Request::parseBodyChunked(std::istringstream& raw_ss) {
+void Request::parseBodyChunked() {
 	std::string	chunk_size, content;
 
-	while (std::getline(raw_ss, chunk_size)) {
+	while (raw_.find('\n') != std::string::npos) {
+		std::string	chunk_size = raw_.substr(0, raw_.find('\n'));
 		removeCR(chunk_size);
+
 		if (!isOnlyHexDigits(chunk_size))
 			return (setError("400 Bad Request"));
 
@@ -352,32 +360,33 @@ void Request::parseBodyChunked(std::istringstream& raw_ss) {
 		len_stream >> std::hex >> len_value;
 		if (len_stream.fail())
 			return (setError("400 Bad Request"));
+		if (body_.size() + len_value > max_body_size_)
+			return (setError("413 Content Too Large"));
+
+		// WIP - NEED TO DETECT IF CHUNK ENDS IN "\r\n", "\n"
+		// OR CONSIDER IT INCOMPLETE IF IT ENDS IN "\r"
+
+		raw_.erase(0, raw_.find('\n') + 1);
 		
-		char		c;
-		std::string	chunk_data, chunk_end;
+		/*Append chunk to body*/
+		std::string	chunk_data;
+		while (chunk_data.size() < len_value) {
+			chunk_data += raw_.front();
+			raw_.erase(0, 1);
+		}
+		body_ += chunk_data;
 
-		while (chunk_data.size() < len_value && raw_ss.get(c))
-			chunk_data += c;
-
-		if (chunk_data.size() != len_value)
-			return ; //Reached end of stream - incomplete body
-
-		/*Check for CR LF termination after chunk*/
-		char	c_end = '\0';
-		while (c_end != '\n') {
-			if (!raw_ss.get(c_end))
-				return ; //Reached end of stream - incomplete body
-			if (c_end != '\r' && c_end != '\n')
-				return (setError("400 Bad Request"));
+		/*Erase chunk newline*/
+		char	c_end = raw_.front();
+		while (raw_.size() > 0 && (c_end == '\r' || c_end == '\n')) {
+			raw_.erase(0, 1);
+			if (raw_.size() > 0)
+				c_end = raw_.front();
 		}
 
-		content += chunk_data;
 		if (len_value == 0) {
 			/*Reached null chunk - body parsing finished*/
-			if (content.size() > this->max_body_size_)
-				return (setError("413 Content Too Large"));
-			this->body_ = content;
-			this->complete_ = true;
+			complete_ = true;
 			return ;
 		}
 	}
