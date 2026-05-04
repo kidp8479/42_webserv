@@ -1,7 +1,9 @@
 #include "ServerConfig.hpp"
 
+#include "HttpConstants.hpp"
+
 ServerConfig::ServerConfig()
-    : port_(kPortNotSet), max_body_size_(kDefaultMaxBodySize) {
+    : port_(kPortNotSet), max_body_size_(HttpConstants::kDefaultMaxBodySize) {
 }
 
 ServerConfig::ServerConfig(const ServerConfig& copy)

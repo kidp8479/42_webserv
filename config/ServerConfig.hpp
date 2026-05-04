@@ -16,7 +16,6 @@
 class ServerConfig {
 public:
     static const int kPortNotSet = -1;
-    static const size_t kDefaultMaxBodySize = 1048576;
 
     ServerConfig();
     ServerConfig(const ServerConfig& copy);
