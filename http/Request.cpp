@@ -231,7 +231,7 @@ static bool isOnlyHexDigits(std::string s) {
  * @brief Parse the start line.
  */
 void Request::parseStartLine() {
-	if (error_)
+	if (complete_ || error_)
 		return;
 
 	while (at_start_line_ && raw_.find('\n') != std::string::npos) {
@@ -266,7 +266,7 @@ void Request::parseStartLine() {
  * @brief Parse the header fields.
  */
 void Request::parseHeaders() {
-	if (at_start_line_ || error_)
+	if (at_start_line_ || complete_ || error_)
 		return ;
 
 	while (!at_body_ && raw_.find('\n') != std::string::npos) {
@@ -279,16 +279,18 @@ void Request::parseHeaders() {
 			return ;
 		}
 
-		std::istringstream	line_stream(line);
-		std::string			name, value;
-
-		std::getline(line_stream, name, ':');
+		if (line.find(':') == std::string::npos)
+			return (setError("400 Bad Request"));
+		std::string	name = line.substr(0, line.find(':'));
 		if (findWhitespace(name))
 			return (setError("400 Bad Request"));
 		setToLower(name);
 
-		std::getline(line_stream, value);
+		std::string	value = line.substr(line.find(':') + 1);
 		trim(value);
+		/*If header already exists, append value in comma-separated list*/
+		if (headers_.count(name) > 0 && !headers_.at(name).empty())
+			value = headers_.at(name) + ", " + value;
 		if (value.size() > max_header_size_)
 			return (setError("431 Request Header Fields Too Large"));
 		headers_[name] = value;
@@ -299,7 +301,7 @@ void Request::parseHeaders() {
  * @brief Parse the body.
  */
 void Request::parseBody() {
-	if (at_start_line_ || !at_body_ || error_)
+	if (at_start_line_ || !at_body_ || complete_ || error_)
 		return ;
 
 	/*Check if a header indicates a body exists*/
@@ -346,15 +348,15 @@ void Request::parseBodyContentLen(std::string len) {
 void Request::parseBodyChunked() {
 	std::string	chunk_size, content;
 
-	while (raw_.find('\n') != std::string::npos) {
-		std::string	chunk_size = raw_.substr(0, raw_.find('\n'));
-		removeCR(chunk_size);
+	while (raw_.find("\r\n") != std::string::npos) {
+		std::string	size_line = raw_.substr(0, raw_.find("\r\n"));
+		removeCR(size_line);
 
-		if (!isOnlyHexDigits(chunk_size))
+		if (!isOnlyHexDigits(size_line))
 			return (setError("400 Bad Request"));
 
 		size_t				len_value;
-		std::istringstream	len_stream(chunk_size);
+		std::istringstream	len_stream(size_line);
 
 		/*Convert hexadecimal chunk size to size_t*/
 		len_stream >> std::hex >> len_value;
@@ -363,10 +365,16 @@ void Request::parseBodyChunked() {
 		if (body_.size() + len_value > max_body_size_)
 			return (setError("413 Content Too Large"));
 
-		// WIP - NEED TO DETECT IF CHUNK ENDS IN "\r\n", "\n"
-		// OR CONSIDER IT INCOMPLETE IF IT ENDS IN "\r"
-
-		raw_.erase(0, raw_.find('\n') + 1);
+		/*Check if chunk properly ends in CRLF*/
+		size_t	chunk_end = raw_.find("\r\n") + len_value + 2;
+		if (raw_.size() <= chunk_end)
+			return ; //chunk too small - incomplete
+		if (raw_.size() - chunk_end == 1 && raw_[chunk_end] == '\r')
+			return ; //raw ends in "\r" - incomplete
+		if (raw_.compare(chunk_end, 2, "\r\n") != 0)
+			return (setError("400 Bad Request"));
+		
+		raw_.erase(0, raw_.find("\r\n") + 2);
 		
 		/*Append chunk to body*/
 		std::string	chunk_data;
@@ -376,13 +384,8 @@ void Request::parseBodyChunked() {
 		}
 		body_ += chunk_data;
 
-		/*Erase chunk newline*/
-		char	c_end = raw_[0];
-		while (raw_.size() > 0 && (c_end == '\r' || c_end == '\n')) {
-			raw_.erase(0, 1);
-			if (raw_.size() > 0)
-				c_end = raw_[0];
-		}
+		/*Erase chunk CRF*/
+		raw_.erase(0, 2);
 
 		if (len_value == 0) {
 			/*Reached null chunk - body parsing finished*/
