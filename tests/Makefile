@@ -19,6 +19,7 @@ VPATH := $(sort $(dir $(TEST_SRCS)))
 
 # shared sources (no test files here)
 SRCS = 	\
+		../config/ConfigValidator.cpp \
 		../config/ConfigTokenizer.cpp \
 		../config/ConfigBuilder.cpp \
 		../logger/Logger.cpp \

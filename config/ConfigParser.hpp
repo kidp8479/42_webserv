@@ -6,6 +6,7 @@
 #include "Config.hpp"
 #include "ConfigBuilder.hpp"
 #include "ConfigTokenizer.hpp"
+#include "ConfigValidator.hpp"
 
 /**
  * @brief Orchestrates the three config parsing phases.
