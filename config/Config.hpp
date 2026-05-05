@@ -6,10 +6,16 @@
 #include "ServerConfig.hpp"
 
 /**
- * @brief Top-level config container, holds all parsed server blocks.
+ * @brief Top-level output of the config parsing pipeline.
  *
- * Built incrementally by ConfigBuilder via addServerBlock().
- * Pure data container, no validation logic.
+ * Holds all ServerConfig objects produced by ConfigBuilder and validated by
+ * ConfigValidator. Returned by value from ConfigParser::parse(), then passed
+ * by const reference to Server for its entire lifetime.
+ *
+ * Copy constructor and assignment operator are public because ConfigParser
+ * returns Config by value.
+ *
+ * @note Pure data container, no validation logic.
  */
 class Config {
 public:
@@ -18,10 +24,7 @@ public:
     Config& operator=(const Config& other);
     ~Config();
 
-    // getter
     const std::vector<ServerConfig>& getServerBlock() const;
-    // add (not exactly a setter, does not work on the whole vector, works on 1
-    // unit server { ... } one block at a time)
     void addServerBlock(const ServerConfig& server_block);
 
 private:

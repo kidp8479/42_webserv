@@ -11,7 +11,7 @@ ConfigParser::~ConfigParser() {
  *
  * @param file_path Path to the .conf file (absolute or relative)
  * @return Fully populated and validated Config object
- * @throws std::runtime_error If the file is invalid or contains errors
+ * @throws std::runtime_error if the file is invalid or contains errors
  */
 Config ConfigParser::parse(const std::string& file_path) {
     Config config;
@@ -26,8 +26,10 @@ Config ConfigParser::parse(const std::string& file_path) {
     ConfigBuilder builder;
     config = builder.build(tokenizer.getTokenList());
 
-    LOG_DEBUG() << BR_YEL "ConfigParser: parsing phase 3 to be coded" RESET;
-    // ConfigValidator validator(config); => phase 3
+    LOG_DEBUG() << BR_YEL
+        "ConfigParser: parsing phase 3 - validating Config object" RESET;
+    ConfigValidator validator;
+    validator.validate(config);
     LOG_INFO() << BR_CYN "Config: " << file_path << " fully parsed" << RESET;
 
     return config;
