@@ -116,7 +116,7 @@ void Client::write() {
 
 	if (n <= 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			LOG_DEBUG() << "[Client] read EAGAIN / EWOULDBLOCK";
+			LOG_DEBUG() << "[Client] write EAGAIN / EWOULDBLOCK";
 			return ;
 		}
 		LOG_ERROR() << "[Client] send error fd=" << fd_.getFd()
