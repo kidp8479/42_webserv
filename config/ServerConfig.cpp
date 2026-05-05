@@ -1,7 +1,9 @@
 #include "ServerConfig.hpp"
 
+#include "../utils/HttpConstants.hpp"
+
 ServerConfig::ServerConfig()
-    : port_(kPortNotSet), max_body_size_(kDefaultMaxBodySize) {
+    : port_(kPortNotSet), max_body_size_(HttpConstants::kDefaultMaxBodySize) {
 }
 
 ServerConfig::ServerConfig(const ServerConfig& copy)
@@ -26,44 +28,42 @@ ServerConfig& ServerConfig::operator=(const ServerConfig& other) {
 ServerConfig::~ServerConfig() {
 }
 
-// getters
 const std::string& ServerConfig::getHost() const {
-    return this->host_;
+    return host_;
 }
 
 int ServerConfig::getPort() const {
-    return this->port_;
+    return port_;
 }
 
 size_t ServerConfig::getMaxBodySize() const {
-    return this->max_body_size_;
+    return max_body_size_;
 }
 
 const std::map<int, std::string>& ServerConfig::getErrorPages() const {
-    return this->error_pages_;
+    return error_pages_;
 }
 
 const std::vector<LocationConfig>& ServerConfig::getLocationBlock() const {
-    return this->location_block_;
+    return location_block_;
 }
 
-// setters
 void ServerConfig::setHost(const std::string& host) {
-    this->host_ = host;
+    host_ = host;
 }
 
 void ServerConfig::setPort(int port) {
-    this->port_ = port;
+    port_ = port;
 }
 
 void ServerConfig::setMaxBodySize(size_t max_body_size) {
-    this->max_body_size_ = max_body_size;
+    max_body_size_ = max_body_size;
 }
 
 void ServerConfig::addErrorPage(int code, const std::string& path) {
-    this->error_pages_[code] = path;
+    error_pages_[code] = path;
 }
 
 void ServerConfig::addLocationBlock(const LocationConfig& location_block) {
-    this->location_block_.push_back(location_block);
+    location_block_.push_back(location_block);
 }

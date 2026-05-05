@@ -101,7 +101,7 @@ void ConfigBuilder::expectOpenBrace() {
     if (open_brace.value != "{") {
         configError(open_brace, "expected \"{\"");
     }
-    index_++;  // advance past "{"
+    index_++;
 }
 
 /**
@@ -121,9 +121,6 @@ int ConfigBuilder::toInt(const std::string& s) const {
     if (!(iss >> result)) {
         configError("invalid integer value: \"" + s + "\"");
     }
-    // we check if there is still something to extract after the int part, if
-    // there is, condition will return true, the string to parse was not only
-    // digits
     if (iss >> leftover) {
         configError("malformed directive value");
     }
@@ -166,7 +163,7 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     index_ = 0;
     tokens_list_ = &raw_tokens;
 
-    LOG_DEBUG() << BR_CYN "ConfigBuilder: starting build, "
+    LOG_DEBUG() << BR_YEL "ConfigBuilder: starting build, "
                 << tokens_list_->size() << " tokens" << RESET;
 
     while (index_ < tokens_list_->size()) {
@@ -175,6 +172,9 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
             configError(current_token, "expected \"server\"");
         }
         config.addServerBlock(parseServerBlock());
+    }
+    if (config.getServerBlock().empty()) {
+        configError("config file contains no server block");
     }
     size_t total_locations = 0;
     for (size_t i = 0; i < config.getServerBlock().size(); i++) {
@@ -195,18 +195,18 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
  */
 ServerConfig ConfigBuilder::parseServerBlock() {
     ServerConfig server_block;
+    bool max_body_size_seen = false;
 
-    index_++;  // advance past "server"
-    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing server block" << RESET;
+    index_++;
+    LOG_DEBUG() << BR_YEL "ConfigBuilder: parsing server block" << RESET;
     expectOpenBrace();
 
-    // loop through directives until "}" or end of file
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
         const Token& current_token = currentToken();
         if (current_token.value == "listen") {
             parseListen(server_block);
         } else if (current_token.value == "client_max_body_size") {
-            parseClientBodySize(server_block);
+            parseClientBodySize(server_block, max_body_size_seen);
         } else if (current_token.value == "error_page") {
             parseErrorPage(server_block);
         } else if (current_token.value == "location") {
@@ -218,7 +218,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     if (index_ >= tokens_list_->size()) {
         configError("unclosed server block, expected \"}\"");
     }
-    index_++;  // advance past "}"
+    index_++;
     return server_block;
 }
 
@@ -230,10 +230,14 @@ ServerConfig ConfigBuilder::parseServerBlock() {
  * @note Parses: listen 127.0.0.1:8080;
  */
 void ConfigBuilder::parseListen(ServerConfig& server_block) {
-    index_++;  // advance past "listen"
+    index_++;
     checkBounds("after \"listen\"");
 
     const Token& current_token = currentToken();
+    if (server_block.getPort() != ServerConfig::kPortNotSet) {
+        configError(current_token, "duplicate \"listen\" directive");
+    }
+
     size_t delimiter_pos = current_token.value.find(":");
     if (delimiter_pos == std::string::npos) {
         configError(current_token, "expected \"host:port\"");
@@ -244,7 +248,7 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
     LOG_DEBUG() << "ConfigBuilder: listen -> " << GRN << server_block.getHost()
                 << ":" << server_block.getPort() << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -253,19 +257,27 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
  * bytes.
  *
  * @param server_block The ServerConfig to fill
+ * @param seen Flag tracking whether this directive has already been parsed in
+ * this server block. Passed by reference from parseServerBlock.
  * @throws std::runtime_error if the value is missing or not a valid number
  * @note Accepts an optional unit suffix: K/k (kilobytes), M/m (megabytes), G/g
  * (gigabytes). No suffix is treated as raw bytes, consistent with nginx
  * behavior.
  * @note Parses: client_max_body_size 10M;
  */
-void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
-    index_++;  // advance past "client_max_body_size"
+void ConfigBuilder::parseClientBodySize(ServerConfig& server_block,
+                                        bool& seen) {
+    index_++;
     checkBounds("after \"client_max_body_size\"");
+
+    if (seen) {
+        configError(currentToken(),
+                    "duplicate \"client_max_body_size\" directive");
+    }
+    seen = true;
 
     const std::string& raw = currentToken().value;
 
-    // validate format: digits only, or digits followed by exactly one K/M/G
     size_t i = 0;
     while (i < raw.size() && std::isdigit(raw[i])) {
         i++;
@@ -284,12 +296,21 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     size_t numeric = toSizeT(raw.substr(0, i));
     size_t byte_size;
     if (i == raw.size()) {
-        byte_size = numeric;  // no unit - treat as bytes, like nginx
+        byte_size = numeric;
     } else if (raw[i] == 'K' || raw[i] == 'k') {
+        if (numeric > std::numeric_limits<size_t>::max() / BYTES_PER_KB) {
+            configError("client_max_body_size value overflows");
+        }
         byte_size = numeric * BYTES_PER_KB;
     } else if (raw[i] == 'M' || raw[i] == 'm') {
+        if (numeric > std::numeric_limits<size_t>::max() / BYTES_PER_MB) {
+            configError("client_max_body_size value overflows");
+        }
         byte_size = numeric * BYTES_PER_MB;
     } else {
+        if (numeric > std::numeric_limits<size_t>::max() / BYTES_PER_GB) {
+            configError("client_max_body_size value overflows");
+        }
         byte_size = numeric * BYTES_PER_GB;
     }
 
@@ -297,7 +318,7 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
     LOG_DEBUG() << "ConfigBuilder: client_max_body_size -> " << GRN << byte_size
                 << " bytes" << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -309,12 +330,17 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block) {
  * @note Parses: error_page 404 /errors/404.html;
  */
 void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
-    index_++;  // advance past "error_page"
+    index_++;
     checkBounds("after \"error_page\"");
 
-    int code = toInt(currentToken().value);
+    const Token& code_token = currentToken();
+    int code = toInt(code_token.value);
+    if (server_block.getErrorPages().find(code) !=
+        server_block.getErrorPages().end()) {
+        configError(code_token, "duplicate error_page code");
+    }
 
-    index_++;  // advance to path
+    index_++;
     checkBounds("after error_page code");
 
     const std::string& path = currentToken().value;
@@ -322,7 +348,7 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
     LOG_DEBUG() << "ConfigBuilder: error_page -> " << GRN << code << " " << path
                 << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -336,14 +362,15 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
  */
 LocationConfig ConfigBuilder::parseLocationBlock() {
     LocationConfig location_block;
+    bool autoindex_seen = false;
 
-    index_++;  // advance past "location"
+    index_++;
     checkBounds("after \"location\", expected path");
 
     location_block.setPath(currentToken().value);
-    LOG_DEBUG() << BR_CYN "ConfigBuilder: parsing location block \""
+    LOG_DEBUG() << BR_YEL "ConfigBuilder: parsing location block \""
                 << location_block.getPath() << "\"" << RESET;
-    index_++;  // advance to "{"
+    index_++;
     expectOpenBrace();
 
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
@@ -356,7 +383,7 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
         } else if (current_token.value == "index") {
             parseIndex(location_block);
         } else if (current_token.value == "autoindex") {
-            parseAutoIndex(location_block);
+            parseAutoIndex(location_block, autoindex_seen);
         } else if (current_token.value == "upload_path") {
             parseUploadPath(location_block);
         } else if (current_token.value == "cgi") {
@@ -370,7 +397,7 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
     if (index_ >= tokens_list_->size()) {
         configError("unclosed location block, expected \"}\"");
     }
-    index_++;  // advance past "}"
+    index_++;
     return location_block;
 }
 
@@ -386,11 +413,18 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"methods\", expected GET and/or POST and/or DELETE");
 
+    if (!location_block.getMethods().empty()) {
+        configError(currentToken(), "duplicate \"methods\" directive");
+    }
     std::vector<std::string> collect_methods;
     while (index_ < tokens_list_->size() && currentToken().value != ";") {
         const Token& current_token = currentToken();
         if (current_token.value == "GET" || current_token.value == "POST" ||
             current_token.value == "DELETE") {
+            if (std::find(collect_methods.begin(), collect_methods.end(),
+                          current_token.value) != collect_methods.end()) {
+                configError(current_token, "duplicate method");
+            }
             collect_methods.push_back(current_token.value);
         } else {
             configError(current_token,
@@ -427,11 +461,14 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"root\", expected path");
 
+    if (!location_block.getRoot().empty()) {
+        configError(currentToken(), "duplicate \"root\" directive");
+    }
     location_block.setRoot(currentToken().value);
     LOG_DEBUG() << "ConfigBuilder: root -> " << GRN << location_block.getRoot()
                 << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -446,11 +483,14 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"index\", expected path");
 
+    if (!location_block.getIndex().empty()) {
+        configError(currentToken(), "duplicate \"index\" directive");
+    }
     location_block.setIndex(currentToken().value);
     LOG_DEBUG() << "ConfigBuilder: index -> " << GRN
                 << location_block.getIndex() << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -459,12 +499,19 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
  * listing.
  *
  * @param location_block The LocationConfig to fill
+ * @param seen Flag tracking whether this directive has already been parsed in
+ * this location block. Passed by reference from parseLocationBlock.
  * @throws std::runtime_error if the value is not "on" or "off"
  * @note Parses: autoindex on;
  */
-void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
+void ConfigBuilder::parseAutoIndex(LocationConfig& location_block, bool& seen) {
     index_++;
     checkBounds("after \"autoindex\", expected on or off");
+
+    if (seen) {
+        configError(currentToken(), "duplicate \"autoindex\" directive");
+    }
+    seen = true;
     bool directory_listing = false;
 
     if (currentToken().value == "on") {
@@ -477,7 +524,7 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: autoindex -> " << GRN
                 << (directory_listing ? "on" : "off") << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -492,11 +539,14 @@ void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"upload_path\", expected path");
 
+    if (!location_block.getUploadPath().empty()) {
+        configError(currentToken(), "duplicate \"upload_path\" directive");
+    }
     location_block.setUploadPath(currentToken().value);
     LOG_DEBUG() << "ConfigBuilder: upload_path -> " << GRN
                 << location_block.getUploadPath() << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -513,7 +563,16 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"cgi\", expected extension + path to binary");
 
-    std::string cgi_extension = currentToken().value;
+    const Token& ext_token = currentToken();
+    std::string cgi_extension = ext_token.value;
+    if (cgi_extension.size() < 2 || cgi_extension[0] != '.') {
+        configError(ext_token,
+                    "cgi extension must start with '.' (ex: \".php\")");
+    }
+    if (location_block.getCgiInterpreters().find(cgi_extension) !=
+        location_block.getCgiInterpreters().end()) {
+        configError(ext_token, "duplicate cgi extension");
+    }
     index_++;
     checkBounds("after cgi extension (ex:\".php\") expected binary path");
     std::string cgi_binary_path = currentToken().value;
@@ -522,7 +581,7 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     LOG_DEBUG() << "ConfigBuilder: cgi -> " << GRN << cgi_extension << " => "
                 << cgi_binary_path << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }
 
@@ -532,23 +591,30 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
  * @param location_block The LocationConfig to fill
  * @throws std::runtime_error if the code or URL is missing
  * @note Parses: return 301 /;
- * @note return_code_ defaults to NO_REDIRECT (-1) if this directive is absent.
+ * @note return_code_ defaults to kNoRedirect (-1) if this directive is absent.
  * Presence is checked by ConfigValidator.
  */
 void ConfigBuilder::parseReturn(LocationConfig& location_block) {
     index_++;
     checkBounds("after \"return\", expected code + path");
 
+    if (location_block.getReturnCode() != LocationConfig::kNoRedirect) {
+        configError(currentToken(), "duplicate \"return\" directive");
+    }
     int return_code = toInt(currentToken().value);
     index_++;
     checkBounds("after \"return code\", expected path");
-    std::string return_path = currentToken().value;
+    const Token& url_token = currentToken();
+    if (url_token.value == ";") {
+        configError(url_token, "expected URL after return code, got \";\"");
+    }
+    const std::string& return_path = url_token.value;
 
     location_block.setReturnCode(return_code);
     location_block.setReturnUrl(return_path);
     LOG_DEBUG() << "ConfigBuilder: return -> " << GRN << return_code << " "
                 << return_path << RESET;
 
-    index_++;  // advance to ";"
+    index_++;
     expectSemicolon();
 }

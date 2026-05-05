@@ -23,10 +23,9 @@ ConfigTokenizer::~ConfigTokenizer() {
 
 /**
  * @brief Returns the list of tokens produced by tokenization.
- * @note ConfigBuilder (config file parsing phase 2) will need it
  */
 const std::vector<Token>& ConfigTokenizer::getTokenList() const {
-    return this->tokens_list_;
+    return tokens_list_;
 }
 
 /**
@@ -34,7 +33,7 @@ const std::vector<Token>& ConfigTokenizer::getTokenList() const {
  * prefix.
  *
  * @param msg The error message (without the "Config: " prefix)
- * @throws std::runtime_error Always
+ * @throws std::runtime_error always
  */
 void ConfigTokenizer::configError(const std::string& msg) const {
     std::string full = "Config: " + msg;
@@ -73,8 +72,9 @@ void ConfigTokenizer::checkPathExists() {
     struct stat file_info;
 
     if (stat(file_path_.c_str(), &file_info) == 0) {
-        if (S_ISDIR(file_info.st_mode))
+        if (S_ISDIR(file_info.st_mode)) {
             configError(file_path_ + " is a directory");
+        }
     } else {
         configError("path error: " + file_path_ + ": " + std::strerror(errno));
     }
@@ -89,8 +89,9 @@ void ConfigTokenizer::checkPathExists() {
 void ConfigTokenizer::checkReadable() {
     std::ifstream config_file(file_path_.c_str());
 
-    if (!config_file.is_open())
+    if (!config_file.is_open()) {
         configError("cannot read: " + file_path_ + ": " + std::strerror(errno));
+    }
     LOG_DEBUG() << "Config: " << file_path_ << " opened successfully";
 }
 
@@ -108,16 +109,19 @@ void ConfigTokenizer::checkExtension() {
                                ? file_path_.substr(slash_pos + 1)
                                : file_path_;
 
-    if (std::count(filename.begin(), filename.end(), '.') != 1)
+    if (std::count(filename.begin(), filename.end(), '.') != 1) {
         configError("filename must have exactly one dot");
+    }
 
     std::string::size_type dot_position = filename.rfind('.');
 
-    if (dot_position == 0 || dot_position >= filename.length() - 1)
+    if (dot_position == 0 || dot_position >= filename.length() - 1) {
         configError("no valid extension found");
+    }
     std::string extension = filename.substr(dot_position + 1);
-    if (extension != "conf")
+    if (extension != "conf") {
         configError("wrong file extension");
+    }
     LOG_DEBUG() << "Config: correct file extension";
 }
 
@@ -129,8 +133,9 @@ void ConfigTokenizer::checkExtension() {
 void ConfigTokenizer::checkNotEmpty() {
     std::ifstream config_file(file_path_.c_str());
 
-    if (config_file.peek() == std::ifstream::traits_type::eof())
+    if (config_file.peek() == std::ifstream::traits_type::eof()) {
         configError(file_path_ + " is empty");
+    }
     LOG_DEBUG() << "Config: file is not empty";
 }
 
@@ -172,7 +177,8 @@ void ConfigTokenizer::tokenize() {
 
     // for (size_t i = 0; i < tokens_list_.size(); i++) {
     //     LOG_DEBUG() << "line [" << tokens_list_[i].line << "] - token[" << i
-    //                 << "] = '" << tokens_list_[i].value << "' ";
+    //                 << "] = '" << GRN << tokens_list_[i].value << RESET <<
+    //                 "'";
     // }
     LOG_INFO() << BR_CYN "ConfigTokenizer: tokenization done - "
                << tokens_list_.size() << " tokens extracted" << RESET;

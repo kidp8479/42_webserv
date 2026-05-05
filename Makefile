@@ -16,6 +16,7 @@ SRCS = main.cpp \
 	   config/ConfigBuilder.cpp \
 	   config/ConfigParser.cpp \
 	   config/ConfigTokenizer.cpp \
+	   config/ConfigValidator.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
 	   http/Request.cpp \
