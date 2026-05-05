@@ -21,12 +21,12 @@ SRCS = main.cpp \
 	   http/Request.cpp \
 	   http/Response.cpp \
 	   logger/Logger.cpp \
-	   server/Client.cpp \
-	   server/EventLoop.cpp \
-	   server/Fd.cpp \
-	   server/Listener.cpp \
-	   server/Server.cpp \
-	   server/Signal.cpp \
+	   core/Client.cpp \
+	   core/EventLoop.cpp \
+	   core/Fd.cpp \
+	   core/Listener.cpp \
+	   core/Server.cpp \
+	   core/Signal.cpp \
 	   utils/LogUtils.cpp \
 
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)

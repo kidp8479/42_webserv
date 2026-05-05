@@ -4,8 +4,8 @@
 #include "config/Config.hpp"
 #include "config/ConfigParser.hpp"
 #include "logger/Logger.hpp"
-#include "server/Server.hpp"
-#include "server/Signal.hpp"
+#include "core/Server.hpp"
+#include "core/Signal.hpp"
 
 int main(int argc, char** argv) {
     signal(SIGINT, handleSigInt);
