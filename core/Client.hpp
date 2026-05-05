@@ -38,6 +38,7 @@ private:
 
 	Request request_;
     Response response_;
+	bool keep_alive_;
 };
 
 #endif

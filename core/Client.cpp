@@ -19,7 +19,8 @@ Client::Client(int fd, EventLoop& loop) :
 	fd_(fd),
 	loop_(loop),
 	bytes_sent_(0),
-	state_(kReading)
+	state_(kReading),
+	keep_alive_(true) 
 {}
 
 /**
