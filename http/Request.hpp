@@ -21,15 +21,19 @@ class Request {
 
 		/* Getters */
 
-		std::string							getMethod() const;
-		std::string							getTarget() const;
-		std::string							getProtocol() const;
-		std::string							getBody() const;
-		std::map<std::string, std::string>	getHeaders() const;
+		std::string	getMethod() const;
+		std::string	getTarget() const;
+		std::string	getProtocol() const;
+		std::string	getBody() const;
+		std::string	getHeaderValue(const std::string key) const;
 
-		bool								isComplete() const;
-		bool								isError() const;
-		std::string							getErrorCode() const;
+		const std::map<std::string, std::string>&	getHeaders() const;
+
+		bool		isComplete() const;
+		bool		isError() const;
+		int			getErrorCode() const;
+		std::string	getErrorMessage() const;
+		bool		shouldKeepAlive() const;
 
 		/* Setters */
 
@@ -51,7 +55,9 @@ class Request {
 
 		bool								complete_;
 		bool								error_;
-		std::string							error_code_;
+		int									error_code_;
+		std::string							error_message_;
+		bool								keep_alive_;
 
 		bool								allow_empty_start_;
 		bool								at_start_line_;
@@ -63,7 +69,7 @@ class Request {
 		void	parseBody();
 		void	parseBodyContentLen(std::string len);
 		void	parseBodyChunked();
-		void	setError(std::string flag);
+		void	setError(int code, std::string message);
 };
 
 #endif

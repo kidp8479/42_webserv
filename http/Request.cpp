@@ -1,5 +1,7 @@
 #include "Request.hpp"
 #include "../utils/HttpConstants.hpp"
+#include "../logger/Logger.hpp"
+
 #include <iostream>
 #include <sstream>
 
@@ -15,6 +17,8 @@ max_header_size_(HttpConstants::kDefaultMaxHeaderSize),
 max_body_size_(HttpConstants::kDefaultMaxBodySize),
 complete_(false),
 error_(false),
+error_code_(0),
+keep_alive_(false),
 allow_empty_start_(true),
 at_start_line_(true),
 at_body_(false) {
@@ -52,121 +56,13 @@ Request	&Request::operator=(const Request& other) {
 	complete_ = other.complete_;
 	error_ = other.error_;
 	error_code_ = other.error_code_;
+	error_message_ = other.error_message_;
+	keep_alive_ = other.keep_alive_;
 
 	allow_empty_start_ = other.allow_empty_start_;
 	at_start_line_ = other.at_start_line_;
 	at_body_ = other.at_body_;
 	return (*this);
-}
-
-
-/********************************* Getters **********************************/
-
- /**
- * @brief Get Request Method.
- */
-std::string Request::getMethod() const {
-	return(method_);
-}
-
- /**
- * @brief Get Request Target.
- */
-std::string Request::getTarget() const {
-	return(target_);
-}
-
- /**
- * @brief Get Request Protocol.
- */
-std::string Request::getProtocol() const {
-	return(protocol_);
-}
-
- /**
- * @brief Get Request Body.
- */
-std::string Request::getBody() const {
-	return(body_);
-}
-
- /**
- * @brief Get Request Headers.
- */
-std::map<std::string, std::string> Request::getHeaders() const {
-	return(headers_);
-}
-
- /**
- * @brief Check if request is complete.
- */
-bool Request::isComplete() const {
-	return (complete_);
-}
-
- /**
- * @brief Check if Request returned an error.
- */
-bool Request::isError() const {
-	return(error_);
-}
-
- /**
- * @brief Get error code.
- */
-std::string Request::getErrorCode() const {
-	return(error_code_);
-}
-
-
-/********************************* Setters **********************************/
-
- /**
- * @brief Append string to raw string.
- * @param data String to append to raw string.
- * @param len Number of characters to append.
- */
-void Request::append(const char* data, size_t len) {
-	raw_.append(data, len);
-	parseStartLine();
-	parseHeaders();
-	parseBody();
-}
-
- /**
- * @brief Wipe out all data with the exception of the raw message string
- */
-void Request::clearData() {
-	method_.clear();
-	target_.clear();
-	protocol_.clear();
-	headers_.clear();
-	body_.clear();
-
-	complete_ = false;
-	error_ = false;
-	error_code_.clear();
-
-	allow_empty_start_ = true;
-	at_start_line_ = true;
-	at_body_ = false;
-}
-
-void Request::setMaxHeaderSize(size_t max_header_size) {
-	max_header_size_ = max_header_size;
-}
-
-void Request::setMaxBodySize(size_t max_body_size) {
-	max_body_size_ = max_body_size;
-}
-
- /**
- * @brief Sets error to true along with error message.
- * @param flag Error message to set error_code_ to.
- */
-void Request::setError(std::string flag) {
-	error_ = true;
-	error_code_ = flag;
 }
 
 
@@ -226,6 +122,144 @@ static bool isOnlyHexDigits(std::string s) {
 }
 
 
+/********************************* Getters **********************************/
+
+ /**
+ * @brief Get Request Method.
+ */
+std::string Request::getMethod() const {
+	return(method_);
+}
+
+ /**
+ * @brief Get Request Target.
+ */
+std::string Request::getTarget() const {
+	return(target_);
+}
+
+ /**
+ * @brief Get Request Protocol.
+ */
+std::string Request::getProtocol() const {
+	return(protocol_);
+}
+
+ /**
+ * @brief Get Request Body.
+ */
+std::string Request::getBody() const {
+	return(body_);
+}
+
+ /**
+ * @brief Get Header Value corresponding to key.
+ * @param key Header name to look for (case-insensitive).
+ */
+std::string Request::getHeaderValue(const std::string key) const {
+	std::string	key_lower(key);
+	return(headers_.at(setToLower(key_lower)));
+}
+
+ /**
+ * @brief Get constant reference to Request Headers.
+ */
+const std::map<std::string, std::string>& Request::getHeaders() const {
+	return(headers_);
+}
+
+ /**
+ * @brief Check if request is complete.
+ */
+bool Request::isComplete() const {
+	return (complete_);
+}
+
+ /**
+ * @brief Check if Request returned an error.
+ */
+bool Request::isError() const {
+	return(error_);
+}
+
+ /**
+ * @brief Get error code.
+ */
+int Request::getErrorCode() const {
+	return(error_code_);
+}
+
+ /**
+ * @brief Get error message.
+ */
+std::string Request::getErrorMessage() const {
+	return(error_message_);
+}
+
+ /**
+ * @brief Check if a connection should be kept alive after request.
+ */
+bool Request::shouldKeepAlive() const {
+	return(keep_alive_);
+}
+
+
+/********************************* Setters **********************************/
+
+ /**
+ * @brief Append string to raw string.
+ * @param data String to append to raw string.
+ * @param len Number of characters to append.
+ */
+void Request::append(const char* data, size_t len) {
+	raw_.append(data, len);
+	parseStartLine();
+	parseHeaders();
+	parseBody();
+}
+
+ /**
+ * @brief Wipe out all data with the exception of the raw message string
+ */
+void Request::clearData() {
+	method_.clear();
+	target_.clear();
+	protocol_.clear();
+	headers_.clear();
+	body_.clear();
+
+	complete_ = false;
+	error_ = false;
+	error_code_ = 0;
+	error_message_.clear();
+	keep_alive_ = false;
+
+	allow_empty_start_ = true;
+	at_start_line_ = true;
+	at_body_ = false;
+}
+
+void Request::setMaxHeaderSize(size_t max_header_size) {
+	max_header_size_ = max_header_size;
+}
+
+void Request::setMaxBodySize(size_t max_body_size) {
+	max_body_size_ = max_body_size;
+}
+
+ /**
+ * @brief Sets error to true along with error message.
+ * @param int Error code to set error_code_ to.
+ * @param message Error message to set error_message_ to.
+ */
+void Request::setError(int code, std::string message) {
+	LOG_DEBUG() << "Request error: " << code << " " << message;
+	error_ = true;
+	error_code_ = code;
+	error_message_ = message;
+}
+
+
 /********************************* Parsing **********************************/
 
  /**
@@ -245,7 +279,7 @@ void Request::parseStartLine() {
 			if (allow_empty_start_)
 				allow_empty_start_ = false;
 			else
-				return (setError("400 Bad Request"));
+				return (setError(400, "Bad Request"));
 		}
 		else {
 			/*Parsing request start line*/
@@ -254,9 +288,9 @@ void Request::parseStartLine() {
 
 			/*Check for missing or malformed tokens*/
 			if (method_.empty() || target_.empty() || protocol_.empty())
-				return (setError("400 Bad Request"));
-			if (protocol_ != "HTTP/1.1")
-				return (setError("505 HTTP Version Not Supported"));
+				return (setError(400, "Bad Request"));
+			if (protocol_ != "HTTP/1.0" && protocol_ != "HTTP/1.1")
+				return (setError(505, "HTTP Version Not Supported"));
 
 			at_start_line_ = false;
 		}
@@ -281,10 +315,10 @@ void Request::parseHeaders() {
 		}
 
 		if (line.find(':') == std::string::npos)
-			return (setError("400 Bad Request"));
+			return (setError(400, "Bad Request"));
 		std::string	name = line.substr(0, line.find(':'));
 		if (findWhitespace(name))
-			return (setError("400 Bad Request"));
+			return (setError(400, "Bad Request"));
 		setToLower(name);
 
 		std::string	value = line.substr(line.find(':') + 1);
@@ -293,7 +327,7 @@ void Request::parseHeaders() {
 		if (headers_.count(name) > 0 && !headers_.at(name).empty())
 			value = headers_.at(name) + ", " + value;
 		if (value.size() > max_header_size_)
-			return (setError("431 Request Header Fields Too Large"));
+			return (setError(431, "Request Header Fields Too Large"));
 		headers_[name] = value;
 	}
 }
@@ -312,8 +346,10 @@ void Request::parseBody() {
 	}
 	else if (headers_.count("content-length") > 0)
 		parseBodyContentLen(headers_.at("content-length"));
-	else
+	else {
 		complete_ = true;
+		LOG_INFO() << "Request: fully parsed without message body";
+	}
 }
 
  /**
@@ -322,16 +358,16 @@ void Request::parseBody() {
  */
 void Request::parseBodyContentLen(std::string len) {
 	if (!isOnlyDigits(len))
-		return (setError("400 Bad Request"));
+		return (setError(400, "Bad Request"));
 
 	size_t				len_value = 0;
 	std::istringstream	len_stream(len);
 
 	len_stream >> len_value;
 	if (len_stream.fail())
-		return (setError("400 Bad Request"));
+		return (setError(400, "Bad Request"));
 	if (len_value > max_body_size_)
-		return (setError("413 Content Too Large"));
+		return (setError(413, "Content Too Large"));
 
 	/*Appending raw content to body*/
 	while (body_.size() < len_value && !raw_.empty()) {
@@ -341,6 +377,8 @@ void Request::parseBodyContentLen(std::string len) {
 	if (body_.size() != len_value)
 		return ;//Reached end of stream - incomplete body
 	complete_ = true;
+	LOG_INFO() << "Request: fully parsed "
+	"using Content-Length for message body";
 }
 
  /**
@@ -354,7 +392,7 @@ void Request::parseBodyChunked() {
 		removeCR(size_line);
 
 		if (!isOnlyHexDigits(size_line))
-			return (setError("400 Bad Request"));
+			return (setError(400, "Bad Request"));
 
 		size_t				len_value;
 		std::istringstream	len_stream(size_line);
@@ -362,9 +400,9 @@ void Request::parseBodyChunked() {
 		/*Convert hexadecimal chunk size to size_t*/
 		len_stream >> std::hex >> len_value;
 		if (len_stream.fail())
-			return (setError("400 Bad Request"));
+			return (setError(400, "Bad Request"));
 		if (body_.size() + len_value > max_body_size_)
-			return (setError("413 Content Too Large"));
+			return (setError(413, "Content Too Large"));
 
 		/*Check if chunk properly ends in CRLF*/
 		size_t	chunk_end = raw_.find("\r\n") + len_value + 2;
@@ -373,7 +411,7 @@ void Request::parseBodyChunked() {
 		if (raw_.size() - chunk_end == 1 && raw_[chunk_end] == '\r')
 			return ; //raw ends in "\r" - incomplete
 		if (raw_.compare(chunk_end, 2, "\r\n") != 0)
-			return (setError("400 Bad Request"));
+			return (setError(400, "Bad Request"));
 		
 		raw_.erase(0, raw_.find("\r\n") + 2);
 		
@@ -391,6 +429,8 @@ void Request::parseBodyChunked() {
 		if (len_value == 0) {
 			/*Reached null chunk - body parsing finished*/
 			complete_ = true;
+			LOG_INFO() << "Request: fully parsed "
+			"with chunked encoding for message body";
 			return ;
 		}
 	}
