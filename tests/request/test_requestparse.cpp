@@ -15,7 +15,7 @@ TEST(RequestTest, Constructor_initialStateIsClean) {
 
 	EXPECT_FALSE(req.isComplete());
 	EXPECT_FALSE(req.isError());
-	EXPECT_EQ(req.getErrorCode(), "");
+	EXPECT_EQ(req.getErrorCode(), 0);
 }
 
 //Test Request copy constructor
@@ -32,7 +32,7 @@ TEST(RequestTest, CopyConstructor_copyCleanReq) {
 
 	EXPECT_FALSE(reqCopy.isComplete());
 	EXPECT_FALSE(reqCopy.isError());
-	EXPECT_EQ(reqCopy.getErrorCode(), "");
+	EXPECT_EQ(reqCopy.getErrorCode(), 0);
 }
 
 class RequestTestFixture : public ::testing::Test {
@@ -53,6 +53,16 @@ protected:
 	const char* chunk3 = "Content-Length: 5\r\n";
 	const char* chunk4 = "\r\n";
 	const char* chunk5 = "Hello";
+
+	// Transfer-Encoding body
+
+	const char* transfer_encode_header = "Transfer-Encoding: chunked\r\n";
+	const char*	transfer_encode_body = "5\r\n"
+	"Hello\r\n"
+	"7\r\n"
+	"1234567\r\n"
+	"0\r\n"
+	"\r\n";
 
 	// chunk variants - optional whitesapce
 	const char* chunk1_OWS = "   GET  /    HTTP/1.1   \r\n";
@@ -95,8 +105,8 @@ TEST_F(RequestTestFixture, Parse_Headers) {
 	req.append(chunk1, strlen(chunk1));
 	req.append(chunk2, strlen(chunk2));
 	req.append(chunk3, strlen(chunk3));
-	EXPECT_EQ(req.getHeaders().at("host"), "www.example.com");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "5");
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
 }
 
 TEST_F(RequestTestFixture, Parse_FullRequest) {
@@ -106,7 +116,7 @@ TEST_F(RequestTestFixture, Parse_FullRequest) {
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "5");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
 }
 
 TEST_F(RequestTestFixture, Parse_AllChunks) {
@@ -120,8 +130,41 @@ TEST_F(RequestTestFixture, Parse_AllChunks) {
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
-	EXPECT_EQ(req.getHeaders().at("host"), "www.example.com");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "5");
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
+}
+
+TEST_F(RequestTestFixture, Parse_TransferEncodedBody) {
+	//Parsing a valid message using the chunked transfer-encoding
+	//method for the body extracts matching data
+	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
+	req.append(transfer_encode_header, strlen(transfer_encode_header));
+	req.append(chunk4, strlen(chunk4));
+	req.append(transfer_encode_body, strlen(transfer_encode_body));
+	EXPECT_EQ(req.getMethod(), "GET");
+	EXPECT_EQ(req.getTarget(), "/");
+	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
+	EXPECT_EQ(req.getBody(), "Hello1234567");
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("transfer-encoding"), "chunked");
+}
+
+TEST_F(RequestTestFixture, Parse_TransferEncodedBodyOverride) {
+	//Transfer-Encoding overrides Content-Length
+	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
+	req.append(chunk3, strlen(chunk3));
+	req.append(transfer_encode_header, strlen(transfer_encode_header));
+	req.append(chunk4, strlen(chunk4));
+	req.append(transfer_encode_body, strlen(transfer_encode_body));
+	EXPECT_EQ(req.getMethod(), "GET");
+	EXPECT_EQ(req.getTarget(), "/");
+	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
+	EXPECT_EQ(req.getBody(), "Hello1234567");
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("transfer-encoding"), "chunked");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
 }
 
 TEST_F(RequestTestFixture, Parse_FullRequestClear) {
@@ -175,8 +218,8 @@ TEST_F(RequestTestFixture, Parse_OptionalWhitespace) {
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
-	EXPECT_EQ(req.getHeaders().at("host"), "www.example.com");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "5");
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
 }
 
 TEST_F(RequestTestFixture, Parse_CaseInsensitive) {
@@ -191,8 +234,8 @@ TEST_F(RequestTestFixture, Parse_CaseInsensitive) {
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
-	EXPECT_EQ(req.getHeaders().at("host"), "www.example.com");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "5");
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
 }
 
 TEST_F(RequestTestFixture, Parse_CutBody) {
@@ -206,7 +249,7 @@ TEST_F(RequestTestFixture, Parse_CutBody) {
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hell");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "4");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "4");
 }
 
 TEST_F(RequestTestFixture, Parse_DeceptiveContentLen) {
@@ -221,7 +264,7 @@ TEST_F(RequestTestFixture, Parse_DeceptiveContentLen) {
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hell");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "4");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "4");
 }
 
 TEST_F(RequestTestFixture, Parse_EmptyLineStart) {
@@ -236,8 +279,8 @@ TEST_F(RequestTestFixture, Parse_EmptyLineStart) {
 	EXPECT_EQ(req.getTarget(), "/");
 	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
 	EXPECT_EQ(req.getBody(), "Hello");
-	EXPECT_EQ(req.getHeaders().at("host"), "www.example.com");
-	EXPECT_EQ(req.getHeaders().at("content-length"), "5");
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
 }
 
 TEST_F(RequestTestFixture, Parse_BodyEndsInNewline) {
@@ -249,6 +292,47 @@ TEST_F(RequestTestFixture, Parse_BodyEndsInNewline) {
 	req.append(chunk5, strlen(chunk5));
 	req.append(chunk4, strlen(chunk4));
 	EXPECT_EQ(req.getBody(), "Hello\r\n");
+}
+
+TEST_F(RequestTestFixture, Parse_StartLineBroken) {
+	//Broken start lines should return an error
+	Request	reqCopy(req);
+
+	req.append(chunk1_broken1, strlen(chunk1_broken1));
+	EXPECT_TRUE(req.isError());
+	reqCopy.append(chunk1_broken2, strlen(chunk1_broken2));
+	EXPECT_TRUE(req.isError());
+}
+
+TEST_F(RequestTestFixture, Parse_HeaderEqualsMaxSize) {
+	//A header that is exactly equal to the max header size should pass
+	req.setMaxHeaderSize(15);
+	req.append(full_request, strlen(full_request));
+	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
+	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
+	EXPECT_FALSE(req.isError());
+}
+
+TEST_F(RequestTestFixture, Parse_HeaderInvalidSize) {
+	//A header that is greater than the max header size should error
+	req.setMaxHeaderSize(14);
+	req.append(full_request, strlen(full_request));
+	EXPECT_TRUE(req.isError());
+}
+
+TEST_F(RequestTestFixture, Parse_BodyEqualsMaxSize) {
+	//A body that is exactly equal to the max body size should pass
+	req.setMaxBodySize(5);
+	req.append(full_request, strlen(full_request));
+	EXPECT_EQ(req.getBody(), "Hello");
+	EXPECT_FALSE(req.isError());
+}
+
+TEST_F(RequestTestFixture, Parse_BodyInvalidSize) {
+	//A body that is greater than the max body size should error
+	req.setMaxBodySize(4);
+	req.append(full_request, strlen(full_request));
+	EXPECT_TRUE(req.isError());
 }
 
 
@@ -407,4 +491,12 @@ TEST_F(RequestTestFixture, isComplete_SingleEmptyLine) {
 	req.append(chunk4, strlen(chunk4));
 	EXPECT_FALSE(req.isComplete());
 	EXPECT_FALSE(req.isError());
+}
+
+TEST_F(RequestTestFixture, isComplete_DoubleEmptyLine) {
+	//Double empty lines with no start line shoud ne icomplete and error
+	req.append(chunk4, strlen(chunk4));
+	req.append(chunk4, strlen(chunk4));
+	EXPECT_FALSE(req.isComplete());
+	EXPECT_TRUE(req.isError());
 }
