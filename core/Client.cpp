@@ -53,11 +53,15 @@ void Client::handle(short revents) {
 		}
 
 		if (state_ == kReading && request_.isComplete()) {
+			keep_alive_ = request_.shouldKeepAlive();
+
 			LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
 			           << " switching " << stateToStr(state_)
 					   << " → kWriting";
+
 			response_.buildFrom(request_);
 			state_ = kWriting;
+
 			LOG_DEBUG() << "[Client] enabling POLLOUT";
 			loop_.modifyHandler(this, POLLOUT);
 		}
@@ -127,7 +131,20 @@ void Client::write() {
 
 	if (bytes_sent_ >= data.size()) {
 		LOG_INFO() << "[Client] response complete fd=" << fd_.getFd();
-		cleanup();
+		if (!keep_alive_) {
+			LOG_INFO() << "[Client] closing connection fd=" << fd_.getFd();
+			cleanup();
+			return ;
+		}
+		LOG_INFO() << "[Client] keeping connection alive fd=" << fd_.getFd();
+		//reset for next request
+		state_ = kReading;
+		bytes_sent_ = 0;
+		request_.reset();
+		response_.reset();
+
+		// switch back to read mode
+		loop_.modifyHandler(this, POLLIN);
 	}
 }
 
