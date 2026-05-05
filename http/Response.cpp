@@ -38,3 +38,7 @@ void Response::buildFrom(const Request& request) {
 const std::string& Response::getRaw() const {
     return raw_;
 }
+
+void Response::reset() {
+	raw_.clear();
+}
