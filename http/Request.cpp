@@ -165,3 +165,20 @@ bool Request::isComplete() const {
 	size_t body_start = header_end + HEADER_TERMINATOR.size();
 	return raw_.size() - body_start >= cl1_value;
 }
+
+bool Request::shouldKeepAlive() const {
+	// STUB: assume HTTP/1.1 keep-alive behavior
+	return true;
+}
+
+/**
+ * right now im clearing the whole buffer since partial parsing
+ * is not integrated yet, we're assuming full requests and full
+ * responses so im not blocked from progressing
+ * but later you'll need to consider that the buffer may contain the
+ * end of a completed request and the start of a new request, so
+ * later this must become more of comsune processed bytes logic
+ */
+ void Request::reset() {
+	raw_.clear();
+}

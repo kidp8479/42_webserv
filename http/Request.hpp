@@ -25,6 +25,8 @@ public:
     // temporary stub API (enough for Client/Server)
     void append(const char* data, size_t len);
     bool isComplete() const;
+	bool shouldKeepAlive() const;
+	void reset();
 
 private:
     std::string raw_;
