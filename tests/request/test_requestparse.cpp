@@ -55,7 +55,6 @@ protected:
 	const char* chunk5 = "Hello";
 
 	// Transfer-Encoding body
-
 	const char* transfer_encode_header = "Transfer-Encoding: chunked\r\n";
 	const char*	transfer_encode_body = "5\r\n"
 	"Hello\r\n"
@@ -63,6 +62,9 @@ protected:
 	"1234567\r\n"
 	"0\r\n"
 	"\r\n";
+
+	// chunk variants - target with path and query
+	const char*	chunk1_pq = "GET /path-name?query=words HTTP/1.1\r\n";
 
 	// chunk variants - optional whitesapce
 	const char* chunk1_OWS = "   GET  /    HTTP/1.1   \r\n";
@@ -77,7 +79,7 @@ protected:
 	const char* chunk1_broken1 = "GET / \r\n";
 	const char* chunk1_broken2 = "GET ./bad pathname HTTP/1.1\r\n";
 
-	//chunk variant - evil misleading headers
+	// chunk variants - evil misleading headers
 	const char* chunk_evil1 = "Cookie: $EvilString=Content-Length:5\r\n";
 
 	void SetUp() override {
@@ -165,6 +167,24 @@ TEST_F(RequestTestFixture, Parse_TransferEncodedBodyOverride) {
 	EXPECT_EQ(req.getHeaderValue("host"), "www.example.com");
 	EXPECT_EQ(req.getHeaderValue("transfer-encoding"), "chunked");
 	EXPECT_EQ(req.getHeaderValue("content-length"), "5");
+}
+
+TEST_F(RequestTestFixture, Parse_GetPathQuery) {
+	req.append(chunk1_pq, strlen(chunk1_pq));
+	EXPECT_EQ(req.getMethod(), "GET");
+	EXPECT_EQ(req.getTarget(), "/path-name?query=words");
+	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
+	EXPECT_EQ(req.getPath(), "/path-name");
+	EXPECT_EQ(req.getQuery(), "query=words");
+}
+
+TEST_F(RequestTestFixture, Parse_GetPathNoQuery) {
+	req.append(chunk1, strlen(chunk1));
+	EXPECT_EQ(req.getMethod(), "GET");
+	EXPECT_EQ(req.getTarget(), "/");
+	EXPECT_EQ(req.getProtocol(), "HTTP/1.1");
+	EXPECT_EQ(req.getPath(), "/");
+	EXPECT_EQ(req.getQuery(), "");
 }
 
 TEST_F(RequestTestFixture, Parse_FullRequestClear) {

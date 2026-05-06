@@ -23,6 +23,8 @@ class Request {
 
 		std::string	getMethod() const;
 		std::string	getTarget() const;
+		std::string	getPath() const;
+		std::string	getQuery() const;
 		std::string	getProtocol() const;
 		std::string	getBody() const;
 		std::string	getHeaderValue(const std::string key) const;

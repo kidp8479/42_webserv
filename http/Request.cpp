@@ -128,28 +128,45 @@ static bool isOnlyHexDigits(std::string s) {
  * @brief Get Request Method.
  */
 std::string Request::getMethod() const {
-	return(method_);
+	return (method_);
 }
 
  /**
  * @brief Get Request Target.
  */
 std::string Request::getTarget() const {
-	return(target_);
+	return (target_);
+}
+
+ /**
+ * @brief Get Path from Target.
+ */
+std::string Request::getPath() const {
+	return (target_.substr(0, target_.find('?')));
+}
+
+ /**
+ * @brief Get Query from Target if it exists.
+ */
+std::string Request::getQuery() const {
+	size_t	query_pos = target_.find('?');
+	if (query_pos != std::string::npos)
+		return (target_.substr(query_pos + 1));
+	return ("");
 }
 
  /**
  * @brief Get Request Protocol.
  */
 std::string Request::getProtocol() const {
-	return(protocol_);
+	return (protocol_);
 }
 
  /**
  * @brief Get Request Body.
  */
 std::string Request::getBody() const {
-	return(body_);
+	return (body_);
 }
 
  /**
@@ -158,14 +175,14 @@ std::string Request::getBody() const {
  */
 std::string Request::getHeaderValue(const std::string key) const {
 	std::string	key_lower(key);
-	return(headers_.at(setToLower(key_lower)));
+	return (headers_.at(setToLower(key_lower)));
 }
 
  /**
  * @brief Get constant reference to Request Headers.
  */
 const std::map<std::string, std::string>& Request::getHeaders() const {
-	return(headers_);
+	return (headers_);
 }
 
  /**
@@ -179,28 +196,28 @@ bool Request::isComplete() const {
  * @brief Check if Request returned an error.
  */
 bool Request::isError() const {
-	return(error_);
+	return (error_);
 }
 
  /**
  * @brief Get error code.
  */
 int Request::getErrorCode() const {
-	return(error_code_);
+	return (error_code_);
 }
 
  /**
  * @brief Get error message.
  */
 std::string Request::getErrorMessage() const {
-	return(error_message_);
+	return (error_message_);
 }
 
  /**
  * @brief Check if a connection should be kept alive after request.
  */
 bool Request::shouldKeepAlive() const {
-	return(keep_alive_);
+	return (keep_alive_);
 }
 
 
