@@ -9,7 +9,18 @@
 
 EventLoop::EventLoop() {}
 
-EventLoop::~EventLoop() {}
+EventLoop::~EventLoop() {
+    LOG_INFO() << "[EventLoop] shutting down, cleaning up "
+               << handlers_.size() << " handlers";
+    for (size_t i = 0; i < handlers_.size(); i++) {
+        LOG_INFO() << "[EventLoop] destroying handler=" << handlers_[i]->name()
+                   << " fd=" << poll_fds_[i].fd;
+        delete handlers_[i];
+    }
+    handlers_.clear();
+    poll_fds_.clear();
+}
+
 /**
  * register an fd (can be client or listener) with the kernel with polling
  * associate that fd with a handler object

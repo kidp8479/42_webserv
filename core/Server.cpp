@@ -15,9 +15,6 @@ Server::Server(const Config& config) :
 }
 
 Server::~Server() {
-/*	for (size_t i = 0; i < listeners_.size(); i++) {
-		delete listeners_[i];
-	}*/
 	// EventLoop owns and deletes all handlers including Listeners
     // just clear our tracking vector without deleting
     listeners_.clear();
