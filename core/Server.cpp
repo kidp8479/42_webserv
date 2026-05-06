@@ -3,14 +3,12 @@
 #include "../logger/Logger.hpp"
 #include "EventLoop.hpp"
 #include "Signal.hpp"
+#include "ServerResources.hpp"
 
 Server::Server(const Config& config) :
 	config_(config),
-	resources_(config_),
 	loop_()
 {
-	//EventLoop loop_ constructed automatically
-	//vector listeners_ constructed automatically
 	setupListeners();
 }
 
@@ -41,9 +39,10 @@ void Server::setupListeners() {
 	const std::vector<ServerConfig>& servers = config_.getServerBlock();
 
 	for (size_t i = 0; i < servers.size(); i++) {
+	
 		int port = servers[i].getPort();
 
-		Listener* listener = new Listener(port, loop_, resources_);
+		Listener* listener = new Listener(port, loop_, ServerResources(servers[i]));
 		listeners_.push_back(listener);
     }
 }
