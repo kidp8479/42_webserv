@@ -22,7 +22,7 @@ private:
 	Fd fd_;
 	// reference to server's loop_
 	EventLoop& loop_;
-	const ServerResources& resources_;
+	const ServerResources resources_;
 };
 
 #endif

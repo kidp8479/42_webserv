@@ -33,7 +33,7 @@ private:
     Fd fd_;
 	//reference to the server's loop_
 	EventLoop& loop_;
-	const ServerResources& resources_;
+	ServerResources resources_;
 
     size_t bytes_sent_;
     State state_;
