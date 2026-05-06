@@ -42,3 +42,8 @@ const std::string& Response::getRaw() const {
 void Response::reset() {
 	raw_.clear();
 }
+
+// handler will need this
+void Response::setRaw(const std::string& raw) {
+    raw_ = raw;
+}
