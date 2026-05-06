@@ -257,6 +257,23 @@ void Request::setError(int code, std::string message) {
 	error_ = true;
 	error_code_ = code;
 	error_message_ = message;
+	if (code == 400)
+		complete_ = true;
+}
+
+ /**
+ * @brief Sets complete_ to true and adjusts keep_alive_.
+ */
+void Request::setComplete() {
+	complete_ = true;
+	if (protocol_ == "HTTP/1.1")
+		keep_alive_ = true;
+	if (headers_.count("connection") > 0) {
+		if (headers_.at("connection") == "keep_alive")
+			keep_alive_ = true;
+		else if (headers_.at("connection") == "close")
+			keep_alive_ = false;
+	}
 }
 
 
@@ -266,7 +283,7 @@ void Request::setError(int code, std::string message) {
  * @brief Parse the start line.
  */
 void Request::parseStartLine() {
-	if (complete_ || error_)
+	if (complete_)
 		return;
 
 	while (at_start_line_ && raw_.find('\n') != std::string::npos) {
@@ -289,8 +306,6 @@ void Request::parseStartLine() {
 			/*Check for missing or malformed tokens*/
 			if (method_.empty() || target_.empty() || protocol_.empty())
 				return (setError(400, "Bad Request"));
-			if (protocol_ != "HTTP/1.0" && protocol_ != "HTTP/1.1")
-				return (setError(505, "HTTP Version Not Supported"));
 
 			at_start_line_ = false;
 		}
@@ -301,7 +316,7 @@ void Request::parseStartLine() {
  * @brief Parse the header fields.
  */
 void Request::parseHeaders() {
-	if (at_start_line_ || complete_ || error_)
+	if (complete_ || at_start_line_)
 		return ;
 
 	while (!at_body_ && raw_.find('\n') != std::string::npos) {
@@ -327,7 +342,7 @@ void Request::parseHeaders() {
 		if (headers_.count(name) > 0 && !headers_.at(name).empty())
 			value = headers_.at(name) + ", " + value;
 		if (value.size() > max_header_size_)
-			return (setError(431, "Request Header Fields Too Large"));
+			setError(431, "Request Header Fields Too Large");
 		headers_[name] = value;
 	}
 }
@@ -336,7 +351,7 @@ void Request::parseHeaders() {
  * @brief Parse the body.
  */
 void Request::parseBody() {
-	if (at_start_line_ || !at_body_ || complete_ || error_)
+	if (complete_ || at_start_line_ || !at_body_)
 		return ;
 
 	/*Check if a header indicates a body exists*/
@@ -347,8 +362,8 @@ void Request::parseBody() {
 	else if (headers_.count("content-length") > 0)
 		parseBodyContentLen(headers_.at("content-length"));
 	else {
-		complete_ = true;
 		LOG_INFO() << "Request: fully parsed without message body";
+		return (setComplete());
 	}
 }
 
@@ -367,7 +382,7 @@ void Request::parseBodyContentLen(std::string len) {
 	if (len_stream.fail())
 		return (setError(400, "Bad Request"));
 	if (len_value > max_body_size_)
-		return (setError(413, "Content Too Large"));
+		setError(413, "Content Too Large");
 
 	/*Appending raw content to body*/
 	while (body_.size() < len_value && !raw_.empty()) {
@@ -376,9 +391,9 @@ void Request::parseBodyContentLen(std::string len) {
 	}
 	if (body_.size() != len_value)
 		return ;//Reached end of stream - incomplete body
-	complete_ = true;
 	LOG_INFO() << "Request: fully parsed "
 	"using Content-Length for message body";
+	return (setComplete());
 }
 
  /**
@@ -402,7 +417,7 @@ void Request::parseBodyChunked() {
 		if (len_stream.fail())
 			return (setError(400, "Bad Request"));
 		if (body_.size() + len_value > max_body_size_)
-			return (setError(413, "Content Too Large"));
+			setError(413, "Content Too Large");
 
 		/*Check if chunk properly ends in CRLF*/
 		size_t	chunk_end = raw_.find("\r\n") + len_value + 2;
@@ -428,10 +443,9 @@ void Request::parseBodyChunked() {
 
 		if (len_value == 0) {
 			/*Reached null chunk - body parsing finished*/
-			complete_ = true;
 			LOG_INFO() << "Request: fully parsed "
 			"with chunked encoding for message body";
-			return ;
+			return (setComplete());
 		}
 	}
 }

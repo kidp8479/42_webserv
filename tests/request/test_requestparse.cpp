@@ -453,7 +453,7 @@ TEST_F(RequestTestFixture, isComplete_NoBodyInvalidContentLen) {
 	req.append(chunk2, strlen(chunk2));
 	req.append("Content-Length: abc\r\n", 21);
 	req.append(chunk4, strlen(chunk4));
-	EXPECT_FALSE(req.isComplete());
+	EXPECT_TRUE(req.isComplete());
 	EXPECT_TRUE(req.isError());
 }
 
@@ -497,6 +497,6 @@ TEST_F(RequestTestFixture, isComplete_DoubleEmptyLine) {
 	//Double empty lines with no start line shoud ne icomplete and error
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk4, strlen(chunk4));
-	EXPECT_FALSE(req.isComplete());
+	EXPECT_TRUE(req.isComplete());
 	EXPECT_TRUE(req.isError());
 }

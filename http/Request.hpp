@@ -70,6 +70,7 @@ class Request {
 		void	parseBodyContentLen(std::string len);
 		void	parseBodyChunked();
 		void	setError(int code, std::string message);
+		void	setComplete();
 };
 
 #endif
