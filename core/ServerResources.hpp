@@ -6,11 +6,12 @@
 
 class ServerResources {
 public:
-	ServerResources(const Config& config);
+	ServerResources(const ServerConfig& config);
 	const Router& router() const;
+	const ServerConfig& config() const;
 
 private:
-	Config config_;
+	ServerConfig config_;
 	Router router_;
 };
 
