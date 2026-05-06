@@ -4,10 +4,11 @@
 #include "EventLoop.hpp"
 #include "IEventHandler.hpp"
 #include "Fd.hpp"
+#include "ServerResources.hpp"
 
 class Listener : public IEventHandler {
 public:
-	Listener(int port, EventLoop& loop);
+	Listener(int port, EventLoop& loop, const ServerResources& resources);
 
 	int getFd() const;
 	void handle(short revents);
@@ -21,6 +22,7 @@ private:
 	Fd fd_;
 	// reference to server's loop_
 	EventLoop& loop_;
+	const ServerResources& resources_;
 };
 
 #endif

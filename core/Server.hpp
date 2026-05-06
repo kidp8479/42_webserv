@@ -10,6 +10,7 @@
 #include "EventLoop.hpp"
 #include <set>
 #include "Listener.hpp"
+#include "ServerResources.hpp"
 
 class Server {
 public:
@@ -25,7 +26,9 @@ private:
 	void setupListeners();
 
     const Config& config_;
+	ServerResources resources_;
 	EventLoop loop_;
+
 	std::vector<Listener*> listeners_;
 };
 

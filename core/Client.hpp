@@ -6,13 +6,14 @@
 #include "Fd.hpp"
 #include "EventLoop.hpp"
 #include "IEventHandler.hpp"
+#include "ServerResources.hpp"
 
 class Client : public IEventHandler {
 public:
 	enum State { kReading, kWriting, kDone };
     static const size_t kBufferSize = 4096;
 
-    explicit Client(int fd, EventLoop& loop);
+    explicit Client(int fd, EventLoop& loop, const ServerResources& resources);
     ~Client();
 
     int getFd() const;
@@ -32,6 +33,7 @@ private:
     Fd fd_;
 	//reference to the server's loop_
 	EventLoop& loop_;
+	const ServerResources& resources_;
 
     size_t bytes_sent_;
     State state_;

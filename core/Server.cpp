@@ -4,16 +4,23 @@
 #include "EventLoop.hpp"
 #include "Signal.hpp"
 
-Server::Server(const Config& config) : config_(config) {
+Server::Server(const Config& config) :
+	config_(config),
+	resources_(config_),
+	loop_()
+{
 	//EventLoop loop_ constructed automatically
 	//vector listeners_ constructed automatically
 	setupListeners();
 }
 
 Server::~Server() {
-	for (size_t i = 0; i < listeners_.size(); i++) {
+/*	for (size_t i = 0; i < listeners_.size(); i++) {
 		delete listeners_[i];
-	}
+	}*/
+	// EventLoop owns and deletes all handlers including Listeners
+    // just clear our tracking vector without deleting
+    listeners_.clear();
 }
 
 bool Server::start() {
@@ -39,7 +46,7 @@ void Server::setupListeners() {
 	for (size_t i = 0; i < servers.size(); i++) {
 		int port = servers[i].getPort();
 
-		Listener* listener = new Listener(port, loop_);
+		Listener* listener = new Listener(port, loop_, resources_);
 		listeners_.push_back(listener);
     }
 }

@@ -4,6 +4,8 @@
 #include <string>
 #include "../logger/Logger.hpp"
 #include "../utils/LogUtils.hpp"
+#include "../handlers/Router.hpp"
+#include "../handlers/Handler.hpp"
 
 // helper for consistent logging
 static const char* stateToStr(Client::State s) {
@@ -15,9 +17,10 @@ static const char* stateToStr(Client::State s) {
 	}
 }
 
-Client::Client(int fd, EventLoop& loop) :
+Client::Client(int fd, EventLoop& loop, const ServerResources& resources) :
 	fd_(fd),
 	loop_(loop),
+	resources_(resources),
 	bytes_sent_(0),
 	state_(kReading),
 	keep_alive_(true) 
@@ -58,8 +61,8 @@ void Client::handle(short revents) {
 			LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
 			           << " switching " << stateToStr(state_)
 					   << " → kWriting";
-
-			response_.buildFrom(request_);
+			const LocationConfig& loc = resources_.router().resolve(request_);
+			Handler::run(request_, loc, response_);
 			state_ = kWriting;
 
 			LOG_DEBUG() << "[Client] enabling POLLOUT";

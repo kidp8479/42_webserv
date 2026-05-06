@@ -15,8 +15,10 @@
  * this class is now responsible for setting up the listen socket and
  * the lifetime of the fd
  */
-Listener::Listener(int port, EventLoop& loop) :
-	fd_(socket(AF_INET, SOCK_STREAM, 0)), loop_(loop)
+Listener::Listener(int port, EventLoop& loop, const ServerResources& resources) :
+	fd_(socket(AF_INET, SOCK_STREAM, 0)),
+	loop_(loop),
+	resources_(resources)
 {
 	if (!fd_.valid()) {
 		throw std::runtime_error("[listener] socket() failed");
@@ -69,7 +71,7 @@ void Listener::acceptClients() {
 		//accept succeed, we set up client
 		try {
 			setNonBlocking(client_fd);
-			Client* client = new Client(client_fd, loop_);
+			Client* client = new Client(client_fd, loop_, resources_);
 
 			loop_.addHandler(client, POLLIN);
 		}

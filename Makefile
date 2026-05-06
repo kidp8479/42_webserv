@@ -19,15 +19,18 @@ SRCS = main.cpp \
 	   config/ConfigValidator.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
-	   http/Request.cpp \
-	   http/Response.cpp \
-	   logger/Logger.cpp \
 	   core/Client.cpp \
 	   core/EventLoop.cpp \
 	   core/Fd.cpp \
 	   core/Listener.cpp \
 	   core/Server.cpp \
+	   core/ServerResources.cpp \
 	   core/Signal.cpp \
+	   handlers/Handler.cpp \
+	   handlers/Router.cpp \
+	   http/Request.cpp \
+	   http/Response.cpp \
+	   logger/Logger.cpp \
 	   utils/LogUtils.cpp \
 
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
