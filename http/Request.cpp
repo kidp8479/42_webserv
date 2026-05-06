@@ -14,14 +14,9 @@
  */
 Request::Request() :
 max_header_size_(HttpConstants::kDefaultMaxHeaderSize),
-max_body_size_(HttpConstants::kDefaultMaxBodySize),
-complete_(false),
-error_(false),
-error_code_(0),
-keep_alive_(false),
-allow_empty_start_(true),
-at_start_line_(true),
-at_body_(false) {
+max_body_size_(HttpConstants::kDefaultMaxBodySize)
+{
+	clearData();
 }
 
  /**
@@ -224,7 +219,7 @@ bool Request::shouldKeepAlive() const {
 /********************************* Setters **********************************/
 
  /**
- * @brief Append string to raw string.
+ * @brief Append string to raw string, then parse it.
  * @param data String to append to raw string.
  * @param len Number of characters to append.
  */
@@ -254,6 +249,16 @@ void Request::clearData() {
 	allow_empty_start_ = true;
 	at_start_line_ = true;
 	at_body_ = false;
+}
+
+ /**
+ * @brief Reset data except for raw, then parse raw
+ */
+void Request::resetData() {
+	clearData();
+	parseStartLine();
+	parseHeaders();
+	parseBody();
 }
 
 void Request::setMaxHeaderSize(size_t max_header_size) {
@@ -286,7 +291,7 @@ void Request::setComplete() {
 	if (protocol_ == "HTTP/1.1")
 		keep_alive_ = true;
 	if (headers_.count("connection") > 0) {
-		if (headers_.at("connection") == "keep_alive")
+		if (headers_.at("connection") == "keep-alive")
 			keep_alive_ = true;
 		else if (headers_.at("connection") == "close")
 			keep_alive_ = false;

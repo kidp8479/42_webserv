@@ -79,6 +79,11 @@ protected:
 	const char* chunk1_broken1 = "GET / \r\n";
 	const char* chunk1_broken2 = "GET ./bad pathname HTTP/1.1\r\n";
 
+	// chunk variants - chunk that contains body and start line
+	const char* chunk_endstart =
+	"Hello"
+	"POST * HTTP/1.0\r\n";
+
 	// chunk variants - evil misleading headers
 	const char* chunk_evil1 = "Cookie: $EvilString=Content-Length:5\r\n";
 
@@ -353,6 +358,25 @@ TEST_F(RequestTestFixture, Parse_BodyInvalidSize) {
 	req.setMaxBodySize(4);
 	req.append(full_request, strlen(full_request));
 	EXPECT_TRUE(req.isError());
+}
+
+TEST_F(RequestTestFixture, Parse_KeepAlive) {
+	//If the raw buffer contains a complete message AND the start line
+	//of the next message, resetData() should begin parsing the next
+	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
+	req.append(chunk3, strlen(chunk3));
+	req.append(chunk4, strlen(chunk4));
+	req.append(chunk_endstart, strlen(chunk_endstart));
+	EXPECT_EQ(req.getBody(), "Hello");
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_TRUE(req.shouldKeepAlive());
+	req.resetData();
+	EXPECT_EQ(req.getMethod(), "POST");
+	EXPECT_EQ(req.getTarget(), "*");
+	EXPECT_EQ(req.getProtocol(), "HTTP/1.0");
+	EXPECT_EQ(req.getBody(), "");
+	EXPECT_FALSE(req.isComplete());
 }
 
 

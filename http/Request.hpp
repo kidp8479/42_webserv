@@ -41,6 +41,7 @@ class Request {
 
 		void	append(const char* data, size_t len);
 		void	clearData();
+		void	resetData();
 		void	setMaxHeaderSize(size_t max_header_size);
 		void	setMaxBodySize(size_t max_body_size);
 	
