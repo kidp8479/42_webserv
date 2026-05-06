@@ -1,6 +1,8 @@
 #include "Router.hpp"
 
-Router::Router(const ServerConfig& config_server) : config_server_(config_server) {}
+Router::Router(const ServerConfig& server_config)
+    : server_config_(server_config) {
+}
 
 /**
  * @brief Stub: returns first available location config.
@@ -9,5 +11,5 @@ Router::Router(const ServerConfig& config_server) : config_server_(config_server
 const LocationConfig& Router::resolve(const Request& request) const {
     (void)request;
     // stub: just return first location of first server block
-    return config_server_.getLocationBlock()[0];
+    return server_config_.getLocationBlock()[0];
 }
