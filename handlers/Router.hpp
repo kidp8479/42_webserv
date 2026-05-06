@@ -6,9 +6,9 @@
 
 class Router {
 public:
-    explicit Router(const Config& config);
+    explicit Router(const ServerConfig& config);
     const LocationConfig& resolve(const Request& request) const;
 private:
-    const Config& config_;
+    const ServerConfig& config_;
 };
 #endif
