@@ -112,7 +112,7 @@ static bool	isOnlyDigits(std::string s) {
 static bool isOnlyHexDigits(std::string s) {
 	for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
 		if (!std::isdigit(s_it[0]) && !(std::tolower(s_it[0]) >= 'a'
-			&& std::tolower(s_it[0]) >= 'f'))
+			&& std::tolower(s_it[0]) <= 'f'))
 			return (false);
 	}
 	return (true);

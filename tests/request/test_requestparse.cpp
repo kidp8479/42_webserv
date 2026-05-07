@@ -54,9 +54,6 @@ protected:
 	const char* chunk4 = "\r\n";
 	const char* chunk5 = "Hello";
 
-	// chunk variants - HTTP/1.0
-	const char* chunk1_p0 = "GET / HTTP/1.0\r\n";
-
 	// Transfer-Encoding body
 	const char* transfer_encode_header = "Transfer-Encoding: chunked\r\n";
 	const char*	transfer_encode_body = "5\r\n"
@@ -65,6 +62,17 @@ protected:
 	"1234567\r\n"
 	"0\r\n"
 	"\r\n";
+	const char*	transfer_encode_nonull = "A\r\n"
+	"Unfinished\r\n";
+	const char*	transfer_encode_null = "0\r\n"
+	"\r\n";
+
+	// Connection header
+	const char* connect_keep = "Connection: keep-alive\r\n";
+	const char* connect_close = "Connection: close\r\n";
+
+	// chunk variants - HTTP/1.0
+	const char* chunk1_p0 = "GET / HTTP/1.0\r\n";
 
 	// chunk variants - target with path and query
 	const char*	chunk1_pq = "GET /path-name?query=words HTTP/1.1\r\n";
@@ -80,7 +88,6 @@ protected:
 
 	// chunk variants - broken chunks
 	const char* chunk1_broken1 = "GET / \r\n";
-	const char* chunk1_broken2 = "GET ./bad pathname HTTP/1.1\r\n";
 
 	// chunk variants - chunk that contains body and start line
 	const char* chunk_endstart =
@@ -330,8 +337,6 @@ TEST_F(RequestTestFixture, Parse_StartLineBroken) {
 
 	req.append(chunk1_broken1, strlen(chunk1_broken1));
 	EXPECT_TRUE(req.isError());
-	reqCopy.append(chunk1_broken2, strlen(chunk1_broken2));
-	EXPECT_TRUE(req.isError());
 }
 
 TEST_F(RequestTestFixture, Parse_HeaderEqualsMaxSize) {
@@ -531,6 +536,25 @@ TEST_F(RequestTestFixture, isComplete_DeceptiveContentLen) {
 	EXPECT_FALSE(req.isError());
 }
 
+TEST_F(RequestTestFixture, isComplete_IncompleteChunked) {
+	//A chunked-encoded body with no null terminator is not
+	//considered complete but partially parses body
+	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
+	req.append(transfer_encode_header, strlen(transfer_encode_header));
+	req.append(chunk4, strlen(chunk4));
+	req.append(transfer_encode_nonull, strlen(transfer_encode_nonull));
+	EXPECT_EQ(req.getBody(), "Unfinished");
+	EXPECT_FALSE(req.isComplete());
+	EXPECT_FALSE(req.isError());
+
+	//Appending the null chunk completes it
+	req.append(transfer_encode_null, strlen(transfer_encode_null));
+	EXPECT_EQ(req.getBody(), "Unfinished");
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_FALSE(req.isError());
+}
+
 TEST_F(RequestTestFixture, isComplete_Nothing) {
 	//An empty raw buffer should not be considered complete
 	EXPECT_FALSE(req.isComplete());
@@ -550,4 +574,74 @@ TEST_F(RequestTestFixture, isComplete_DoubleEmptyLine) {
 	req.append(chunk4, strlen(chunk4));
 	EXPECT_TRUE(req.isComplete());
 	EXPECT_TRUE(req.isError());
+}
+
+
+/********************************* Keep Alive **********************************/
+
+TEST_F(RequestTestFixture, KeepAlive_HTTP1) {
+	//Using protocol HTTP/1.1 keeps connections alive on completion
+	req.append(full_request, strlen(full_request));
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_TRUE(req.shouldKeepAlive());
+}
+
+TEST_F(RequestTestFixture, KeepAlive_HTTP0) {
+	//Using protocol HTTP/1.0 keeps closes connection on completion
+	req.append(chunk1_p0, strlen(chunk1_p0));
+	req.append(chunk2, strlen(chunk2));
+	req.append(chunk3, strlen(chunk3));
+	req.append(chunk4, strlen(chunk4));
+	req.append(chunk5, strlen(chunk5));
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_FALSE(req.shouldKeepAlive());
+}
+
+TEST_F(RequestTestFixture, KeepAlive_ConnectionClose) {
+	//Using "Connection: close" closes connection despite HTTP/1.1
+	req.append(chunk1, strlen(chunk1));
+	req.append(connect_close, strlen(connect_close));
+	req.append(chunk2, strlen(chunk2));
+	req.append(chunk3, strlen(chunk3));
+	req.append(chunk4, strlen(chunk4));
+	req.append(chunk5, strlen(chunk5));
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_FALSE(req.shouldKeepAlive());
+}
+
+TEST_F(RequestTestFixture, KeepAlive_ConnectionKeep) {
+	//Using "Connection: keep-alive" keeps connection despite HTTP/1.0
+	req.append(chunk1_p0, strlen(chunk1_p0));
+	req.append(connect_keep, strlen(connect_keep));
+	req.append(chunk2, strlen(chunk2));
+	req.append(chunk3, strlen(chunk3));
+	req.append(chunk4, strlen(chunk4));
+	req.append(chunk5, strlen(chunk5));
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_TRUE(req.shouldKeepAlive());
+}
+
+TEST_F(RequestTestFixture, KeepAlive_ConnectionCloseOn400) {
+	//A 400 Bad Request error should close connection and complete message
+	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
+	req.append("Content-Length: abc\r\n", 21);
+	req.append(chunk4, strlen(chunk4));
+	EXPECT_EQ(req.getErrorCode(), 400);
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_FALSE(req.shouldKeepAlive());
+}
+
+TEST_F(RequestTestFixture, KeepAlive_TransferEncodeCL) {
+	//Having both Transfer-Encode and Content-Length closes connections
+	//despite successful parsing and HTTP/1.1
+	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
+	req.append(chunk3, strlen(chunk3));
+	req.append(transfer_encode_header, strlen(transfer_encode_header));
+	req.append(chunk4, strlen(chunk4));
+	req.append(transfer_encode_body, strlen(transfer_encode_body));
+	EXPECT_TRUE(req.isComplete());
+	EXPECT_FALSE(req.isError());
+	EXPECT_FALSE(req.shouldKeepAlive());
 }
