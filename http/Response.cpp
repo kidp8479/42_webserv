@@ -40,7 +40,7 @@ const std::string& Response::getRaw() const {
 }
 
 void Response::reset() {
-	raw_.clear();
+    raw_.clear();
 }
 
 // handler will need this

@@ -25,8 +25,8 @@ public:
     void buildFrom(const Request& request);
 
     const std::string& getRaw() const;
-	void reset();
-	void setRaw(const std::string& raw);
+    void reset();
+    void setRaw(const std::string& raw);
 
 private:
     std::string raw_;

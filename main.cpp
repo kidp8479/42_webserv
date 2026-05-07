@@ -4,9 +4,9 @@
 
 #include "config/Config.hpp"
 #include "config/ConfigParser.hpp"
-#include "logger/Logger.hpp"
 #include "core/Server.hpp"
 #include "core/Signal.hpp"
+#include "logger/Logger.hpp"
 
 int main(int argc, char** argv) {
     signal(SIGINT, handleSigInt);
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     } catch (const std::runtime_error& e) {
         return EXIT_FAILURE;
     } catch (const std::exception& e) {
-		LOG_ERROR() << "Fatal error: " << e.what();
+        LOG_ERROR() << "Fatal error: " << e.what();
         return EXIT_FAILURE;
     }
 
