@@ -7,7 +7,7 @@
 
 class Router {
 public:
-    explicit Router(const ServerConfig& server_config);
+    Router(const ServerConfig& server_config);
     const LocationConfig& resolve(const Request& request) const;
 
 private:
