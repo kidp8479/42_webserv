@@ -54,6 +54,9 @@ protected:
 	const char* chunk4 = "\r\n";
 	const char* chunk5 = "Hello";
 
+	// chunk variants - HTTP/1.0
+	const char* chunk1_p0 = "GET / HTTP/1.0\r\n";
+
 	// Transfer-Encoding body
 	const char* transfer_encode_header = "Transfer-Encoding: chunked\r\n";
 	const char*	transfer_encode_body = "5\r\n"
@@ -267,6 +270,7 @@ TEST_F(RequestTestFixture, Parse_CutBody) {
 	//Using a "Content-Length" with a size smaller than the body in the
 	//message will cut the extracted body string to match sizes
 	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
 	req.append("Content-Length: 4\r\n", 19);
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
@@ -281,6 +285,7 @@ TEST_F(RequestTestFixture, Parse_DeceptiveContentLen) {
 	//Despite a misleading instance of "Content-Length", the correct size
 	//will be used for the body
 	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
 	req.append(chunk_evil1, strlen(chunk_evil1));
 	req.append("Content-Length: 4\r\n", 19);
 	req.append(chunk4, strlen(chunk4));
@@ -423,7 +428,8 @@ TEST_F(RequestTestFixture, isComplete_AddEmptyLine) {
 
 TEST_F(RequestTestFixture, isComplete_NoHeadersNoBody) {
 	//A valid message without headers or body should be considered complete
-	req.append(chunk1, strlen(chunk1));
+	//(HTTP/1.0 is used because a lack of Host header is othewise an error)
+	req.append(chunk1_p0, strlen(chunk1_p0));
 	req.append(chunk4, strlen(chunk4));
 	EXPECT_TRUE(req.isComplete());
 	EXPECT_FALSE(req.isError());
@@ -517,6 +523,7 @@ TEST_F(RequestTestFixture, isComplete_DeceptiveContentLen) {
 	//A valid message without a body should be considered complete
 	//even if it contains a misleading instance of "Content-Length"
 	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
 	req.append(chunk_evil1, strlen(chunk_evil1));
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk5, strlen(chunk5));
