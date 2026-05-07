@@ -118,7 +118,7 @@ static bool isOnlyHexDigits(std::string s) {
 	return (true);
 }
 
-static std::vector<std::string> listHeaderElements(const std::string s) {
+static std::vector<std::string> listHeaders(const std::string s) {
 	std::string					val(s), element;
 	std::vector<std::string>	val_vect;
 
@@ -370,6 +370,12 @@ void Request::parseHeaders() {
 		removeCR(line);
 
 		if (line.empty()) {
+			if (headers_.count("host") > 0) {
+				if (listHeaders(headers_.at("host")).size() > 1)
+					return (setError(400, "Bad Request"));
+			}
+			else if (protocol_ == "HTTP/1.1")
+				return (setError(400, "Bad Request"));
 			at_body_ = true;
 			return ;
 		}
@@ -402,7 +408,7 @@ void Request::parseBody() {
 	/*Check if a header indicates a body exists*/
 	if (headers_.count("transfer-encoding") > 0) {
 		std::vector<std::string>	encoding_list;
-		encoding_list = listHeaderElements(headers_.at("transfer-encoding"));
+		encoding_list = listHeaders(headers_.at("transfer-encoding"));
 		if (!encoding_list.empty() && encoding_list.back() == "chunked")
 			parseBodyChunked();
 		else
