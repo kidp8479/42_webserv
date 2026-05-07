@@ -66,6 +66,10 @@ protected:
 	"Unfinished\r\n";
 	const char*	transfer_encode_null = "0\r\n"
 	"\r\n";
+	const char*	transfer_encode_missing ="4\r\n"
+	"Wait\r\n"
+	"A\r\n"
+	"Unfinished\r";
 
 	// Connection header
 	const char* connect_keep = "Connection: keep-alive\r\n";
@@ -536,7 +540,7 @@ TEST_F(RequestTestFixture, isComplete_DeceptiveContentLen) {
 	EXPECT_FALSE(req.isError());
 }
 
-TEST_F(RequestTestFixture, isComplete_IncompleteChunked) {
+TEST_F(RequestTestFixture, isComplete_NoNullChunked) {
 	//A chunked-encoded body with no null terminator is not
 	//considered complete but partially parses body
 	req.append(chunk1, strlen(chunk1));
@@ -553,6 +557,22 @@ TEST_F(RequestTestFixture, isComplete_IncompleteChunked) {
 	EXPECT_EQ(req.getBody(), "Unfinished");
 	EXPECT_TRUE(req.isComplete());
 	EXPECT_FALSE(req.isError());
+}
+
+TEST_F(RequestTestFixture, isComplete_IncompleteChunked) {
+	//A chunked-encoded body with a partial chunk doesn't complete
+	req.append(chunk1, strlen(chunk1));
+	req.append(chunk2, strlen(chunk2));
+	req.append(transfer_encode_header, strlen(transfer_encode_header));
+	req.append(chunk4, strlen(chunk4));
+	req.append(transfer_encode_missing, strlen(transfer_encode_missing));
+	EXPECT_EQ(req.getBody(), "Wait");
+	EXPECT_FALSE(req.isComplete());
+	EXPECT_FALSE(req.isError());
+
+	//Malformed chunk returns an error
+	req.append(transfer_encode_null, strlen(transfer_encode_null));
+	EXPECT_TRUE(req.isError());
 }
 
 TEST_F(RequestTestFixture, isComplete_Nothing) {
