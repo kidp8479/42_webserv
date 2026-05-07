@@ -74,6 +74,13 @@ TEST_F(TestRouter, IntermediatePrefix) {
     EXPECT_EQ(loc.getPath(), "/api");
 }
 
+TEST_F(TestRouter, SimilarPrefixDoesNotMatch) {
+    Router router(server_config_);
+    // /apiary shares prefix /api but is not a sub-path of /api
+    const LocationConfig& loc = router.resolve("/apiary");
+    EXPECT_EQ(loc.getPath(), "/");
+}
+
 /* TestRouterTrailingSlash - location paths with trailing slash */
 
 class TestRouterTrailingSlash : public ::testing::Test {

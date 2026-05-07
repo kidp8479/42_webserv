@@ -58,12 +58,18 @@ const LocationConfig& Router::resolve(const std::string& uri) const {
         }
 
         if (uri.compare(0, path.size(), path) == 0) {
-            if (path.size() > best_path_len) {
-                best_path_len = path.size();
-                best_path_match =
-                    &(*it);  // dereference it to obtain right LocationConfig +
-                             // take its adress and asign to pointer (yes it's
-                             // weird)
+            // guard against false positives: /api must not match /apiary
+            // valid match only if: exact match, next char is '/', or path is
+            // "/" (root always matches - every URI starts with /)
+            if (path == "/" || uri.size() == path.size() ||
+                uri[path.size()] == '/') {
+                if (path.size() > best_path_len) {
+                    best_path_len = path.size();
+                    best_path_match =
+                        &(*it);  // dereference it to obtain right
+                                 // LocationConfig + take its adress and asign
+                                 // to pointer (yes it's weird)
+                }
             }
         }
     }
