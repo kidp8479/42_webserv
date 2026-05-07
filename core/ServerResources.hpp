@@ -6,19 +6,19 @@
 
 class ServerResources {
 public:
-	ServerResources(const ServerConfig& server_config);
+    ServerResources(const ServerConfig& server_config);
 
-	ServerResources(const ServerResources& other);
-	~ServerResources();
+    ServerResources(const ServerResources& other);
+    ~ServerResources();
 
-	const Router& router() const;
-	const ServerConfig& serverConfig() const;
+    const Router& router() const;
+    const ServerConfig& serverConfig() const;
 
 private:
-	ServerResources& operator=(const ServerResources&);
+    ServerResources& operator=(const ServerResources&);
 
-	ServerConfig server_config_;
-	Router router_;
+    ServerConfig server_config_;
+    Router router_;
 };
 
 #endif
