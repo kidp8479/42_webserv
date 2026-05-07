@@ -3,12 +3,11 @@
 
 #include "../config/LocationConfig.hpp"
 #include "../config/ServerConfig.hpp"
-#include "../http/Request.hpp"
 
 class Router {
 public:
     Router(const ServerConfig& server_config);
-    const LocationConfig& resolve(const Request& request) const;
+    const LocationConfig& resolve(const std::string& uri) const;
 
 private:
     const ServerConfig& server_config_;
