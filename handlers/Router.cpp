@@ -4,6 +4,9 @@ Router::Router(const ServerConfig& server_config)
     : server_config_(server_config) {
 }
 
+Router::~Router() {
+}
+
 /**
  * @brief Stub: returns first available location config.
  * @note Will be replaced by proper path matching logic.
