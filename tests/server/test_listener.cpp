@@ -5,6 +5,8 @@
 #include "../../core/EventLoop.hpp"
 #include "../../core/ServerResources.hpp"
 //#include "../../handlers/Router.hpp"
+#include <sys/socket.h>
+#include <fcntl.h>
 
 ServerConfig createDummyServerConfig(int port = 8083) {
 	ServerConfig sconf;
@@ -36,4 +38,11 @@ TEST_F(ListenerTestFixture, Constructor_CreatesValidSocket) {
 
 	EXPECT_GT(listener->getFd(), 0);
 	EXPECT_STREQ(listener->name(), "Listener");
+}
+
+TEST_F(ListenerTestFixture, Constructor_SetsSocketNonBlocking) {
+    Listener* listener = new Listener(8088, loop, resources);
+
+    int flags = fcntl(listener->getFd(), F_GETFL, 0);
+    EXPECT_TRUE(flags & O_NONBLOCK);
 }
