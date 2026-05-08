@@ -9,12 +9,16 @@
 class Listener : public IEventHandler {
 public:
 	Listener(int port, EventLoop& loop, const ServerResources& resources);
+	~Listener();
 
 	int getFd() const;
 	void handle(short revents);
 	const char* name() const;
 
 private:
+	Listener(const Listener&);
+	Listener& operator=(const Listener&);
+
 	bool isDone() const;
 	void setNonBlocking(int fd);
 	void acceptClients();

@@ -46,6 +46,8 @@ Listener::Listener(int port, EventLoop& loop, const ServerResources& resources) 
 	loop_.addHandler(this, POLLIN);
 }
 
+Listener::~Listener() {}
+
 int Listener::getFd() const {
 	return fd_.getFd();
 }
