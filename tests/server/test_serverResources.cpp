@@ -23,6 +23,12 @@ TEST(ServerResources, Constructor_StoresServerConfig) {
 	EXPECT_EQ(resources.serverConfig().getPort(), 8080);
 }
 
+TEST(ServerResources, Constructor_DoesNotThrow) {
+	ServerConfig sconf = createDummyServerConfig();
+
+	EXPECT_NO_THROW(ServerResources resources(sconf));
+}
+
 TEST(ServerResources, Constructor_InitializesRouter) {
 	ServerConfig sconf = createDummyServerConfig();
 
@@ -33,9 +39,9 @@ TEST(ServerResources, Constructor_InitializesRouter) {
 
 TEST(ServerResources, CopyConstructor_RebindsRouterCorrectly) {
 	ServerConfig sconf = createDummyServerConfig();
+
 	ServerResources original(sconf);
 	ServerResources copy(original);
 
 	EXPECT_NO_THROW(copy.router());
-
 }
