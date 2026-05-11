@@ -308,7 +308,7 @@ void Request::setMaxBodySize(size_t max_body_size) {
  * @param int Error code to set error_code_ to.
  * @param message Error message to set error_message_ to.
  */
-void Request::setError(HttpConstants::HttpError_t http_error) {
+void Request::setError(HttpConstants::HttpError http_error) {
 	error_ = true;
 	error_code_ = http_error.code;
 	error_message_ = http_error.reason;

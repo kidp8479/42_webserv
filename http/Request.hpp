@@ -76,7 +76,7 @@ class Request {
 		void	parseBody();
 		void	parseBodyContentLen(std::string len);
 		void	parseBodyChunked();
-		void	setError(HttpConstants::HttpError_t http_error);
+		void	setError(HttpConstants::HttpError http_error);
 		void	setComplete();
 };
 
