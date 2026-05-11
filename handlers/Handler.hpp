@@ -5,6 +5,7 @@
 #include "../config/ServerConfig.hpp"
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
+#include "../utils/HttpConstants.hpp"
 
 class Handler {
 public:
