@@ -81,7 +81,7 @@ protected:
 	// chunk variants - target with path and query
 	const char*	chunk1_pq = "GET /path-name?query=words HTTP/1.1\r\n";
 
-	// chunk variants - optional whitesapce
+	// chunk variants - optional whitespace
 	const char* chunk1_OWS = "   GET  /    HTTP/1.1   \r\n";
 	const char* chunk2_OWS = "Host:     www.example.com      \r\n";
 	const char* chunk3_OWS = "Content-Length:      5      \r\n";
@@ -437,7 +437,7 @@ TEST_F(RequestTestFixture, isComplete_AddEmptyLine) {
 
 TEST_F(RequestTestFixture, isComplete_NoHeadersNoBody) {
 	//A valid message without headers or body should be considered complete
-	//(HTTP/1.0 is used because a lack of Host header is othewise an error)
+	//(HTTP/1.0 is used because a lack of Host header is otherwise an error)
 	req.append(chunk1_p0, strlen(chunk1_p0));
 	req.append(chunk4, strlen(chunk4));
 	EXPECT_TRUE(req.isComplete());
@@ -590,7 +590,7 @@ TEST_F(RequestTestFixture, isComplete_SingleEmptyLine) {
 }
 
 TEST_F(RequestTestFixture, isComplete_DoubleEmptyLine) {
-	//Double empty lines with no start line shoud ne icomplete and error
+	//Double empty lines with no start line shoud be icomplete and error
 	req.append(chunk4, strlen(chunk4));
 	req.append(chunk4, strlen(chunk4));
 	EXPECT_TRUE(req.isComplete());

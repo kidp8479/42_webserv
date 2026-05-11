@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cctype>
 
 /*****************************************************************************
  *                                  REQUEST                                  *
@@ -49,6 +50,7 @@ Request	&Request::operator=(const Request& other) {
 
 	max_header_size_ = other.max_header_size_;
 	max_body_size_ = other.max_body_size_;
+	max_uri_size_ = other.max_uri_size_;
 
 	complete_ = other.complete_;
 	error_ = other.error_;
@@ -123,7 +125,7 @@ static std::vector<std::string> listHeaders(const std::string s) {
 	std::vector<std::string>	val_vect;
 
 	while (!val.empty()) {
-		size_t	comma_pos = val.find(", ");
+		size_t	comma_pos = val.find(",");
 		element = val.substr(0, comma_pos);
 		val_vect.push_back(trim(element));
 		val.erase(0, comma_pos);
@@ -187,7 +189,13 @@ std::string Request::getBody() const {
  */
 std::string Request::getHeaderValue(const std::string key) const {
 	std::string	key_lower(key);
-	return (headers_.at(setToLower(key_lower)));
+	std::string	value_get;
+	if (headers_.count(setToLower(key_lower)) > 0) {
+		std::map<std::string,std::string>::const_iterator c_it;
+		c_it = headers_.find(key_lower);
+		value_get = c_it->second;
+	}
+	return (value_get);
 }
 
  /**
@@ -312,9 +320,9 @@ void Request::setComplete() {
 	if (protocol_ == "HTTP/1.1")
 		keep_alive_ = true;
 	if (headers_.count("connection") > 0) {
-		if (headers_.at("connection") == "keep-alive")
+		if (headers_["connection"] == "keep-alive")
 			keep_alive_ = true;
-		else if (headers_.at("connection") == "close")
+		else if (headers_["connection"] == "close")
 			keep_alive_ = false;
 	}
 }
@@ -371,7 +379,7 @@ void Request::parseHeaders() {
 
 		if (line.empty()) {
 			if (headers_.count("host") > 0) {
-				if (listHeaders(headers_.at("host")).size() > 1)
+				if (listHeaders(headers_["host"]).size() > 1)
 					return (setError(400, "Bad Request"));
 			}
 			else if (protocol_ == "HTTP/1.1")
@@ -390,8 +398,8 @@ void Request::parseHeaders() {
 		std::string	value = line.substr(line.find(':') + 1);
 		trim(value);
 		/*If header already exists, append value in comma-separated list*/
-		if (headers_.count(name) > 0 && !headers_.at(name).empty())
-			value = headers_.at(name) + ", " + value;
+		if (headers_.count(name) > 0 && !headers_[name].empty())
+			value = headers_[name] + ", " + value;
 		if (value.size() > max_header_size_)
 			setError(431, "Request Header Fields Too Large");
 		headers_[name] = value;
@@ -408,14 +416,14 @@ void Request::parseBody() {
 	/*Check if a header indicates a body exists*/
 	if (headers_.count("transfer-encoding") > 0) {
 		std::vector<std::string>	encoding_list;
-		encoding_list = listHeaders(headers_.at("transfer-encoding"));
+		encoding_list = listHeaders(headers_["transfer-encoding"]);
 		if (!encoding_list.empty() && encoding_list.back() == "chunked")
 			parseBodyChunked();
 		else
 			return (setError(400, "Bad Request"));
 	}
 	else if (headers_.count("content-length") > 0)
-		parseBodyContentLen(headers_.at("content-length"));
+		parseBodyContentLen(headers_["content-length"]);
 	else {
 		LOG_INFO() << "Request: fully parsed without message body";
 		return (setComplete());
@@ -440,9 +448,11 @@ void Request::parseBodyContentLen(std::string len) {
 		setError(413, "Content Too Large");
 
 	/*Appending raw content to body*/
-	while (body_.size() < len_value && !raw_.empty()) {
-		body_ += raw_[0];
-		raw_.erase(0, 1);
+	size_t	len_take = len_value - body_.size();
+	if (raw_.size() < len_take) len_take = raw_.size();
+	if (len_take > 0) {
+		body_ += raw_.substr(0, len_take);;
+		raw_.erase(0, len_take);
 	}
 	if (body_.size() != len_value)
 		return ;//Reached end of stream - incomplete body
@@ -455,7 +465,6 @@ void Request::parseBodyContentLen(std::string len) {
  * @brief Parse body using Transfer-Encoding chunked method.
  */
 void Request::parseBodyChunked() {
-	std::string	chunk_size, content;
 
 	while (raw_.find("\r\n") != std::string::npos) {
 		std::string	size_line = raw_.substr(0, raw_.find("\r\n"));
@@ -486,15 +495,11 @@ void Request::parseBodyChunked() {
 		raw_.erase(0, raw_.find("\r\n") + 2);
 		
 		/*Append chunk to body*/
-		std::string	chunk_data;
-		while (chunk_data.size() < len_value) {
-			chunk_data += raw_[0];
-			raw_.erase(0, 1);
-		}
+		std::string	chunk_data = raw_.substr(0, len_value);
 		body_ += chunk_data;
 
-		/*Erase chunk CRF*/
-		raw_.erase(0, 2);
+		/*Erase parsed chunk and CRF*/
+		raw_.erase(0, len_value + 2);
 
 		if (len_value == 0) {
 			/*Reached null chunk - body parsing finished*/
