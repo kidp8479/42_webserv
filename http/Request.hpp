@@ -42,6 +42,7 @@ public:
     void append(const char* data, size_t len);
     void clearData();
     void resetData();
+    void setMaxURISize(size_t max_uri_size);
     void setMaxHeaderSize(size_t max_header_size);
     void setMaxBodySize(size_t max_body_size);
 
@@ -53,6 +54,7 @@ private:
     std::map<std::string, std::string> headers_;
     std::string body_;
 
+    size_t max_uri_size_;
     size_t max_header_size_;
     size_t max_body_size_;
 
