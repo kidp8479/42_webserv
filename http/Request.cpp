@@ -1,11 +1,11 @@
 #include "Request.hpp"
 
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
 #include "../logger/Logger.hpp"
-#include "../utils/HttpConstants.hpp"
 
 /*****************************************************************************
  *                                  REQUEST                                  *
@@ -17,8 +17,14 @@
 Request::Request()
     : max_uri_size_(HttpConstants::kDefaultMaxURISize),
       max_header_size_(HttpConstants::kDefaultMaxHeaderSize),
-      max_body_size_(HttpConstants::kDefaultMaxBodySize) {
-    clearData();
+      max_body_size_(HttpConstants::kDefaultMaxBodySize),
+      complete_(false),
+      error_(false),
+      error_code_(0),
+      keep_alive_(false),
+      allow_empty_start_(true),
+      at_start_line_(true),
+      at_body_(false) {
 }
 
 /**
@@ -49,6 +55,7 @@ Request& Request::operator=(const Request& other) {
 
     max_header_size_ = other.max_header_size_;
     max_body_size_ = other.max_body_size_;
+    max_uri_size_ = other.max_uri_size_;
 
     complete_ = other.complete_;
     error_ = other.error_;
@@ -122,12 +129,12 @@ static std::vector<std::string> listHeaders(const std::string s) {
     std::vector<std::string> val_vect;
 
     while (!val.empty()) {
-        size_t comma_pos = val.find(", ");
+        size_t comma_pos = val.find(",");
         element = val.substr(0, comma_pos);
         val_vect.push_back(trim(element));
         val.erase(0, comma_pos);
         if (comma_pos != std::string::npos)
-            val.erase(0, 2);
+            val.erase(0, 1);
     }
     return (val_vect);
 }
@@ -185,7 +192,13 @@ std::string Request::getBody() const {
  */
 std::string Request::getHeaderValue(const std::string key) const {
     std::string key_lower(key);
-    return (headers_.at(setToLower(key_lower)));
+    std::string value_get;
+    if (headers_.count(setToLower(key_lower)) > 0) {
+        std::map<std::string, std::string>::const_iterator c_it;
+        c_it = headers_.find(key_lower);
+        value_get = c_it->second;
+    }
+    return (value_get);
 }
 
 /**
@@ -292,13 +305,12 @@ void Request::setMaxBodySize(size_t max_body_size) {
  * @param int Error code to set error_code_ to.
  * @param message Error message to set error_message_ to.
  */
-void Request::setError(int code, std::string message) {
-    LOG_DEBUG() << "Request error: " << code << " " << message;
+void Request::setError(HttpConstants::HttpError http_error) {
     error_ = true;
-    error_code_ = code;
-    error_message_ = message;
-    if (code == 400)
-        complete_ = true;
+    error_code_ = http_error.code;
+    error_message_ = http_error.reason;
+    complete_ = true;
+    LOG_DEBUG() << "Request error: " << error_code_ << " " << error_message_;
 }
 
 /**
@@ -309,9 +321,9 @@ void Request::setComplete() {
     if (protocol_ == "HTTP/1.1")
         keep_alive_ = true;
     if (headers_.count("connection") > 0) {
-        if (headers_.at("connection") == "keep-alive")
+        if (headers_["connection"] == "keep-alive")
             keep_alive_ = true;
-        else if (headers_.at("connection") == "close")
+        else if (headers_["connection"] == "close")
             keep_alive_ = false;
     }
 }
@@ -335,17 +347,19 @@ void Request::parseStartLine() {
             if (allow_empty_start_)
                 allow_empty_start_ = false;
             else
-                return (setError(400, "Bad Request"));
+                return (setError(HttpConstants::kBadRequest));
         } else {
             /*Parsing request start line*/
             std::istringstream line_stream(line);
-            line_stream >> method_ >> target_ >> protocol_;
+            std::string garbage;
+            line_stream >> method_ >> target_ >> protocol_ >> garbage;
 
             /*Check for missing or malformed tokens*/
-            if (method_.empty() || target_.empty() || protocol_.empty())
-                return (setError(400, "Bad Request"));
+            if (method_.empty() || target_.empty() || protocol_.empty() ||
+                !garbage.empty())
+                return (setError(HttpConstants::kBadRequest));
             if (target_.size() > max_uri_size_)
-                setError(414, "URI Too Long");
+                return (setError(HttpConstants::kURITooLong));
 
             at_start_line_ = false;
         }
@@ -366,28 +380,28 @@ void Request::parseHeaders() {
 
         if (line.empty()) {
             if (headers_.count("host") > 0) {
-                if (listHeaders(headers_.at("host")).size() > 1)
-                    return (setError(400, "Bad Request"));
+                if (listHeaders(headers_["host"]).size() > 1)
+                    return (setError(HttpConstants::kBadRequest));
             } else if (protocol_ == "HTTP/1.1")
-                return (setError(400, "Bad Request"));
+                return (setError(HttpConstants::kBadRequest));
             at_body_ = true;
             return;
         }
 
         if (line.find(':') == std::string::npos)
-            return (setError(400, "Bad Request"));
+            return (setError(HttpConstants::kBadRequest));
         std::string name = line.substr(0, line.find(':'));
         if (findWhitespace(name))
-            return (setError(400, "Bad Request"));
+            return (setError(HttpConstants::kBadRequest));
         setToLower(name);
 
         std::string value = line.substr(line.find(':') + 1);
         trim(value);
         /*If header already exists, append value in comma-separated list*/
-        if (headers_.count(name) > 0 && !headers_.at(name).empty())
-            value = headers_.at(name) + ", " + value;
+        if (headers_.count(name) > 0 && !headers_[name].empty())
+            value = headers_[name] + ", " + value;
         if (value.size() > max_header_size_)
-            setError(431, "Request Header Fields Too Large");
+            return (setError(HttpConstants::kHeaderTooLarge));
         headers_[name] = value;
     }
 }
@@ -402,13 +416,13 @@ void Request::parseBody() {
     /*Check if a header indicates a body exists*/
     if (headers_.count("transfer-encoding") > 0) {
         std::vector<std::string> encoding_list;
-        encoding_list = listHeaders(headers_.at("transfer-encoding"));
+        encoding_list = listHeaders(headers_["transfer-encoding"]);
         if (!encoding_list.empty() && encoding_list.back() == "chunked")
             parseBodyChunked();
         else
-            return (setError(400, "Bad Request"));
+            return (setError(HttpConstants::kBadRequest));
     } else if (headers_.count("content-length") > 0)
-        parseBodyContentLen(headers_.at("content-length"));
+        parseBodyContentLen(headers_["content-length"]);
     else {
         LOG_INFO() << "Request: fully parsed without message body";
         return (setComplete());
@@ -421,21 +435,24 @@ void Request::parseBody() {
  */
 void Request::parseBodyContentLen(std::string len) {
     if (!isOnlyDigits(len))
-        return (setError(400, "Bad Request"));
+        return (setError(HttpConstants::kBadRequest));
 
     size_t len_value = 0;
     std::istringstream len_stream(len);
 
     len_stream >> len_value;
     if (len_stream.fail())
-        return (setError(400, "Bad Request"));
+        return (setError(HttpConstants::kBadRequest));
     if (len_value > max_body_size_)
-        setError(413, "Content Too Large");
+        return (setError(HttpConstants::kBodyTooLarge));
 
     /*Appending raw content to body*/
-    while (body_.size() < len_value && !raw_.empty()) {
-        body_ += raw_[0];
-        raw_.erase(0, 1);
+    size_t len_take = len_value - body_.size();
+    if (raw_.size() < len_take)
+        len_take = raw_.size();
+    if (len_take > 0) {
+        body_ += raw_.substr(0, len_take);
+        raw_.erase(0, len_take);
     }
     if (body_.size() != len_value)
         return;  // Reached end of stream - incomplete body
@@ -448,24 +465,22 @@ void Request::parseBodyContentLen(std::string len) {
  * @brief Parse body using Transfer-Encoding chunked method.
  */
 void Request::parseBodyChunked() {
-    std::string chunk_size, content;
-
     while (raw_.find("\r\n") != std::string::npos) {
         std::string size_line = raw_.substr(0, raw_.find("\r\n"));
         removeCR(size_line);
 
         if (!isOnlyHexDigits(size_line))
-            return (setError(400, "Bad Request"));
+            return (setError(HttpConstants::kBadRequest));
 
-        size_t len_value;
+        size_t len_value = 0;
         std::istringstream len_stream(size_line);
 
         /*Convert hexadecimal chunk size to size_t*/
         len_stream >> std::hex >> len_value;
         if (len_stream.fail())
-            return (setError(400, "Bad Request"));
+            return (setError(HttpConstants::kBadRequest));
         if (body_.size() + len_value > max_body_size_)
-            setError(413, "Content Too Large");
+            return (setError(HttpConstants::kBodyTooLarge));
 
         /*Check if chunk properly ends in CRLF*/
         size_t chunk_end = raw_.find("\r\n") + len_value + 2;
@@ -474,20 +489,16 @@ void Request::parseBodyChunked() {
         if (raw_.size() - chunk_end == 1 && raw_[chunk_end] == '\r')
             return;  // raw ends in "\r" - incomplete
         if (raw_.compare(chunk_end, 2, "\r\n") != 0)
-            return (setError(400, "Bad Request"));
+            return (setError(HttpConstants::kBadRequest));
 
         raw_.erase(0, raw_.find("\r\n") + 2);
 
         /*Append chunk to body*/
-        std::string chunk_data;
-        while (chunk_data.size() < len_value) {
-            chunk_data += raw_[0];
-            raw_.erase(0, 1);
-        }
+        std::string chunk_data = raw_.substr(0, len_value);
         body_ += chunk_data;
 
-        /*Erase chunk CRF*/
-        raw_.erase(0, 2);
+        /*Erase parsed chunk and CRF*/
+        raw_.erase(0, len_value + 2);
 
         if (len_value == 0) {
             /*Reached null chunk - body parsing finished*/

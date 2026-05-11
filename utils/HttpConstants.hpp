@@ -4,8 +4,19 @@
 #include <cstddef>
 
 namespace HttpConstants {
+struct HttpError {
+    int code;
+    const char* reason;
+};
+
 const size_t kDefaultMaxBodySize = 1048576;  // 1MB
 const size_t kDefaultMaxHeaderSize = 8192;   // 8KB
+const size_t kDefaultMaxURISize = 8192;      // 8KB
+
+const HttpError kBadRequest = {400, "Bad Request"};
+const HttpError kBodyTooLarge = {413, "Content Too Large"};
+const HttpError kURITooLong = {414, "URI Too Long"};
+const HttpError kHeaderTooLarge = {431, "Request Header Fields Too Large"};
 }  // namespace HttpConstants
 
 #endif

@@ -4,6 +4,8 @@
 #include <map>
 #include <string>
 
+#include "../utils/HttpConstants.hpp"
+
 /**
  * @class Request
  * @brief Manages request parsing and request data storage
@@ -74,7 +76,7 @@ private:
     void parseBody();
     void parseBodyContentLen(std::string len);
     void parseBodyChunked();
-    void setError(int code, std::string message);
+    void setError(HttpConstants::HttpError http_error);
     void setComplete();
 };
 
