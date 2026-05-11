@@ -5,8 +5,8 @@
 
 namespace HttpConstants {
 struct HttpError {
-   int code;
-   const char* reason;
+    int code;
+    const char* reason;
 };
 
 const size_t kDefaultMaxBodySize = 1048576;  // 1MB
