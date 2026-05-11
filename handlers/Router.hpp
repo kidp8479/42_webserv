@@ -11,7 +11,7 @@
  * ServerConfig. Given a URI, iterates all locations and returns the one
  * whose path is the longest prefix of the URI. Throws if no location matches.
  *
- * @note No regex support — prefix matching only, per subject requirements.
+ * @note No regex support - prefix matching only, per subject requirements.
  */
 class Router {
 public:
@@ -23,7 +23,6 @@ public:
 private:
     void routerError(const std::string& msg) const;
 
-private:
     Router(const Router& copy);
     Router& operator=(const Router& other);
 
