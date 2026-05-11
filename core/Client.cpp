@@ -67,9 +67,10 @@ void Client::handle(short revents) {
 
             LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
                        << " switching " << stateToStr(state_) << " → kWriting";
-            const LocationConfig& loc =
-                resources_.router().resolve(request_.getPath());
-            Handler::run(request_, loc, response_);
+            const LocationConfig& location =
+                resources_.getRouter().resolve(request_.getPath());
+            const ServerConfig& server = resources_.getServerConfig();
+            Handler::run(request_, location, server, response_);
             state_ = kWriting;
 
             LOG_DEBUG() << "[Client] enabling POLLOUT";

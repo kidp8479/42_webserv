@@ -13,10 +13,10 @@ ServerResources::ServerResources(const ServerResources& other)
 ServerResources::~ServerResources() {
 }
 
-const Router& ServerResources::router() const {
+const Router& ServerResources::getRouter() const {
     return router_;
 }
 
-const ServerConfig& ServerResources::serverConfig() const {
+const ServerConfig& ServerResources::getServerConfig() const {
     return server_config_;
 }
