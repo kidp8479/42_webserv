@@ -67,6 +67,7 @@ void Client::handle(short revents) {
 
             LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
                        << " switching " << stateToStr(state_) << " → kWriting";
+
             const LocationConfig& location =
                 resources_.getRouter().resolve(request_.getPath());
             const ServerConfig& server = resources_.getServerConfig();
