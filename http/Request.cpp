@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "../logger/Logger.hpp"
 #include "../utils/HttpConstants.hpp"
@@ -14,7 +15,8 @@
  * @brief Default Constructor.
  */
 Request::Request()
-    : max_header_size_(HttpConstants::kDefaultMaxHeaderSize),
+    : max_uri_size_(HttpConstants::kDefaultMaxURISize),
+      max_header_size_(HttpConstants::kDefaultMaxHeaderSize),
       max_body_size_(HttpConstants::kDefaultMaxBodySize) {
     clearData();
 }
@@ -109,10 +111,25 @@ static bool isOnlyDigits(std::string s) {
 static bool isOnlyHexDigits(std::string s) {
     for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
         if (!std::isdigit(s_it[0]) &&
-            !(std::tolower(s_it[0]) >= 'a' && std::tolower(s_it[0]) >= 'f'))
+            !(std::tolower(s_it[0]) >= 'a' && std::tolower(s_it[0]) <= 'f'))
             return (false);
     }
     return (true);
+}
+
+static std::vector<std::string> listHeaders(const std::string s) {
+    std::string val(s), element;
+    std::vector<std::string> val_vect;
+
+    while (!val.empty()) {
+        size_t comma_pos = val.find(", ");
+        element = val.substr(0, comma_pos);
+        val_vect.push_back(trim(element));
+        val.erase(0, comma_pos);
+        if (comma_pos != std::string::npos)
+            val.erase(0, 2);
+    }
+    return (val_vect);
 }
 
 /********************************* Getters **********************************/
@@ -216,7 +233,7 @@ bool Request::shouldKeepAlive() const {
 /********************************* Setters **********************************/
 
 /**
- * @brief Append string to raw string, then parse it.
+ * @brief Append string to raw string, then parse it. Erases parsed sections.
  * @param data String to append to raw string.
  * @param len Number of characters to append.
  */
@@ -256,6 +273,10 @@ void Request::resetData() {
     parseStartLine();
     parseHeaders();
     parseBody();
+}
+
+void Request::setMaxURISize(size_t max_uri_size) {
+    max_uri_size_ = max_uri_size;
 }
 
 void Request::setMaxHeaderSize(size_t max_header_size) {
@@ -323,6 +344,8 @@ void Request::parseStartLine() {
             /*Check for missing or malformed tokens*/
             if (method_.empty() || target_.empty() || protocol_.empty())
                 return (setError(400, "Bad Request"));
+            if (target_.size() > max_uri_size_)
+                setError(414, "URI Too Long");
 
             at_start_line_ = false;
         }
@@ -342,6 +365,11 @@ void Request::parseHeaders() {
         removeCR(line);
 
         if (line.empty()) {
+            if (headers_.count("host") > 0) {
+                if (listHeaders(headers_.at("host")).size() > 1)
+                    return (setError(400, "Bad Request"));
+            } else if (protocol_ == "HTTP/1.1")
+                return (setError(400, "Bad Request"));
             at_body_ = true;
             return;
         }
@@ -372,9 +400,13 @@ void Request::parseBody() {
         return;
 
     /*Check if a header indicates a body exists*/
-    if (headers_.count("transfer-encoding") > 0 &&
-        headers_.at("transfer-encoding") == "chunked") {
-        parseBodyChunked();
+    if (headers_.count("transfer-encoding") > 0) {
+        std::vector<std::string> encoding_list;
+        encoding_list = listHeaders(headers_.at("transfer-encoding"));
+        if (!encoding_list.empty() && encoding_list.back() == "chunked")
+            parseBodyChunked();
+        else
+            return (setError(400, "Bad Request"));
     } else if (headers_.count("content-length") > 0)
         parseBodyContentLen(headers_.at("content-length"));
     else {
@@ -461,7 +493,10 @@ void Request::parseBodyChunked() {
             /*Reached null chunk - body parsing finished*/
             LOG_INFO() << "Request: fully parsed "
                           "with chunked encoding for message body";
-            return (setComplete());
+            setComplete();
+            if (headers_.count("content-length") > 0 || protocol_ == "HTTP/1.0")
+                keep_alive_ = false;
+            return;
         }
     }
 }
