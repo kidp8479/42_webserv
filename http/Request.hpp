@@ -1,6 +1,8 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
+#include "../utils/HttpConstants.hpp"
+
 #include <string>
 #include <map>
 
@@ -74,7 +76,7 @@ class Request {
 		void	parseBody();
 		void	parseBodyContentLen(std::string len);
 		void	parseBodyChunked();
-		void	setError(int code, std::string message);
+		void	setError(HttpConstants::HttpError_t http_error);
 		void	setComplete();
 };
 

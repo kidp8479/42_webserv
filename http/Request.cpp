@@ -1,5 +1,4 @@
 #include "Request.hpp"
-#include "../utils/HttpConstants.hpp"
 #include "../logger/Logger.hpp"
 
 #include <iostream>
@@ -17,9 +16,15 @@
 Request::Request() :
 max_uri_size_(HttpConstants::kDefaultMaxURISize),
 max_header_size_(HttpConstants::kDefaultMaxHeaderSize),
-max_body_size_(HttpConstants::kDefaultMaxBodySize)
+max_body_size_(HttpConstants::kDefaultMaxBodySize),
+complete_(false),
+error_(false),
+error_code_(0),
+keep_alive_(false),
+allow_empty_start_(true),
+at_start_line_(true),
+at_body_(false)
 {
-	clearData();
 }
 
  /**
@@ -303,13 +308,12 @@ void Request::setMaxBodySize(size_t max_body_size) {
  * @param int Error code to set error_code_ to.
  * @param message Error message to set error_message_ to.
  */
-void Request::setError(int code, std::string message) {
-	LOG_DEBUG() << "Request error: " << code << " " << message;
+void Request::setError(HttpConstants::HttpError_t http_error) {
 	error_ = true;
-	error_code_ = code;
-	error_message_ = message;
-	if (code == 400)
-		complete_ = true;
+	error_code_ = http_error.code;
+	error_message_ = http_error.reason;
+	complete_ = true;
+	LOG_DEBUG() << "Request error: " << error_code_ << " " << error_message_;
 }
 
  /**
@@ -347,18 +351,20 @@ void Request::parseStartLine() {
 			if (allow_empty_start_)
 				allow_empty_start_ = false;
 			else
-				return (setError(400, "Bad Request"));
+				return (setError(HttpConstants::kBadRequest));
 		}
 		else {
 			/*Parsing request start line*/
 			std::istringstream	line_stream(line);
-			line_stream >> method_ >> target_ >> protocol_;
+			std::string			garbage;
+			line_stream >> method_ >> target_ >> protocol_ >> garbage;
 
 			/*Check for missing or malformed tokens*/
-			if (method_.empty() || target_.empty() || protocol_.empty())
-				return (setError(400, "Bad Request"));
+			if (method_.empty() || target_.empty() || protocol_.empty()
+				|| !garbage.empty())
+				return (setError(HttpConstants::kBadRequest));
 			if (target_.size() > max_uri_size_)
-				setError(414, "URI Too Long");
+				return (setError(HttpConstants::kURITooLong));
 
 			at_start_line_ = false;
 		}
@@ -380,19 +386,19 @@ void Request::parseHeaders() {
 		if (line.empty()) {
 			if (headers_.count("host") > 0) {
 				if (listHeaders(headers_["host"]).size() > 1)
-					return (setError(400, "Bad Request"));
+					return (setError(HttpConstants::kBadRequest));
 			}
 			else if (protocol_ == "HTTP/1.1")
-				return (setError(400, "Bad Request"));
+				return (setError(HttpConstants::kBadRequest));
 			at_body_ = true;
 			return ;
 		}
 
 		if (line.find(':') == std::string::npos)
-			return (setError(400, "Bad Request"));
+			return (setError(HttpConstants::kBadRequest));
 		std::string	name = line.substr(0, line.find(':'));
 		if (findWhitespace(name))
-			return (setError(400, "Bad Request"));
+			return (setError(HttpConstants::kBadRequest));
 		setToLower(name);
 
 		std::string	value = line.substr(line.find(':') + 1);
@@ -401,7 +407,7 @@ void Request::parseHeaders() {
 		if (headers_.count(name) > 0 && !headers_[name].empty())
 			value = headers_[name] + ", " + value;
 		if (value.size() > max_header_size_)
-			setError(431, "Request Header Fields Too Large");
+			return (setError(HttpConstants::kHeaderTooLarge));
 		headers_[name] = value;
 	}
 }
@@ -420,7 +426,7 @@ void Request::parseBody() {
 		if (!encoding_list.empty() && encoding_list.back() == "chunked")
 			parseBodyChunked();
 		else
-			return (setError(400, "Bad Request"));
+			return (setError(HttpConstants::kBadRequest));
 	}
 	else if (headers_.count("content-length") > 0)
 		parseBodyContentLen(headers_["content-length"]);
@@ -436,16 +442,16 @@ void Request::parseBody() {
  */
 void Request::parseBodyContentLen(std::string len) {
 	if (!isOnlyDigits(len))
-		return (setError(400, "Bad Request"));
+		return (setError(HttpConstants::kBadRequest));
 
 	size_t				len_value = 0;
 	std::istringstream	len_stream(len);
 
 	len_stream >> len_value;
 	if (len_stream.fail())
-		return (setError(400, "Bad Request"));
+		return (setError(HttpConstants::kBadRequest));
 	if (len_value > max_body_size_)
-		setError(413, "Content Too Large");
+		return (setError(HttpConstants::kBodyTooLarge));
 
 	/*Appending raw content to body*/
 	size_t	len_take = len_value - body_.size();
@@ -471,7 +477,7 @@ void Request::parseBodyChunked() {
 		removeCR(size_line);
 
 		if (!isOnlyHexDigits(size_line))
-			return (setError(400, "Bad Request"));
+			return (setError(HttpConstants::kBadRequest));
 
 		size_t				len_value;
 		std::istringstream	len_stream(size_line);
@@ -479,9 +485,9 @@ void Request::parseBodyChunked() {
 		/*Convert hexadecimal chunk size to size_t*/
 		len_stream >> std::hex >> len_value;
 		if (len_stream.fail())
-			return (setError(400, "Bad Request"));
+			return (setError(HttpConstants::kBadRequest));
 		if (body_.size() + len_value > max_body_size_)
-			setError(413, "Content Too Large");
+			return (setError(HttpConstants::kBodyTooLarge));
 
 		/*Check if chunk properly ends in CRLF*/
 		size_t	chunk_end = raw_.find("\r\n") + len_value + 2;
@@ -490,7 +496,7 @@ void Request::parseBodyChunked() {
 		if (raw_.size() - chunk_end == 1 && raw_[chunk_end] == '\r')
 			return ; //raw ends in "\r" - incomplete
 		if (raw_.compare(chunk_end, 2, "\r\n") != 0)
-			return (setError(400, "Bad Request"));
+			return (setError(HttpConstants::kBadRequest));
 		
 		raw_.erase(0, raw_.find("\r\n") + 2);
 		

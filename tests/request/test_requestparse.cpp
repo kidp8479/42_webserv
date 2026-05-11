@@ -92,6 +92,7 @@ protected:
 
 	// chunk variants - broken chunks
 	const char* chunk1_broken1 = "GET / \r\n";
+	const char* chunk1_broken2 = "GET / HTTP/1.1 garbage\r\n";
 
 	// chunk variants - chunk that contains body and start line
 	const char* chunk_endstart =
@@ -335,11 +336,15 @@ TEST_F(RequestTestFixture, Parse_BodyEndsInNewline) {
 	EXPECT_EQ(req.getBody(), "Hello\r\n");
 }
 
-TEST_F(RequestTestFixture, Parse_StartLineBroken) {
-	//Broken start lines should return an error
-	Request	reqCopy(req);
-
+TEST_F(RequestTestFixture, Parse_StartLineMissingToken) {
+	//Start lines with missing tokens should return an error
 	req.append(chunk1_broken1, strlen(chunk1_broken1));
+	EXPECT_TRUE(req.isError());
+}
+
+TEST_F(RequestTestFixture, Parse_StartLineGarbageToken) {
+	//Start lines with more than 3 tokens should return an error
+	req.append(chunk1_broken2, strlen(chunk1_broken2));
 	EXPECT_TRUE(req.isError());
 }
 
