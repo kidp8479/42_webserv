@@ -17,21 +17,18 @@ private:
     Handler(const Handler& copy);
     Handler& operator=(const Handler& other);
 
-    static void handleReturn(const Request& request,
-                             const LocationConfig& location,
-                             const ServerConfig& server, Response& response);
-    static void handleCgiInterpreters(const Request& request,
-                                      const LocationConfig& location,
-                                      const ServerConfig& server,
-                                      Response& response);
-    static void handleUpload(const Request& request,
-                             const LocationConfig& location,
-                             const ServerConfig& server, Response& response);
-    static void handleStatic(const Request& request,
-                             const LocationConfig& location,
-                             const ServerConfig& server, Response& response);
-    static void sendError(int code, const ServerConfig& server,
-                          Response& response);
+    struct HandlerContext {
+        const Request& request;
+        const LocationConfig& location;
+        const ServerConfig& server;
+        Response& response;
+    };
+
+    static void handleReturn(HandlerContext& handler_context);
+    static void handleCgiInterpreters(HandlerContext& handler_context);
+    static void handleUpload(HandlerContext& handler_context);
+    static void handleStatic(HandlerContext& handler_context);
+    static void sendError(int code, HandlerContext& handler_context);
 };
 
 #endif
