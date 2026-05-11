@@ -560,7 +560,8 @@ TEST_F(RequestTestFixture, isComplete_NoNullChunked) {
 }
 
 TEST_F(RequestTestFixture, isComplete_IncompleteChunked) {
-	//A chunked-encoded body with a partial chunk doesn't complete
+	//A chunked-encoded body with an incomplete chunk doesn't complete
+	//and only parses previous complete chunks
 	req.append(chunk1, strlen(chunk1));
 	req.append(chunk2, strlen(chunk2));
 	req.append(transfer_encode_header, strlen(transfer_encode_header));
