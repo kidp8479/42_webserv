@@ -26,6 +26,9 @@ void Handler::run(const Request& request, const LocationConfig& location,
         return;
     }
 
+    // second - check for 405 error
+    // third - dispatcher for right private method
+
     // stub: same hello world as before, keeps server testable
     response.setRaw(
         "HTTP/1.1 200 OK\r\n"
