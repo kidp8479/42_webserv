@@ -143,7 +143,7 @@ void Client::write() {
 		//reset for next request
 		state_ = kReading;
 		bytes_sent_ = 0;
-		request_.reset();
+		request_.resetData();
 		response_.reset();
 
 		// switch back to read mode
