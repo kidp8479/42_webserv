@@ -26,10 +26,20 @@ public:
 
     const std::string& getRaw() const;
     void reset();
+
+    // what Pauline needs for the handler:
+    // void setStatus(int code, const std::string& reason);
+    // void setHeader(const std::string& key, const std::string& value);
+    // void setBody(const std::string& body);
+
+    // will be obsolete when the 3 above methods are implemented, could be
+    // deleted in the end
     void setRaw(const std::string& raw);
 
 private:
     std::string raw_;
+    // + whatever members you need to store the infos for the above methods
+    // needed
 };
 
 #endif

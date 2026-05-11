@@ -43,7 +43,13 @@ void Response::reset() {
     raw_.clear();
 }
 
-// handler will need this
+// what Pauline needs for handler:
+// void setStatus(int code, const std::string& reason);
+// void setHeader(const std::string& key, const std::string& value);
+// void setBody(const std::string& body);
+
+// handler uses this for now to unblock dev time, but this call will be replaced
+// by the 3 setters above when ready and can be deleted in the end
 void Response::setRaw(const std::string& raw) {
     raw_ = raw;
 }
