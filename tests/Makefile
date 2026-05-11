@@ -19,24 +19,25 @@ VPATH := $(sort $(dir $(TEST_SRCS)))
 
 # shared sources (no test files here)
 SRCS = 	\
-		../config/ConfigValidator.cpp \
-		../config/ConfigTokenizer.cpp \
-		../config/ConfigBuilder.cpp \
-		../logger/Logger.cpp \
 		../config/Config.cpp \
-		../config/ServerConfig.cpp \
+		../config/ConfigBuilder.cpp \
+		../config/ConfigParser.cpp \
+		../config/ConfigTokenizer.cpp \
+		../config/ConfigValidator.cpp \
 		../config/LocationConfig.cpp \
-		../core/Fd.cpp \
+		../config/ServerConfig.cpp \
 		../core/Client.cpp \
-		../core/Listener.cpp \
 		../core/EventLoop.cpp \
-		../core/Signal.cpp \
-		../core/ServerResources.cpp \
-		../http/Request.cpp \
-		../http/Response.cpp \
+		../core/Fd.cpp \
+		../core/Listener.cpp \
 		../core/Server.cpp \
+		../core/ServerResources.cpp \
+		../core/Signal.cpp \
 		../handlers/Router.cpp \
 		../handlers/Handler.cpp \
+		../http/Request.cpp \
+		../http/Response.cpp \
+		../logger/Logger.cpp \
 		../utils/LogUtils.cpp \
 		
 

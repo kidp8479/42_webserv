@@ -24,3 +24,20 @@ void Handler::run(const Request& request, const LocationConfig& location,
         "\r\n"
         "Hello World");
 }
+
+void Handler::handleReturn(HandlerContext& handler_context) {
+    (void)handler_context;
+}
+void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
+    (void)handler_context;
+}
+void Handler::handleUpload(HandlerContext& handler_context) {
+    (void)handler_context;
+}
+void Handler::handleStatic(HandlerContext& handler_context) {
+    (void)handler_context;
+}
+void Handler::sendError(int code, HandlerContext& handler_context) {
+    (void)code;
+    (void)handler_context;
+}
