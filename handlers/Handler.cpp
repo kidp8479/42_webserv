@@ -123,24 +123,34 @@ void Handler::dispatch(HandlerContext& handler_context) {
     }
 }
 
-// TODO
+// TODO: implement redirect with Location header and return code
 void Handler::handleReturn(HandlerContext& handler_context) {
-    (void)handler_context;
+    // this is a super minimal response
+    // setRaw will be replaced by real Response setters (code/body/header) when
+    // available
+    handler_context.response.setRaw("HTTP/1.1 301 Moved Permanently\r\n\r\n");
 }
 
-// TODO
+// TODO: implement CGI execution (fork/execve)
 void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
-    (void)handler_context;
+    // this is a super minimal response
+    // setRaw will be replaced by real Response setters (code/body/header) when
+    // available
+    handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
 }
 
-// TODO
+// TODO: implement file upload handling
 void Handler::handleUpload(HandlerContext& handler_context) {
-    (void)handler_context;
+    // this is a super minimal response
+    // setRaw will be replaced by real Response setters (code/body/header) when
+    // available
+    handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
 }
 
-// TODO
+// TODO: implement static file serving
 void Handler::handleStatic(HandlerContext& handler_context) {
-    (void)handler_context;
+    // this is a super minimal response
+    handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
 }
 
 void Handler::sendError(HttpConstants::HttpError error,
