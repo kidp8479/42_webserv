@@ -45,25 +45,27 @@ Request::Request(const Request& other) {
  * @param other Request to copy.
  */
 Request& Request::operator=(const Request& other) {
-    raw_ = other.raw_;
-    method_ = other.method_;
-    target_ = other.target_;
-    protocol_ = other.protocol_;
-    headers_ = other.headers_;
-    body_ = other.body_;
+    if (this != &other) {
+        raw_ = other.raw_;
+        method_ = other.method_;
+        target_ = other.target_;
+        protocol_ = other.protocol_;
+        headers_ = other.headers_;
+        body_ = other.body_;
 
-    max_header_size_ = other.max_header_size_;
-    max_body_size_ = other.max_body_size_;
-    max_uri_size_ = other.max_uri_size_;
+        max_header_size_ = other.max_header_size_;
+        max_body_size_ = other.max_body_size_;
+        max_uri_size_ = other.max_uri_size_;
 
-    complete_ = other.complete_;
-    error_ = other.error_;
-    error_code_ = other.error_code_;
-    error_message_ = other.error_message_;
+        complete_ = other.complete_;
+        error_ = other.error_;
+        error_code_ = other.error_code_;
+        error_message_ = other.error_message_;
 
-    allow_empty_start_ = other.allow_empty_start_;
-    at_start_line_ = other.at_start_line_;
-    at_body_ = other.at_body_;
+        allow_empty_start_ = other.allow_empty_start_;
+        at_start_line_ = other.at_start_line_;
+        at_body_ = other.at_body_;
+    }
     return (*this);
 }
 
