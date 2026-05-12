@@ -241,7 +241,7 @@ bool Request::shouldKeepAlive() const {
     if (error_)
         return (false);
 
-    bool    keep_alive = (protocol_ == "HTTP/1.1");
+    bool keep_alive = (protocol_ == "HTTP/1.1");
 
     if (headers_.count("connection") > 0) {
         std::map<std::string, std::string>::const_iterator c_it;
@@ -254,8 +254,8 @@ bool Request::shouldKeepAlive() const {
             keep_alive = false;
     }
 
-    if (headers_.count("transfer-encoding")
-        && (headers_.count("content-length") > 0 || protocol_ != "HTTP/1.1"))
+    if (headers_.count("transfer-encoding") &&
+        (headers_.count("content-length") > 0 || protocol_ != "HTTP/1.1"))
         keep_alive = false;
 
     return (keep_alive);
