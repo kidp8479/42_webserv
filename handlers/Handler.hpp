@@ -38,7 +38,7 @@ private:
     static void sendError(int code, const std::string& reason,
                           HandlerContext& handler_context);
 
-    static std::string Handler::toString(int code);
+    static std::string toString(int code);
 };
 
 #endif
