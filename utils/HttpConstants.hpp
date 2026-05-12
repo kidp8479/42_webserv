@@ -17,6 +17,7 @@ const HttpError kBadRequest = {400, "Bad Request"};
 const HttpError kBodyTooLarge = {413, "Content Too Large"};
 const HttpError kURITooLong = {414, "URI Too Long"};
 const HttpError kHeaderTooLarge = {431, "Request Header Fields Too Large"};
+const HttpError kHTTPNotSupported = {505, "HTTP Version Not Supported"};
 }  // namespace HttpConstants
 
 #endif

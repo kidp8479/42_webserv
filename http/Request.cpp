@@ -21,7 +21,6 @@ Request::Request()
       complete_(false),
       error_(false),
       error_code_(0),
-      keep_alive_(false),
       allow_empty_start_(true),
       at_start_line_(true),
       at_body_(false) {
@@ -61,7 +60,6 @@ Request& Request::operator=(const Request& other) {
     error_ = other.error_;
     error_code_ = other.error_code_;
     error_message_ = other.error_message_;
-    keep_alive_ = other.keep_alive_;
 
     allow_empty_start_ = other.allow_empty_start_;
     at_start_line_ = other.at_start_line_;
@@ -134,7 +132,7 @@ static std::vector<std::string> listHeaders(const std::string s) {
         val_vect.push_back(trim(element));
         val.erase(0, comma_pos);
         if (comma_pos != std::string::npos)
-            val.erase(0, 2);
+            val.erase(0, 1);
     }
     return (val_vect);
 }
@@ -240,7 +238,27 @@ std::string Request::getErrorMessage() const {
  * @brief Check if a connection should be kept alive after request.
  */
 bool Request::shouldKeepAlive() const {
-    return (keep_alive_);
+    if (error_)
+        return (false);
+
+    bool    keep_alive = (protocol_ == "HTTP/1.1");
+
+    if (headers_.count("connection") > 0) {
+        std::map<std::string, std::string>::const_iterator c_it;
+        c_it = headers_.find("connection");
+        std::string connec_val = c_it->second;
+
+        if (connec_val == "keep-alive")
+            keep_alive = true;
+        else if (connec_val == "close")
+            keep_alive = false;
+    }
+
+    if (headers_.count("transfer-encoding")
+        && (headers_.count("content-length") > 0 || protocol_ != "HTTP/1.1"))
+        keep_alive = false;
+
+    return (keep_alive);
 }
 
 /********************************* Setters **********************************/
@@ -271,7 +289,6 @@ void Request::clearData() {
     error_ = false;
     error_code_ = 0;
     error_message_.clear();
-    keep_alive_ = false;
 
     allow_empty_start_ = true;
     at_start_line_ = true;
@@ -310,22 +327,14 @@ void Request::setError(HttpConstants::HttpError http_error) {
     error_code_ = http_error.code;
     error_message_ = http_error.reason;
     complete_ = true;
-    LOG_DEBUG() << "Request error: " << error_code_ << " " << error_message_;
+    LOG_WARNING() << "Request error: " << error_code_ << " " << error_message_;
 }
 
 /**
- * @brief Sets complete_ to true and adjusts keep_alive_.
+ * @brief Sets complete_ to true
  */
 void Request::setComplete() {
     complete_ = true;
-    if (protocol_ == "HTTP/1.1")
-        keep_alive_ = true;
-    if (headers_.count("connection") > 0) {
-        if (headers_["connection"] == "keep-alive")
-            keep_alive_ = true;
-        else if (headers_["connection"] == "close")
-            keep_alive_ = false;
-    }
 }
 
 /********************************* Parsing **********************************/
@@ -360,6 +369,8 @@ void Request::parseStartLine() {
                 return (setError(HttpConstants::kBadRequest));
             if (target_.size() > max_uri_size_)
                 return (setError(HttpConstants::kURITooLong));
+            if (protocol_ != "HTTP/1.1" && protocol_ != "HTTP/1.0")
+                return (setError(HttpConstants::kHTTPNotSupported));
 
             at_start_line_ = false;
         }
@@ -452,7 +463,6 @@ void Request::parseBodyContentLen(std::string len) {
         len_take = raw_.size();
     if (len_take > 0) {
         body_ += raw_.substr(0, len_take);
-        ;
         raw_.erase(0, len_take);
     }
     if (body_.size() != len_value)
@@ -473,14 +483,14 @@ void Request::parseBodyChunked() {
         if (!isOnlyHexDigits(size_line))
             return (setError(HttpConstants::kBadRequest));
 
-        size_t len_value;
+        size_t len_value = 0;
         std::istringstream len_stream(size_line);
 
         /*Convert hexadecimal chunk size to size_t*/
         len_stream >> std::hex >> len_value;
         if (len_stream.fail())
             return (setError(HttpConstants::kBadRequest));
-        if (body_.size() + len_value > max_body_size_)
+        if (len_value > max_body_size_ - body_.size())
             return (setError(HttpConstants::kBodyTooLarge));
 
         /*Check if chunk properly ends in CRLF*/
@@ -505,10 +515,7 @@ void Request::parseBodyChunked() {
             /*Reached null chunk - body parsing finished*/
             LOG_INFO() << "Request: fully parsed "
                           "with chunked encoding for message body";
-            setComplete();
-            if (headers_.count("content-length") > 0 || protocol_ == "HTTP/1.0")
-                keep_alive_ = false;
-            return;
+            return (setComplete());
         }
     }
 }
