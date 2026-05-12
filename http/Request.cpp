@@ -146,7 +146,8 @@ static bool checkTargetSyntax(std::string target) {
         return (false);
     std::string::iterator s_it = target.begin();
     while (++s_it != target.end()) {
-        if (std::isspace(s_it[0]) || s_it[0] == '\x1B' || s_it[0] == 0x7F)
+        char c = s_it[0];
+        if (c < 32 || c == 127)
             return (false);
     }
     return (true);
