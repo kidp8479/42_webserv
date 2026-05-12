@@ -34,7 +34,7 @@ private:
     static bool methodNotAllowedCheck(HandlerContext& handler_context);
     static bool locationBlockDiscriminantCheck(HandlerContext& handler_context);
 
-    //
+    // helpers for dispatch()
     static void handleReturn(HandlerContext& handler_context);
     static void handleCgiInterpreters(HandlerContext& handler_context);
     static void handleUpload(HandlerContext& handler_context);

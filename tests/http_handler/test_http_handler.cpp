@@ -109,6 +109,35 @@ TEST_F(TestHandler, MethodNotInLocationIs405) {
     EXPECT_NE(response_.getRaw().find("405"), std::string::npos);
 }
 
+/* tests for run() - 500 Internal Server Error check
+   [FAIL] => multiple discriminants set in the location block can't resolve
+   properly, ambiguous block, internal server error. Don't let a weird block
+   pass.
+*/
+TEST_F(TestHandler, AmbiguousLocationBlockIs500) {
+    Request req = makeRequest(
+        "GET / HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "\r\n");
+
+    ASSERT_FALSE(req.isError());
+    ASSERT_EQ(req.getMethod(), "GET");
+
+    LocationConfig loc;
+
+    std::vector<std::string> methods;
+    methods.push_back("GET");
+    loc.setMethods(methods);
+
+    loc.setReturnCode(301);
+    loc.setUploadPath("/upload");
+    loc.addCgiInterpreter(".php", "whatever/this/is/a/test");
+
+    Handler::run(req, loc, server_, response_);
+    EXPECT_FALSE(response_.getRaw().empty());
+    EXPECT_NE(response_.getRaw().find("500"), std::string::npos);
+}
+
 /* tests for run() - dispatch reached
    [PASS] => all checks pass, request reaches the dispatch (Hello World stub for
    now)

@@ -105,8 +105,9 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
     if (count_discriminant > 1) {
         sendError(HttpConstants::kInternalServerError, handler_context);
 
-        LOG_WARNING() << "[Handler] ambiguous location block: multiple "
-                         "discriminants set, cannot resolve properly";
+        LOG_WARNING() << "[Handler] 500 - internal server error "
+                      << "- ambiguous location block: multiple discriminants "
+                         "set, cannot resolve properly";
         return true;
     }
     return false;
