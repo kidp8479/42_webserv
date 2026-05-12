@@ -17,7 +17,11 @@ Response::Response() : raw_("") {
  * @param request Parsed HTTP request (currently unused in this stub)
  */
 void Response::buildFrom(const Request& request) {
-    (void)request;
+    if (request.isError()) {
+		buildError(request.getErrorCode(),
+			request.getErrorMessage());
+		return;
+	}
 
     // minimal valid HTTP response
     raw_ =
@@ -25,6 +29,28 @@ void Response::buildFrom(const Request& request) {
         "Content-Length: 11\r\n"
         "\r\n"
         "Hello World";
+}
+
+void Response::buildError(int code, const std::string& reason) {
+	std::ostringstream body;
+
+	body << "<html><body><h1>"
+		<< code << " " << reason
+		<< "</h1></body></html>";
+
+	std::string body_str = body.str();
+	std::ostringstream response;
+	response
+		<< "HTTP/1.1 "
+        << code << " "
+        << reason << "\r\n"
+        << "Content-Length: "
+        << body_str.size() << "\r\n"
+        << "Connection: close\r\n"
+        << "\r\n"
+        << body_str;
+
+    raw_ = response.str();
 }
 
 /**

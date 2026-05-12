@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Request.hpp"
+#include <sstream>
 
 /**
  * @brief HTTP response builder and container.
@@ -27,6 +28,8 @@ public:
     const std::string& getRaw() const;
 	void reset();
 	void setRaw(const std::string& raw);
+	void buildError(int code, const std::string& reason);
+
 
 private:
     std::string raw_;
