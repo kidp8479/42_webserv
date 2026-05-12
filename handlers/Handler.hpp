@@ -33,7 +33,7 @@ private:
     static bool methodNotImplementedCheck(HandlerContext& handler_context);
     static bool methodNotAllowedCheck(HandlerContext& handler_context);
     static bool locationBlockDiscriminantCheck(HandlerContext& handler_context);
-    static void disptach(HandlerContext& handler_context);
+    static void dispatch(HandlerContext& handler_context);
 
     // helpers for dispatch()
     static void handleReturn(HandlerContext& handler_context);
