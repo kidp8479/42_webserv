@@ -47,7 +47,8 @@ void ConfigValidator::configError(const std::string& msg) const {
 void ConfigValidator::validate(const Config& config) const {
     serverChecks(config);
     checkDuplicateHostPort(config);
-    LOG_INFO() << BR_CYN "ConfigValidator: Config object fully validated" RESET;
+    LOG_INFO() << BR_CYN
+        "[ConfigValidator] Config object fully validated" RESET;
 }
 
 /**
@@ -59,7 +60,7 @@ void ConfigValidator::serverChecks(const Config& config) const {
 
     for (it = server_blocks.begin(); it != server_blocks.end(); ++it) {
         LOG_DEBUG()
-            << "ConfigValidator: server block found, validating data...";
+            << "[ConfigValidator] server block found, validating data...";
 
         checkPort(*it);
         checkHost(*it);
@@ -89,7 +90,7 @@ void ConfigValidator::checkDuplicateHostPort(const Config& config) const {
             }
         }
     }
-    LOG_DEBUG() << "ConfigValidator: no duplicated host:port pairs.";
+    LOG_DEBUG() << "[ConfigValidator] no duplicated host:port pairs.";
 }
 
 /**
@@ -107,7 +108,7 @@ void ConfigValidator::checkPort(const ServerConfig& server) const {
             << kMaxPort << "]";
         configError(oss.str());
     }
-    LOG_DEBUG() << "ConfigValidator: valid listening server port.";
+    LOG_DEBUG() << "[ConfigValidator] valid listening server port.";
 }
 
 /**
@@ -117,7 +118,7 @@ void ConfigValidator::checkPort(const ServerConfig& server) const {
 void ConfigValidator::checkHost(const ServerConfig& server) const {
     std::string host = server.getHost();
     if (host == "localhost") {
-        LOG_DEBUG() << "ConfigValidator: valid host format.";
+        LOG_DEBUG() << "[ConfigValidator] valid host format.";
         return;
     }
 
@@ -153,7 +154,7 @@ void ConfigValidator::checkHost(const ServerConfig& server) const {
     if (count != kIpOctetCount) {
         configError("Invalid host format. Misconstructed IP address.");
     }
-    LOG_DEBUG() << "ConfigValidator: valid host format.";
+    LOG_DEBUG() << "[ConfigValidator] valid host format.";
 }
 
 /**
@@ -173,7 +174,7 @@ void ConfigValidator::checkServerErrorCodes(const ServerConfig& server) const {
             configError(oss.str());
         }
     }
-    LOG_DEBUG() << "ConfigValidator: valid error code(s).";
+    LOG_DEBUG() << "[ConfigValidator] valid error code(s).";
 }
 
 /**
@@ -195,7 +196,7 @@ void ConfigValidator::checkDuplicatePath(const ServerConfig& server) const {
             }
         }
     }
-    LOG_DEBUG() << "ConfigValidator: no duplicated location path.";
+    LOG_DEBUG() << "[ConfigValidator] no duplicated location path.";
 }
 
 /**
@@ -208,7 +209,7 @@ void ConfigValidator::locationChecks(const ServerConfig& server) const {
 
     for (it = location_blocks.begin(); it != location_blocks.end(); ++it) {
         LOG_DEBUG()
-            << "ConfigValidator: location block found, validating data...";
+            << "[ConfigValidator] location block found, validating data...";
 
         checkPath(*it);
         checkReturnCode(*it);
@@ -226,7 +227,7 @@ void ConfigValidator::checkPath(const LocationConfig& location) const {
     if (path.empty() || path[0] != '/') {
         configError("Invalid location path format. Path must start with '/'");
     }
-    LOG_DEBUG() << "ConfigValidator: location path is valid.";
+    LOG_DEBUG() << "[ConfigValidator] location path is valid.";
 }
 
 /**
@@ -240,7 +241,7 @@ void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
     const std::string& return_url = location.getReturnUrl();
 
     if (return_code == LocationConfig::kNoRedirect) {
-        LOG_DEBUG() << "ConfigValidator: no return directive set, skipping "
+        LOG_DEBUG() << "[ConfigValidator] no return directive set, skipping "
                        "return code check.";
         return;
     }
@@ -257,7 +258,7 @@ void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
     if (return_url.empty()) {
         configError("Return code set. A valid return url must be set");
     }
-    LOG_DEBUG() << "ConfigValidator: valid return code.";
+    LOG_DEBUG() << "[ConfigValidator] valid return code.";
 }
 
 /**
@@ -278,5 +279,5 @@ void ConfigValidator::checkCgiBinaryPaths(
                         "\". Path must be absolute (start with '/')");
         }
     }
-    LOG_DEBUG() << "ConfigValidator: valid CGI binary path(s).";
+    LOG_DEBUG() << "[ConfigValidator] valid CGI binary path(s).";
 }

@@ -1,13 +1,15 @@
 #include "Handler.hpp"
 
+#include "../logger/Logger.hpp"
+
 /**
  * @brief Stub: returns static hello world response.
  * @note Will be replaced by Pauline's full handler implementation.
  */
 void Handler::run(const Request& request, const LocationConfig& location,
                   const ServerConfig& server, Response& response) {
-    // this is called "aggregate initialization"
-    // init members in the order of declaration
+    LOG_INFO() << BR_CYN "[Handler] " << request.getMethod() << " "
+               << request.getTarget() << RESET;
     HandlerContext handler_context = {request, location, server, response};
 
     // if request parsing has marked isError true, sendError will either look
@@ -24,6 +26,8 @@ void Handler::run(const Request& request, const LocationConfig& location,
     const std::string& request_method = request.getMethod();
     if (request_method != "GET" && request_method != "POST" &&
         request_method != "DELETE") {
+        LOG_WARNING() << "[Handler] 501 - method not implemented: "
+                      << request_method;
         sendError(HttpConstants::kNotImplemented, handler_context);
         return;
     }
@@ -34,6 +38,8 @@ void Handler::run(const Request& request, const LocationConfig& location,
     std::vector<std::string>::const_iterator it;
     if (std::find(allowed_method.begin(), allowed_method.end(),
                   request_method) == allowed_method.end()) {
+        LOG_WARNING() << "[Handler] 405 - method not allowed: "
+                      << request_method;
         sendError(HttpConstants::kMethodNotAllowed, handler_context);
         return;
     }
@@ -68,6 +74,8 @@ void Handler::sendError(HttpConstants::HttpError error,
 
 void Handler::sendError(int code, const std::string& reason,
                         HandlerContext& handler_context) {
+    LOG_DEBUG() << "[Handler] sending error " << GRN << code << " " << reason
+                << RESET;
     // to add : look for existing error pages on disk
     // return it
     // it it does not exists : minimal hardcoded html response

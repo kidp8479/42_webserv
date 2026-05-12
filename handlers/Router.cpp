@@ -17,7 +17,7 @@ Router::~Router() {
  * @throws std::runtime_error always
  */
 void Router::routerError(const std::string& msg) const {
-    std::string full = "Router: " + msg;
+    std::string full = "[Router] " + msg;
     LOG_ERROR() << full;
     throw std::runtime_error(full);
 }
@@ -34,6 +34,9 @@ void Router::routerError(const std::string& msg) const {
  * @throws std::runtime_error if no location prefix matches the URI
  */
 const LocationConfig& Router::resolve(const std::string& uri) const {
+    LOG_DEBUG() << BR_YEL "[Router] resolving request" << RESET;
+    LOG_DEBUG() << "[Router] resolving URI: " << GRN << uri << RESET;
+
     const std::vector<LocationConfig>& location_blocks =
         server_config_.getLocationBlock();
     std::vector<LocationConfig>::const_iterator it;
@@ -77,6 +80,9 @@ const LocationConfig& Router::resolve(const std::string& uri) const {
     if (best_path_match == NULL) {
         routerError("No matching location for URI: " + uri);
     }
+
+    LOG_INFO() << BR_CYN "[Router] resolved " << uri << " => "
+               << best_path_match->getPath() << RESET;
 
     return (*best_path_match);
 }
