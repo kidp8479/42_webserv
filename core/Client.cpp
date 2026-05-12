@@ -54,8 +54,15 @@ void Client::handle(short revents) {
 			LOG_DEBUG() << "[Client] POLLIN detected";
 			read();
 		}
-
+		// request finished parsing
 		if (state_ == kReading && request_.isComplete()) {
+			// invalid request close connection immediately
+			if (request_.isError()) {
+				LOG_WARNING() << "[Client] invalid request fd="
+					<< fd_.getFd() << " closing connection";
+				cleanup();
+				return;
+			}
 			keep_alive_ = request_.shouldKeepAlive();
 
 			LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
