@@ -26,7 +26,7 @@ void Handler::run(const Request& request, const LocationConfig& location,
         return;
     }
 
-    // four - dispatch
+    disptach(handler_context);
 
     // stub: same hello world as before, keeps server testable
     response.setRaw(
@@ -111,6 +111,25 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
         return true;
     }
     return false;
+}
+
+void Handler::disptach(HandlerContext& handler_context) {
+    // at this step, it is guaranteed to have only ONE location block type
+    // possible we can now dispatch to the right path
+    if (handler_context.location.getReturnCode() !=
+        LocationConfig::kNoRedirect) {
+        handleReturn(handler_context);
+        LOG_DEBUG() << "[Handler] - return location block detected";
+    } else if (!handler_context.location.getCgiInterpreters().empty()) {
+        handleCgiInterpreters(handler_context);
+        LOG_DEBUG() << "[Handler] - CGI location block detected";
+    } else if (!handler_context.location.getUploadPath().empty()) {
+        handleUpload(handler_context);
+        LOG_DEBUG() << "[Handler] - upload location block detected";
+    } else {
+        handleStatic(handler_context);
+        LOG_DEBUG() << "[Handler] - serve static files location block detected";
+    }
 }
 
 void Handler::handleReturn(HandlerContext& handler_context) {
