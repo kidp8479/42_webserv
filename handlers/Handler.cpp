@@ -149,7 +149,19 @@ void Handler::handleUpload(HandlerContext& handler_context) {
 
 // TODO: implement static file serving
 void Handler::handleStatic(HandlerContext& handler_context) {
+    // build full_path = root + uri
+    // stat(full_path) :
+    //   if -1 => 404 Not Found
+    //   if 0 + S_ISREG => serve the file
+    //   if 0 + S_ISDIR :
+    //     try full_path + "/" + index
+    //     if index exists  serve the file
+    //     else if directory_listing on => generate and serve directory listing
+    //     else => 403 Forbidden
+
     // this is a super minimal response
+    // setRaw will be replaced by real Response setters (code/body/header) when
+    // available
     handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
 }
 
