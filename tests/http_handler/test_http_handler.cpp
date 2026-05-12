@@ -31,10 +31,9 @@ protected:
     Response response_;
 };
 
-/* --- isError() branch --- */
-
-// A malformed request (no valid start line) must produce some error response,
-// not the stub "Hello World"
+/* tests for run() - isError() branch
+   [FAIL] => request parsing failed (Charlie set isError), sendError() is called
+*/
 TEST_F(TestHandler, MalformedRequestTriggersError) {
     Request req = makeRequest("GARBAGE THIS IS NOT HTTP\r\n\r\n");
 
@@ -49,9 +48,10 @@ TEST_F(TestHandler, MalformedRequestTriggersError) {
     EXPECT_EQ(response_.getRaw().find("200"), std::string::npos);
 }
 
-/* --- 501 Not Implemented --- */
-
-// PATCH is not GET/POST/DELETE - always 501 regardless of location
+/* tests for run() - 501 Not Implemented check
+   [FAIL] => method is not GET, POST, or DELETE (PATCH, PUT, etc.)
+   [PASS] => method is GET, POST, or DELETE
+*/
 TEST_F(TestHandler, UnknownMethodIs501) {
     Request req = makeRequest(
         "PATCH / HTTP/1.1\r\n"
@@ -83,9 +83,11 @@ TEST_F(TestHandler, PutMethodIs501) {
     EXPECT_NE(response_.getRaw().find("501"), std::string::npos);
 }
 
-/* --- 405 Method Not Allowed --- */
-
-// Location only allows GET - DELETE must produce 405
+/* tests for run() - 405 Method Not Allowed check
+   [FAIL] => method is valid (GET/POST/DELETE) but not listed in location's
+   allowed methods [PASS] => method is listed in location's allowed methods
+   (single or multiple)
+*/
 TEST_F(TestHandler, MethodNotInLocationIs405) {
     Request req = makeRequest(
         "DELETE / HTTP/1.1\r\n"
@@ -107,8 +109,10 @@ TEST_F(TestHandler, MethodNotInLocationIs405) {
     EXPECT_NE(response_.getRaw().find("405"), std::string::npos);
 }
 
-/* --- valid GET reaches dispatch (stub for now) --- */
-
+/* tests for run() - dispatch reached
+   [PASS] => all checks pass, request reaches the dispatch (Hello World stub for
+   now)
+*/
 TEST_F(TestHandler, ValidGetReachesDispatch) {
     Request req = makeRequest(
         "GET / HTTP/1.1\r\n"
@@ -130,4 +134,52 @@ TEST_F(TestHandler, ValidGetReachesDispatch) {
     EXPECT_FALSE(response_.getRaw().empty());
     EXPECT_EQ(response_.getRaw().find("4"), std::string::npos);  // no 4xx
     EXPECT_EQ(response_.getRaw().find("5"), std::string::npos);  // no 5xx
+}
+
+TEST_F(TestHandler, MultipleMethodAuthorizedValidGet) {
+    Request req = makeRequest(
+        "GET / HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "\r\n");
+
+    ASSERT_FALSE(req.isError());
+    ASSERT_EQ(req.getMethod(), "GET");
+
+    LocationConfig loc;
+    loc.setPath("/");
+    std::vector<std::string> methods;
+    methods.push_back("GET");
+    methods.push_back("POST");
+    loc.setMethods(methods);
+
+    Handler::run(req, loc, server_, response_);
+
+    // stub still sets Hello World - test will evolve when handleStatic is done
+    EXPECT_FALSE(response_.getRaw().empty());
+    EXPECT_EQ(response_.getRaw().find("4"), std::string::npos);  // no 4xx
+    EXPECT_EQ(response_.getRaw().find("5"), std::string::npos);  // no 5xx
+}
+
+TEST_F(TestHandler, MultipleMethodAuthorizedInvalid405) {
+    Request req = makeRequest(
+        "DELETE / HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "\r\n");
+
+    ASSERT_FALSE(req.isError());
+    ASSERT_EQ(req.getMethod(), "DELETE");
+
+    LocationConfig loc;
+    loc.setPath("/");
+    std::vector<std::string> methods;
+    methods.push_back("GET");
+    methods.push_back("POST");
+    loc.setMethods(methods);
+
+    Handler::run(req, loc, server_, response_);
+
+    // stub still sets Hello World - test will evolve when handleStatic is done
+    EXPECT_FALSE(response_.getRaw().empty());
+    EXPECT_NE(response_.getRaw().find("405"),
+              std::string::npos);  // look for 405
 }
