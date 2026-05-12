@@ -1,6 +1,8 @@
 #ifndef HANDLER_HPP
 #define HANDLER_HPP
 
+#include <sstream>
+
 #include "../config/LocationConfig.hpp"
 #include "../config/ServerConfig.hpp"
 #include "../http/Request.hpp"
@@ -29,7 +31,14 @@ private:
     static void handleCgiInterpreters(HandlerContext& handler_context);
     static void handleUpload(HandlerContext& handler_context);
     static void handleStatic(HandlerContext& handler_context);
-    static void sendError(int code, HandlerContext& handler_context);
+    static void sendError(HttpConstants::HttpError error,
+                          HandlerContext& handler_context);
+
+    // overload, need the detailed parameters sometimes depending on context
+    static void sendError(int code, const std::string& reason,
+                          HandlerContext& handler_context);
+
+    static std::string Handler::toString(int code);
 };
 
 #endif

@@ -15,18 +15,29 @@ void Handler::run(const Request& request, const LocationConfig& location,
     // page via setRaw
     // then sendError returns, run returns and we are back into Client
     if (request.isError()) {
-        sendError(request.getErrorCode(), handler_context);
+        sendError(request.getErrorCode(), request.getErrorMessage(),
+                  handler_context);
         return;
     }
 
-    // first check for 501 error
-    const std::string& method = request.getMethod();
-    if (method != "GET" && method != "POST" && method != "DELETE") {
+    // first - check for 501 error
+    const std::string& request_method = request.getMethod();
+    if (request_method != "GET" && request_method != "POST" &&
+        request_method != "DELETE") {
         sendError(HttpConstants::kNotImplemented.code, handler_context);
         return;
     }
 
     // second - check for 405 error
+    const std::vector<std::string> allowed_method = location.getMethods();
+    std::vector<std::string>::const_iterator it;
+    for (it = allowed_method.begin(); it != allowed_method.end(); ++it) {
+        if (request_method != *it) {
+            sendError(HttpConstants::kMethodNotAllowed.code, handler_context);
+            return;
+        }
+    }
+
     // third - dispatcher for right private method
 
     // stub: same hello world as before, keeps server testable
@@ -49,7 +60,32 @@ void Handler::handleUpload(HandlerContext& handler_context) {
 void Handler::handleStatic(HandlerContext& handler_context) {
     (void)handler_context;
 }
-void Handler::sendError(int code, HandlerContext& handler_context) {
-    (void)code;
-    (void)handler_context;
+
+void Handler::sendError(HttpConstants::HttpError error,
+                        HandlerContext& handler_context) {
+    sendError(error.code, error.reason, handler_context);
+}
+
+void Handler::sendError(int code, const std::string& reason,
+                        HandlerContext& handler_context) {
+    // to add : look for existing error pages on disk
+    // return it
+    // it it does not exists : minimal hardcoded html response
+
+    std::string body =
+        "<html><body><h1>" + toString(code) + reason + "</h1></body></html>";
+    std::string response =
+        "HTTP/1.1 " + toString(code) + " " + reason + "\r\n" +
+        "Content-Type: text/html\r\n" +
+        "Content-Length: " + toString(static_cast<int>(body.size())) + "\r\n" +
+        "\r\n" + body;
+    handler_context.response.setRaw(response);
+}
+
+std::string Handler::toString(int code) {
+    std::ostringstream oss;
+    oss << code;
+    std::string converted_code = oss.str();
+
+    return converted_code;
 }
