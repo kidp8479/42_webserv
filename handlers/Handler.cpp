@@ -10,6 +10,7 @@ void Handler::run(const Request& request, const LocationConfig& location,
                   const ServerConfig& server, Response& response) {
     LOG_INFO() << BR_CYN "[Handler] " << request.getMethod() << " "
                << request.getTarget() << RESET;
+
     HandlerContext handler_context = {request, location, server, response};
 
     // if request parsing has marked isError true, sendError will either look
@@ -28,6 +29,7 @@ void Handler::run(const Request& request, const LocationConfig& location,
         request_method != "DELETE") {
         LOG_WARNING() << "[Handler] 501 - method not implemented: "
                       << request_method;
+
         sendError(HttpConstants::kNotImplemented, handler_context);
         return;
     }
@@ -40,11 +42,31 @@ void Handler::run(const Request& request, const LocationConfig& location,
                   request_method) == allowed_method.end()) {
         LOG_WARNING() << "[Handler] 405 - method not allowed: "
                       << request_method;
+
         sendError(HttpConstants::kMethodNotAllowed, handler_context);
         return;
     }
 
-    // third - dispatcher for right private method
+    // third - count for discriminant
+    size_t count_discriminant = 0;
+    if (location.getReturnCode() != LocationConfig::kNoRedirect) {
+        count_discriminant++;
+    }
+    if (!location.getCgiInterpreters().empty()) {
+        count_discriminant++;
+    }
+    if (!location.getUploadPath().empty()) {
+        count_discriminant++;
+    }
+
+    if (count_discriminant > 1) {
+        LOG_WARNING() << "[Handler] ambiguous location block: multiple "
+                         "discriminants set, cannot resolve properly";
+        sendError(HttpConstants::kInternalServerError, handler_context);
+        return;
+    }
+
+    // four - dispatch
 
     // stub: same hello world as before, keeps server testable
     response.setRaw(
@@ -76,6 +98,7 @@ void Handler::sendError(int code, const std::string& reason,
                         HandlerContext& handler_context) {
     LOG_DEBUG() << "[Handler] sending error " << GRN << code << " " << reason
                 << RESET;
+
     // to add : look for existing error pages on disk
     // return it
     // it it does not exists : minimal hardcoded html response
