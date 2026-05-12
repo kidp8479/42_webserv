@@ -89,7 +89,7 @@ bool Handler::methodNotAllowedCheck(HandlerContext& handler_context) {
 
 bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
     // fourth - count for discriminant, meaning what define the "type" of a
-    // location block, if more than 1 is set : too ambiguous
+    // location block, if more than 1 is set : too ambiguous to resolve for user
     size_t count_discriminant = 0;
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
