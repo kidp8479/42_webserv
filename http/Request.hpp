@@ -64,7 +64,6 @@ private:
     bool error_;
     int error_code_;
     std::string error_message_;
-    bool keep_alive_;
 
     bool allow_empty_start_;
     bool at_start_line_;
