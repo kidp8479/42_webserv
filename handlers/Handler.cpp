@@ -28,14 +28,14 @@ void Handler::run(const Request& request, const LocationConfig& location,
         return;
     }
 
-    // second - check for 405 error
+    // second - check for 405 error, look for request_method inside
+    // allowed_method vector
     const std::vector<std::string> allowed_method = location.getMethods();
     std::vector<std::string>::const_iterator it;
-    for (it = allowed_method.begin(); it != allowed_method.end(); ++it) {
-        if (request_method != *it) {
-            sendError(HttpConstants::kMethodNotAllowed, handler_context);
-            return;
-        }
+    if (std::find(allowed_method.begin(), allowed_method.end(),
+                  request_method) == allowed_method.end()) {
+        sendError(HttpConstants::kMethodNotAllowed, handler_context);
+        return;
     }
 
     // third - dispatcher for right private method

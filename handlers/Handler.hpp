@@ -1,6 +1,7 @@
 #ifndef HANDLER_HPP
 #define HANDLER_HPP
 
+#include <algorithm>
 #include <sstream>
 
 #include "../config/LocationConfig.hpp"
