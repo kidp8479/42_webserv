@@ -147,7 +147,7 @@ static bool checkTargetSyntax(std::string target) {
     std::string::iterator s_it = target.begin();
     while (++s_it != target.end()) {
         char c = s_it[0];
-        if (c < 32 || c == 127)
+        if (c <= 32 || c == 127)
             return (false);
     }
     return (true);
