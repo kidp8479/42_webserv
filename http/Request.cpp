@@ -249,6 +249,7 @@ bool Request::shouldKeepAlive() const {
         std::map<std::string, std::string>::const_iterator c_it;
         c_it = headers_.find("connection");
         std::string connec_val = c_it->second;
+        setToLower(connec_val);
 
         if (connec_val == "keep-alive")
             keep_alive = true;
