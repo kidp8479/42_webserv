@@ -109,17 +109,17 @@ void Handler::dispatch(HandlerContext& handler_context) {
     // possible, we can now dispatch to the right branch path
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
-        handleReturn(handler_context);
         LOG_DEBUG() << "[Handler] - return location block detected";
+        handleReturn(handler_context);
     } else if (!handler_context.location.getCgiInterpreters().empty()) {
-        handleCgiInterpreters(handler_context);
         LOG_DEBUG() << "[Handler] - CGI location block detected";
+        handleCgiInterpreters(handler_context);
     } else if (!handler_context.location.getUploadPath().empty()) {
-        handleUpload(handler_context);
         LOG_DEBUG() << "[Handler] - upload location block detected";
+        handleUpload(handler_context);
     } else {
-        handleStatic(handler_context);
         LOG_DEBUG() << "[Handler] - serve static files location block detected";
+        handleStatic(handler_context);
     }
 }
 
