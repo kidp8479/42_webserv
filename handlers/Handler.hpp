@@ -28,13 +28,21 @@ private:
         Response& response;
     };
 
+    // helpers for run()
+    static bool requestIsError(HandlerContext& handler_context);
+    static bool methodNotImplementedCheck(HandlerContext& handler_context);
+    static bool methodNotAllowedCheck(HandlerContext& handler_context);
+    static bool locationBlockDiscriminantCheck(HandlerContext& handler_context);
+
+    //
     static void handleReturn(HandlerContext& handler_context);
     static void handleCgiInterpreters(HandlerContext& handler_context);
     static void handleUpload(HandlerContext& handler_context);
     static void handleStatic(HandlerContext& handler_context);
+
+    // error handling
     static void sendError(HttpConstants::HttpError error,
                           HandlerContext& handler_context);
-
     // overload, need the detailed parameters sometimes depending on context
     static void sendError(int code, const std::string& reason,
                           HandlerContext& handler_context);

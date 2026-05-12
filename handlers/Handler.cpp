@@ -13,56 +13,16 @@ void Handler::run(const Request& request, const LocationConfig& location,
 
     HandlerContext handler_context = {request, location, server, response};
 
-    // if request parsing has marked isError true, sendError will either look
-    // for an existing error page on the disk or if not, hardcode a minimal http
-    // page via setRaw
-    // then sendError returns, run returns and we are back into Client
-    if (request.isError()) {
-        sendError(request.getErrorCode(), request.getErrorMessage(),
-                  handler_context);
+    if (requestIsError(handler_context)) {
         return;
     }
-
-    // first - check for 501 error
-    const std::string& request_method = request.getMethod();
-    if (request_method != "GET" && request_method != "POST" &&
-        request_method != "DELETE") {
-        LOG_WARNING() << "[Handler] 501 - method not implemented: "
-                      << request_method;
-
-        sendError(HttpConstants::kNotImplemented, handler_context);
+    if (methodNotImplementedCheck(handler_context)) {
         return;
     }
-
-    // second - check for 405 error, look for request_method inside
-    // allowed_method vector
-    const std::vector<std::string> allowed_method = location.getMethods();
-    std::vector<std::string>::const_iterator it;
-    if (std::find(allowed_method.begin(), allowed_method.end(),
-                  request_method) == allowed_method.end()) {
-        LOG_WARNING() << "[Handler] 405 - method not allowed: "
-                      << request_method;
-
-        sendError(HttpConstants::kMethodNotAllowed, handler_context);
+    if (methodNotAllowedCheck(handler_context)) {
         return;
     }
-
-    // third - count for discriminant
-    size_t count_discriminant = 0;
-    if (location.getReturnCode() != LocationConfig::kNoRedirect) {
-        count_discriminant++;
-    }
-    if (!location.getCgiInterpreters().empty()) {
-        count_discriminant++;
-    }
-    if (!location.getUploadPath().empty()) {
-        count_discriminant++;
-    }
-
-    if (count_discriminant > 1) {
-        LOG_WARNING() << "[Handler] ambiguous location block: multiple "
-                         "discriminants set, cannot resolve properly";
-        sendError(HttpConstants::kInternalServerError, handler_context);
+    if (locationBlockDiscriminantCheck(handler_context)) {
         return;
     }
 
@@ -74,6 +34,82 @@ void Handler::run(const Request& request, const LocationConfig& location,
         "Content-Length: 11\r\n"
         "\r\n"
         "Hello World");
+}
+
+bool Handler::requestIsError(HandlerContext& handler_context) {
+    // first - check for reauest parsing flagged error
+    // if request parsing has marked isError true, sendError will either look
+    // for an existing error page on the disk or if not, hardcode a minimal http
+    // page via setRaw
+    // then sendError returns, run returns and we are back into Client
+
+    if (handler_context.request.isError()) {
+        sendError(handler_context.request.getErrorCode(),
+                  handler_context.request.getErrorMessage(), handler_context);
+
+        LOG_WARNING() << "[Handler] " << handler_context.request.getErrorCode()
+                      << ": " << handler_context.request.getErrorMessage();
+        return true;
+    }
+    return false;
+}
+
+bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
+    // second - check for 501 error,
+    const std::string& request_method = handler_context.request.getMethod();
+
+    if (request_method != "GET" && request_method != "POST" &&
+        request_method != "DELETE") {
+        sendError(HttpConstants::kNotImplemented, handler_context);
+
+        LOG_WARNING() << "[Handler] 501 - method not implemented: "
+                      << request_method;
+        return true;
+    }
+    return false;
+}
+
+bool Handler::methodNotAllowedCheck(HandlerContext& handler_context) {
+    // third - check for 405 error, look for request_method inside
+    // allowed_method vector
+    const std::string& request_method = handler_context.request.getMethod();
+    const std::vector<std::string> allowed_method =
+        handler_context.location.getMethods();
+
+    if (std::find(allowed_method.begin(), allowed_method.end(),
+                  request_method) == allowed_method.end()) {
+        sendError(HttpConstants::kMethodNotAllowed, handler_context);
+
+        LOG_WARNING() << "[Handler] 405 - method not allowed: "
+                      << request_method;
+        return true;
+    }
+    return false;
+}
+
+bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
+    // fourth - count for discriminant, meaning what define the "type" of a
+    // location block, if more than 1 is set : too ambiguous
+    size_t count_discriminant = 0;
+    if (handler_context.location.getReturnCode() !=
+        LocationConfig::kNoRedirect) {
+        count_discriminant++;
+    }
+    if (!handler_context.location.getCgiInterpreters().empty()) {
+        count_discriminant++;
+    }
+    if (!handler_context.location.getUploadPath().empty()) {
+        count_discriminant++;
+    }
+
+    if (count_discriminant > 1) {
+        sendError(HttpConstants::kInternalServerError, handler_context);
+
+        LOG_WARNING() << "[Handler] ambiguous location block: multiple "
+                         "discriminants set, cannot resolve properly";
+        return true;
+    }
+    return false;
 }
 
 void Handler::handleReturn(HandlerContext& handler_context) {
