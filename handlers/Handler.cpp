@@ -24,7 +24,7 @@ void Handler::run(const Request& request, const LocationConfig& location,
     const std::string& request_method = request.getMethod();
     if (request_method != "GET" && request_method != "POST" &&
         request_method != "DELETE") {
-        sendError(HttpConstants::kNotImplemented.code, handler_context);
+        sendError(HttpConstants::kNotImplemented, handler_context);
         return;
     }
 
@@ -33,7 +33,7 @@ void Handler::run(const Request& request, const LocationConfig& location,
     std::vector<std::string>::const_iterator it;
     for (it = allowed_method.begin(); it != allowed_method.end(); ++it) {
         if (request_method != *it) {
-            sendError(HttpConstants::kMethodNotAllowed.code, handler_context);
+            sendError(HttpConstants::kMethodNotAllowed, handler_context);
             return;
         }
     }
