@@ -119,8 +119,7 @@ void Client::read() {
 		}
 		// real error: connection reset, bad fd, kernel error
 		// maybe log debug here
-		LOG_ERROR() << "[Client] recv error fd=" << fd_.getFd()
-		            << " errno=" << errno;
+		LOG_ERROR() << "[Client] recv error fd=" << fd_.getFd() << " errno=" << errno;
 		cleanup();
 		return;
 	}
@@ -135,18 +134,15 @@ void Client::write() {
 
 	ssize_t n =
 		send(fd_.getFd(), data.c_str() + bytes_sent_, data.size() - bytes_sent_, 0);
-
 	if (n <= 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			LOG_DEBUG() << "[Client] write EAGAIN / EWOULDBLOCK";
 			return ;
 		}
-		LOG_ERROR() << "[Client] send error fd=" << fd_.getFd()
-		            << " errno=" << errno;
+		LOG_ERROR() << "[Client] send error fd=" << fd_.getFd() << " errno=" << errno;
 		cleanup();
 		return ;
 	}
-
 	bytes_sent_ += n;
 	LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
 
