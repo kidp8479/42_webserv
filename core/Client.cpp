@@ -50,9 +50,7 @@ void Client::handle(short revents) {
 		            << " events=" << LogUtils::pollToStr(revents);
 		// handle failures and disconnects (fatal socket states)
 		if (revents & (POLLERR | POLLNVAL)) {
-			LOG_WARNING() << "[Client] socket error/hangup fd=" << fd_.getFd();
-			cleanup();
-			return;
+			return closeConnection("socket error/hangup", "WARNING");
 		}
 		//POLLHUP means peer closed it's side of the connection so there
 		//may still be unread bytes buffered in the kernel so we dont 
@@ -72,10 +70,7 @@ void Client::handle(short revents) {
 		if (state_ == kReading && request_.isComplete()) {
 			// invalid request close connection immediately
 			if (request_.isError()) {
-				LOG_WARNING() << "[Client] invalid request fd=" << fd_.getFd()
-							  << " closing connection";
-				cleanup();
-				return;
+				return closeConnection("invalid request", "WARNING");
 			}
 			keep_alive_ = request_.shouldKeepAlive();
 
@@ -99,7 +94,7 @@ void Client::handle(short revents) {
 		if (peer_closed && state_ == kReading) {
 			LOG_INFO() << "[Client] peer disconnected during read fd=" << fd_.getFd();
 			cleanup();
-			return;
+			return closeConnection("peer disconnected during read");
 		}
 	}
 	catch (const std::exception& e) {
@@ -119,9 +114,7 @@ void Client::read() {
 	ssize_t n = recv(fd_.getFd(), buffer, kBufferSize, 0);
 	//client disconnected cleanly
 	if (n == 0) {
-		LOG_INFO() << "[Client] client closed connection fd=" << fd_.getFd();
-		cleanup();
-		return ;
+		return closeConnection("client closed connection");
 	}
 
 	if (n < 0) {
@@ -144,8 +137,7 @@ void Client::read() {
 void Client::write() {
 	const std::string& data = response_.getRaw();
 	LOG_DEBUG() << "[Client] write() fd=" << fd_.getFd()
-	            << " sent=" << bytes_sent_
-	            << "/" << data.size();
+	            << " sent=" << bytes_sent_ << "/" << data.size();
 
 	ssize_t n =
 		send(fd_.getFd(), data.c_str() + bytes_sent_, data.size() - bytes_sent_, 0);
@@ -158,19 +150,16 @@ void Client::write() {
 		LOG_ERROR() << "[Client] send error fd=" << fd_.getFd()
 		            << " errno=" << errno;
 		cleanup();
-		return;
+		return ;
 	}
 
 	bytes_sent_ += n;
-	LOG_DEBUG() << "[Client] wrote bytes=" << n
-	            << " total=" << bytes_sent_;
+	LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
 
 	if (bytes_sent_ >= data.size()) {
 		LOG_INFO() << "[Client] response complete fd=" << fd_.getFd();
 		if (!keep_alive_) {
-			LOG_INFO() << "[Client] closing connection fd=" << fd_.getFd();
-			cleanup();
-			return ;
+			return closeConnection("closing connection");
 		}
 		LOG_INFO() << "[Client] keeping connection alive fd=" << fd_.getFd();
 		//reset for next request
@@ -199,3 +188,13 @@ const char* Client::name() const {
 	return "Client";
 }
 
+void Client::closeConnection(const std::string& reason, const char* level) {
+	if (std::string(level) == "WARNING") {
+		LOG_WARNING() << "[Client] " << reason << " fd=" << fd_.getFd();
+	} else if (std::string(level) == "ERROR") {
+			LOG_ERROR() << "[Client] " << reason << "fd=" << fd_.getFd();
+	} else {
+		LOG_INFO() << "[Client] " << reason << " fd=" << fd_.getFd();
+	}
+	cleanup();
+}
