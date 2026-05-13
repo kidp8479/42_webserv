@@ -4,8 +4,7 @@
  * @brief Stub: returns static hello world response.
  * @note Will be replaced by Pauline's full handler implementation.
  */
-void Handler::run(const Request& request,
-                  const LocationConfig& loc,
+void Handler::run(const Request& request, const LocationConfig& loc,
                   Response& response) {
     (void)request;
     (void)loc;
@@ -14,6 +13,5 @@ void Handler::run(const Request& request,
         "HTTP/1.1 200 OK\r\n"
         "Content-Length: 11\r\n"
         "\r\n"
-        "Hello World"
-    );
+        "Hello World");
 }

@@ -1,11 +1,12 @@
 #ifndef LOGUTILS_HPP
 #define LOGUTILS_HPP
 
-#include <string>
 #include <poll.h>
 
+#include <string>
+
 namespace LogUtils {
-	std::string pollToStr(short events);
+std::string pollToStr(short events);
 }
 
 #endif

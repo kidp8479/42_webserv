@@ -2,34 +2,35 @@
 #define EVENTLOOP_HPP
 
 #include <poll.h>
-#include <vector>
+
 #include <map>
 #include <set>
+#include <vector>
 
 class IEventHandler;
 
 class EventLoop {
 public:
-	EventLoop();
-	~EventLoop();
+    EventLoop();
+    ~EventLoop();
 
-	void addHandler(IEventHandler* handler, short events);
-	void modifyHandler(IEventHandler* handler, short events);
-	void removeHandler(IEventHandler* handler);
+    void addHandler(IEventHandler* handler, short events);
+    void modifyHandler(IEventHandler* handler, short events);
+    void removeHandler(IEventHandler* handler);
 
-	int wait(int timeout);
+    int wait(int timeout);
 
-	void dispatch();
-	void cleanup();
+    void dispatch();
+    void cleanup();
 
 private:
-	EventLoop(const EventLoop&);
-	EventLoop& operator=(const EventLoop&);
+    EventLoop(const EventLoop&);
+    EventLoop& operator=(const EventLoop&);
 
-	// see the struct in the notes below
-	std::vector<pollfd> poll_fds_;
-	// this is where Listener* and/or Client* is stored
-	std::vector<IEventHandler*> handlers_;
+    // see the struct in the notes below
+    std::vector<pollfd> poll_fds_;
+    // this is where Listener* and/or Client* is stored
+    std::vector<IEventHandler*> handlers_;
 };
 #endif
 
@@ -51,4 +52,3 @@ private:
  *  POLLHUP → connection closed
  *  POLLNVAL → invalid fd
  */
-

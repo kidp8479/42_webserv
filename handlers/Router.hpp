@@ -8,6 +8,7 @@ class Router {
 public:
     explicit Router(const ServerConfig& config_server);
     const LocationConfig& resolve(const Request& request) const;
+
 private:
     const ServerConfig& config_server_;
 };

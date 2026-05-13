@@ -286,6 +286,9 @@ bool Request::shouldKeepAlive() const {
  * @param len Number of characters to append.
  */
 void Request::append(const char* data, size_t len) {
+    if (raw_.size() + len > max_header_size_ + max_body_size_) {
+        return (setError(HttpConstants::kBodyTooLarge));
+    }
     raw_.append(data, len);
     parseStartLine();
     parseHeaders();

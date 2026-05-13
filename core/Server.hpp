@@ -2,13 +2,13 @@
 #define SERVER_HPP
 
 #include <map>
-#include <vector>
+#include <set>
 #include <string>
+#include <vector>
 
 #include "../config/Config.hpp"
 #include "Client.hpp"
 #include "EventLoop.hpp"
-#include <set>
 #include "Listener.hpp"
 #include "ServerResources.hpp"
 
@@ -23,12 +23,12 @@ private:
     Server(const Server&);
     Server& operator=(const Server&);
 
-	void setupListeners();
+    void setupListeners();
 
     const Config& config_;
-	EventLoop loop_;
+    EventLoop loop_;
 
-	std::vector<Listener*> listeners_;
+    std::vector<Listener*> listeners_;
 };
 
 #endif

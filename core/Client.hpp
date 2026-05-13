@@ -3,45 +3,44 @@
 
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
-#include "Fd.hpp"
 #include "EventLoop.hpp"
+#include "Fd.hpp"
 #include "IEventHandler.hpp"
 #include "ServerResources.hpp"
 
 class Client : public IEventHandler {
 public:
-	enum State { kReading, kWriting, kDone };
+    enum State { kReading, kWriting, kDone };
     static const size_t kBufferSize = 4096;
 
     explicit Client(int fd, EventLoop& loop, const ServerResources& resources);
     ~Client();
 
     int getFd() const;
-	void handle(short revents);
-	const char* name() const;
-	
-	
+    void handle(short revents);
+    const char* name() const;
+
 private:
     Client(const Client&);
     Client& operator=(const Client&);
 
-	bool isDone() const;
-	void read();
-	void write();
-	void cleanup();
-	void closeConnection(const std::string& reason, const char* level = "INFO");
-	
+    bool isDone() const;
+    void read();
+    void write();
+    void cleanup();
+    void closeConnection(const std::string& reason, const char* level = "INFO");
+
     Fd fd_;
-	//reference to the server's loop_
-	EventLoop& loop_;
-	ServerResources resources_;
+    // reference to the server's loop_
+    EventLoop& loop_;
+    ServerResources resources_;
 
     size_t bytes_sent_;
     State state_;
 
-	Request request_;
+    Request request_;
     Response response_;
-	bool keep_alive_;
+    bool keep_alive_;
 };
 
 #endif

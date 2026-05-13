@@ -1,6 +1,8 @@
 #include "Router.hpp"
 
-Router::Router(const ServerConfig& config_server) : config_server_(config_server) {}
+Router::Router(const ServerConfig& config_server)
+    : config_server_(config_server) {
+}
 
 /**
  * @brief Stub: returns first available location config.

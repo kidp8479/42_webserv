@@ -17,7 +17,7 @@ Config createDummyConfig(int port = 8083) {
     sconf.setPort(port);
 
     LocationConfig loc;
-	loc.setPath("/");
+    loc.setPath("/");
     sconf.addLocationBlock(loc);
 
     cfg.addServerBlock(sconf);
@@ -29,38 +29,36 @@ protected:
     Config cfg;     // shared config
     Server server;  // server instance
 
-    ServerTestFixture()
-		: cfg(createDummyConfig()),
-		server(cfg)
-	{}
+    ServerTestFixture() : cfg(createDummyConfig()), server(cfg) {
+    }
 
     // Wrappers
-	int createSocket() {
-		int fd = socket(AF_INET, SOCK_STREAM, 0);
-		EXPECT_NE(fd, -1);
-		return fd;
-	}
+    int createSocket() {
+        int fd = socket(AF_INET, SOCK_STREAM, 0);
+        EXPECT_NE(fd, -1);
+        return fd;
+    }
 
-	sockaddr_in makeAddress(int port) {
-		sockaddr_in addr;
+    sockaddr_in makeAddress(int port) {
+        sockaddr_in addr;
 
-		std::memset(&addr, 0, sizeof(addr));
+        std::memset(&addr, 0, sizeof(addr));
 
-		        addr.sin_family = AF_INET;
+        addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
         return addr;
-	}
+    }
 
-	bool canConnect(int port) {
-		int fd = createSocket();
-		sockaddr_in addr = makeAddress(port);
+    bool canConnect(int port) {
+        int fd = createSocket();
+        sockaddr_in addr = makeAddress(port);
 
-		int ret = connect(fd, (sockaddr*)&addr, sizeof(addr));
-		close(fd);
-		return ret == 0;
-	}
+        int ret = connect(fd, (sockaddr*)&addr, sizeof(addr));
+        close(fd);
+        return ret == 0;
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -69,11 +67,11 @@ protected:
 
 // Test construction does not throw
 TEST_F(ServerTestFixture, Constructor_CreatesListeningSocket) {
-	EXPECT_TRUE(canConnect(8083));
+    EXPECT_TRUE(canConnect(8083));
 }
 
 TEST_F(ServerTestFixture, Constructor_CreatesMultipleListeningSockets) {
-	const int port1 = 8085;
+    const int port1 = 8085;
     const int port2 = 8086;
 
     // Build a second config manually for this test
@@ -107,7 +105,7 @@ TEST(Server, Constructor_InvalidConfig_Throws) {
     ServerConfig s2;
 
     s1.setPort(8085);
-    s2.setPort(8085); // duplicate port
+    s2.setPort(8085);  // duplicate port
 
     LocationConfig loc;
     loc.setPath("/");
