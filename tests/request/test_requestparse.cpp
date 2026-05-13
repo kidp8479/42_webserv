@@ -97,11 +97,13 @@ protected:
     // chunk variants - broken chunks
     const char* chunk1_broken1 = "GET / \r\n";
     const char* chunk1_broken2 = "GET / HTTP/1.1 garbage\r\n";
+    const char* chunk1_broken3 = "GET badtarget HTTP/1.1\r\n";
+    const char* chunk1_broken4 = "GET / HTTP/9.1\r\n";
 
     // chunk variants - chunk that contains body and start line
     const char* chunk_endstart =
         "Hello"
-        "POST * HTTP/1.0\r\n";
+        "POST /target HTTP/1.0\r\n";
 
     // chunk variants - evil misleading headers
     const char* chunk_evil1 = "Cookie: $EvilString=Content-Length:5\r\n";
@@ -350,6 +352,18 @@ TEST_F(RequestTestFixture, Parse_StartLineGarbageToken) {
     EXPECT_TRUE(req.isError());
 }
 
+TEST_F(RequestTestFixture, Parse_StartLineBadTarget) {
+    // Start lines with invalid target syntax return an error
+    req.append(chunk1_broken3, strlen(chunk1_broken3));
+    EXPECT_TRUE(req.isError());
+}
+
+TEST_F(RequestTestFixture, Parse_StartLineBadProtocol) {
+    // Start lines with unrecognized protocols return an error
+    req.append(chunk1_broken4, strlen(chunk1_broken4));
+    EXPECT_TRUE(req.isError());
+}
+
 TEST_F(RequestTestFixture, Parse_HeaderEqualsMaxSize) {
     // A header that is exactly equal to the max header size should pass
     req.setMaxHeaderSize(15);
@@ -394,7 +408,7 @@ TEST_F(RequestTestFixture, Parse_KeepAlive) {
     EXPECT_TRUE(req.shouldKeepAlive());
     req.resetData();
     EXPECT_EQ(req.getMethod(), "POST");
-    EXPECT_EQ(req.getTarget(), "*");
+    EXPECT_EQ(req.getTarget(), "/target");
     EXPECT_EQ(req.getProtocol(), "HTTP/1.0");
     EXPECT_EQ(req.getBody(), "");
     EXPECT_FALSE(req.isComplete());
