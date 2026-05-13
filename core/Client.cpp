@@ -28,7 +28,6 @@ Client::Client(int fd, EventLoop& loop, const ServerResources& resources) :
 
 /**
  * @brief Destroys the Client.
- *
  * Releases owned resources (socket managed by Fd).
  */
 Client::~Client() {
@@ -36,7 +35,6 @@ Client::~Client() {
 
 /**
  * @brief Returns the client socket file descriptor.
- *
  * @return The underlying socket fd
  */
 int Client::getFd() const {
@@ -56,7 +54,6 @@ void Client::handle(short revents) {
 		//may still be unread bytes buffered in the kernel so we dont 
 		//instantly clean up here.
 		bool peer_closed = false;
-
 		if (revents & POLLHUP) {
 			LOG_INFO() << "[Client] POLLHUP fd=" << fd_.getFd();
 			peer_closed = true;
@@ -73,14 +70,12 @@ void Client::handle(short revents) {
 				return closeConnection("invalid request", "WARNING");
 			}
 			keep_alive_ = request_.shouldKeepAlive();
-
 			LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
 			           << " switching " << stateToStr(state_) << " → kWriting";
 
 			const LocationConfig& loc = resources_.router().resolve(request_);
 			Handler::run(request_, loc, response_);
 			state_ = kWriting;
-
 			LOG_DEBUG() << "[Client] enabling POLLOUT";
 			loop_.modifyHandler(this, POLLOUT);
 		}
@@ -101,8 +96,7 @@ void Client::handle(short revents) {
 		LOG_ERROR() << "[Client] exception: " << e.what();
 		cleanup();
 	}
-
-	catch (...) {
+	catch (...) { // universal fall back
 		cleanup();
 	}
 }
