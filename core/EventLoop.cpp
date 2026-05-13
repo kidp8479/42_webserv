@@ -104,8 +104,8 @@ int EventLoop::wait(int timeout) {
 	// checks are any of thes ready RIGHT NOW?, if yes it fills revents
 	// the number returned is how many revents filled out
 	if (ret == -1) {
-		LOG_WARNING() << "System call interrupted";
 		if (errno == EINTR) {
+			LOG_WARNING() << "System call interrupted";
 			return 0; // normal interrupt
 		}
 		LOG_ERROR() << "[EventLoop] poll() failed: " << strerror(errno);
@@ -114,6 +114,7 @@ int EventLoop::wait(int timeout) {
 	LOG_DEBUG() << "[EventLoop] poll returned ready_fds=" << ret;
 	return ret;
 }
+
 /**
  * here is our polymorphism in action: reactor pattern
  * reacts differently depending on which object it is
