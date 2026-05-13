@@ -1,6 +1,9 @@
 #ifndef HANDLER_HPP
 #define HANDLER_HPP
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <algorithm>
 #include <sstream>
 
@@ -8,6 +11,7 @@
 #include "../config/ServerConfig.hpp"
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
+#include "../logger/Logger.hpp"
 #include "../utils/HttpConstants.hpp"
 
 class Handler {

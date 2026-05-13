@@ -1,7 +1,5 @@
 #include "Handler.hpp"
 
-#include "../logger/Logger.hpp"
-
 /**
  * @brief Stub: returns static hello world response.
  * @note Will be replaced by Pauline's full handler implementation.
@@ -109,16 +107,16 @@ void Handler::dispatch(HandlerContext& handler_context) {
     // possible, we can now dispatch to the right branch path
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
-        LOG_DEBUG() << "[Handler] - return location block detected";
+        LOG_DEBUG() << "[Handler] return location block detected";
         handleReturn(handler_context);
     } else if (!handler_context.location.getCgiInterpreters().empty()) {
-        LOG_DEBUG() << "[Handler] - CGI location block detected";
+        LOG_DEBUG() << "[Handler] CGI location block detected";
         handleCgiInterpreters(handler_context);
     } else if (!handler_context.location.getUploadPath().empty()) {
-        LOG_DEBUG() << "[Handler] - upload location block detected";
+        LOG_DEBUG() << "[Handler] upload location block detected";
         handleUpload(handler_context);
     } else {
-        LOG_DEBUG() << "[Handler] - serve static files location block detected";
+        LOG_DEBUG() << "[Handler] serve static files location block detected";
         handleStatic(handler_context);
     }
 }
@@ -158,6 +156,25 @@ void Handler::handleStatic(HandlerContext& handler_context) {
     //     if index exists  serve the file
     //     else if directory_listing on => generate and serve directory listing
     //     else => 403 Forbidden
+
+    const std::string full_path =
+        handler_context.location.getRoot() + handler_context.request.getPath();
+    LOG_DEBUG() << "[Handler] full path (root + uri) is: " << full_path;
+
+    struct stat get_info;
+    if (stat(full_path.c_str(), &get_info) == 0) {
+        if (S_ISDIR(get_info.st_mode)) {
+            std::string path_to_serve =
+                full_path + "/" + handler_context.location.getIndex();
+            LOG_DEBUG()
+                << "[Handler] file path to serve (root + uri + / + index) is: "
+                << path_to_serve;
+
+        } else if (S_ISREG(get_info.st_mode)) {
+        }
+    } else {
+        sendError(HttpConstants::kNotFound, handler_context);  // 404 not found
+    }
 
     // this is a super minimal response
     // setRaw will be replaced by real Response setters (code/body/header) when
