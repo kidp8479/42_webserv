@@ -48,8 +48,22 @@ void Client::handle(short revents) {
 		LOG_DEBUG() << "[Client] ENTER handle fd=" << fd_.getFd()
 		            << " state=" << stateToStr(state_)
 		            << " events=" << LogUtils::pollToStr(revents);
-		// conceptually since poll events are bit masks..
-		// does revents contain the POLLIN bit? if yes the result is non zero
+		// handle failures and disconnects (fatal socket states)
+		if (revents & (POLLERR | POLLNVAL)) {
+			LOG_WARNING() << "[Client] socket error/hangup fd=" << fd_.getFd();
+			cleanup();
+			return;
+		}
+		//POLLHUP means peer closed it's side of the connection so there
+		//may still be unread bytes buffered in the kernel so we dont 
+		//instantly clean up here.
+		bool peer_closed = false;
+
+		if (revents & POLLHUP) {
+			LOG_INFO() << "[Client] POLLHUP fd=" << fd_.getFd();
+			peer_closed = true;
+		}
+		// read avaliable data first
 		if (revents & POLLIN && state_ == kReading) {
 			LOG_DEBUG() << "[Client] POLLIN detected";
 			read();
@@ -58,16 +72,16 @@ void Client::handle(short revents) {
 		if (state_ == kReading && request_.isComplete()) {
 			// invalid request close connection immediately
 			if (request_.isError()) {
-				LOG_WARNING() << "[Client] invalid request fd="
-					<< fd_.getFd() << " closing connection";
+				LOG_WARNING() << "[Client] invalid request fd=" << fd_.getFd()
+							  << " closing connection";
 				cleanup();
 				return;
 			}
 			keep_alive_ = request_.shouldKeepAlive();
 
 			LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
-			           << " switching " << stateToStr(state_)
-					   << " → kWriting";
+			           << " switching " << stateToStr(state_) << " → kWriting";
+
 			const LocationConfig& loc = resources_.router().resolve(request_);
 			Handler::run(request_, loc, response_);
 			state_ = kWriting;
@@ -75,12 +89,24 @@ void Client::handle(short revents) {
 			LOG_DEBUG() << "[Client] enabling POLLOUT";
 			loop_.modifyHandler(this, POLLOUT);
 		}
-		//if revents contain POLLOUT
+		// write response
 		if (revents & POLLOUT && state_ == kWriting) {
 			LOG_DEBUG() << "[Client] write triggered";
 			write();
 		}
+		// if peer closed and we're still reading, we cant receive more bytes
+		// anymore so if request is incomplete its a dead connection
+		if (peer_closed && state_ == kReading) {
+			LOG_INFO() << "[Client] peer disconnected during read fd=" << fd_.getFd();
+			cleanup();
+			return;
+		}
 	}
+	catch (const std::exception& e) {
+		LOG_ERROR() << "[Client] exception: " << e.what();
+		cleanup();
+	}
+
 	catch (...) {
 		cleanup();
 	}
