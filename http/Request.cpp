@@ -139,6 +139,20 @@ static std::vector<std::string> listHeaders(const std::string s) {
     return (val_vect);
 }
 
+static bool checkTargetSyntax(std::string target) {
+    if (target.empty())
+        return (false);
+    if (target[0] != '/')
+        return (false);
+    std::string::iterator s_it = target.begin();
+    while (++s_it != target.end()) {
+        char c = s_it[0];
+        if (c <= 32 || c == 127)
+            return (false);
+    }
+    return (true);
+}
+
 /********************************* Getters **********************************/
 
 /**
@@ -369,6 +383,8 @@ void Request::parseStartLine() {
             /*Check for missing or malformed tokens*/
             if (method_.empty() || target_.empty() || protocol_.empty() ||
                 !garbage.empty())
+                return (setError(HttpConstants::kBadRequest));
+            if (!checkTargetSyntax(target_))
                 return (setError(HttpConstants::kBadRequest));
             if (target_.size() > max_uri_size_)
                 return (setError(HttpConstants::kURITooLong));
