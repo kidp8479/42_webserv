@@ -24,7 +24,11 @@ bool Server::start() {
         if (!g_running) {
             break;
         }
-        if (ready <= 0)
+		if (ready < 0) {
+			LOG_ERROR() << "[Server] Event loop wait failed";
+			return false;
+		}
+        if (ready == 0)
             continue;
         loop_.dispatch();
         // remove dead handlers
