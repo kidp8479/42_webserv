@@ -54,12 +54,12 @@ void Handler::run(const Request& request, const LocationConfig& location,
     dispatch(handler_context);
 }
 
+/**
+ * @brief Checks if the request was flagged as an error by the parser.
+ * @return true if an error was detected and a response has been written
+ * @note Catches 400, 413, 414, 431, 505 set by Request before Handler runs.
+ */
 bool Handler::requestIsError(HandlerContext& handler_context) {
-    // first - check for request parsing flagged error
-    // if request parsing has marked isError true, sendError will either look
-    // for an existing error page on the disk or if not, hardcode a minimal http
-    // page via setRaw
-    // then sendError returns, run returns, Client sends the error response
     if (handler_context.request.isError()) {
         LOG_WARNING() << "[Handler] " << handler_context.request.getErrorCode()
                       << ": " << handler_context.request.getErrorMessage();
@@ -70,9 +70,11 @@ bool Handler::requestIsError(HandlerContext& handler_context) {
     return false;
 }
 
+/**
+ * @brief Checks if the request method is one of the three implemented methods.
+ * @return true if the method is not GET, POST, or DELETE (501 sent)
+ */
 bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
-    // second - check for 501 error, is it an implemented method ? don't even
-    // start to treat if if not
     const std::string& request_method = handler_context.request.getMethod();
 
     if (request_method != "GET" && request_method != "POST" &&
@@ -85,9 +87,12 @@ bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
     return false;
 }
 
+/**
+ * @brief Checks if the request method is listed in the location's allowed
+ * methods.
+ * @return true if the method is not in the allowed list (405 sent)
+ */
 bool Handler::methodNotAllowedCheck(HandlerContext& handler_context) {
-    // third - check for 405 error, look for request_method inside
-    // allowed_method vector, if it's not there, don't start to treat it
     const std::string& request_method = handler_context.request.getMethod();
     const std::vector<std::string> allowed_method =
         handler_context.location.getMethods();
@@ -102,10 +107,15 @@ bool Handler::methodNotAllowedCheck(HandlerContext& handler_context) {
     return false;
 }
 
+/**
+ * @brief Checks that at most one discriminant field is set in the location
+ * block.
+ * @return true if multiple discriminants are set (500 sent)
+ * @note Discriminants are returnCode, cgiInterpreters, and uploadPath. Having
+ *       more than one set is a .conf writer error: Handler cannot resolve the
+ *       ambiguity and returns 500 rather than guessing intent.
+ */
 bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
-    // fourth - count for discriminants, meaning what define the "type" of a
-    // location block, if more than 1 is set : too ambiguous to resolve for
-    // user, if we don't reject here, we will encounter weird behaviors later
     size_t count_discriminant = 0;
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
@@ -128,9 +138,12 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
     return false;
 }
 
+/**
+ * @brief Routes to the appropriate handler based on the location block type.
+ * @note Called only after all pre-dispatch checks pass, so exactly one
+ *       discriminant is guaranteed to be set (or none, defaulting to static).
+ */
 void Handler::dispatch(HandlerContext& handler_context) {
-    // at this step, it is guaranteed to have only ONE location block type
-    // possible, we can now dispatch to the right logical branch path
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
         LOG_DEBUG() << BR_YEL "[Handler] return location block detected"
@@ -151,42 +164,41 @@ void Handler::dispatch(HandlerContext& handler_context) {
     }
 }
 
-// TODO: implement redirect with Location header and return code
+/**
+ * @brief Handles redirect location blocks. Sends a redirect response.
+ * @note TODO: implement with real Location header using getReturnCode() +
+ *       getReturnUrl(). Currently a stub.
+ */
 void Handler::handleReturn(HandlerContext& handler_context) {
-    // this is a super minimal response
-    // setRaw will be replaced by real Response setters (code/body/header) when
-    // available
     handler_context.response.setRaw("HTTP/1.1 301 Moved Permanently\r\n\r\n");
 }
 
-// TODO: implement CGI execution (fork/execve)
+/**
+ * @brief Handles CGI location blocks. Forks and executes the CGI script.
+ * @note TODO: implement fork/execve/pipe. Currently a stub.
+ */
 void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
-    // this is a super minimal response
-    // setRaw will be replaced by real Response setters (code/body/header) when
-    // available
     handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
 }
 
-// TODO: implement file upload handling
+/**
+ * @brief Handles upload location blocks. Writes the request body to disk.
+ * @note TODO: implement file write to getUploadPath(), return 201 Created.
+ *       Currently a stub.
+ */
 void Handler::handleUpload(HandlerContext& handler_context) {
-    // this is a super minimal response
-    // setRaw will be replaced by real Response setters (code/body/header) when
-    // available
     handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
 }
 
-// TODO: implement static file serving
+/**
+ * @brief Handles static file location blocks. Serves files or directory
+ * listings.
+ * @note Resolves full_path = root + URI, then dispatches based on what stat()
+ *       finds: regular file => serve it, directory => try index then listing,
+ *       nothing => 404. Empty index string is handled explicitly to avoid
+ *       stat()-ing the directory itself (which would always succeed).
+ */
 void Handler::handleStatic(HandlerContext& handler_context) {
-    // build full_path = root + uri
-    // stat(full_path) :
-    //   if -1 => 404 Not Found
-    //   if 0 + S_ISREG => serve the file
-    //   if 0 + S_ISDIR :
-    //     try full_path + "/" + index
-    //     if index exists  serve the file
-    //     else if directory_listing on => generate and serve directory listing
-    //     else => 403 Forbidden
-
     const std::string full_path =
         handler_context.location.getRoot() + handler_context.request.getPath();
     LOG_DEBUG() << "[Handler] full path (root + uri) is: " << GRN << full_path
@@ -240,11 +252,24 @@ void Handler::handleStatic(HandlerContext& handler_context) {
     }
 }
 
+/**
+ * @brief Convenience overload: unpacks an HttpError struct and delegates.
+ * @param error Struct containing the HTTP error code and reason string
+ */
 void Handler::sendError(HttpConstants::HttpError error,
                         HandlerContext& handler_context) {
     sendError(error.code, error.reason, handler_context);
 }
 
+/**
+ * @brief Writes an error response. Looks up a custom error page first,
+ *        falls back to a hardcoded minimal HTML page if none is found.
+ * @param code    HTTP status code
+ * @param reason  HTTP reason phrase
+ * @note Does not throw. Writes directly into response and returns so Client
+ *       can send it normally, equivalent to configError() in ConfigBuilder
+ *       but without the exception.
+ */
 void Handler::sendError(int code, const std::string& reason,
                         HandlerContext& handler_context) {
     LOG_WARNING() << "[Handler] sending error " << code << " " << reason;
@@ -286,6 +311,12 @@ std::string Handler::toString(int code) {
     return converted_code;
 }
 
+/**
+ * @brief Returns the MIME type string for a given file path based on its
+ * extension.
+ * @param path File path (only the extension is used)
+ * @return MIME type string, or kMimeTypeFallback if the extension is unknown
+ */
 std::string Handler::getFileMimeType(const std::string& path) {
     std::string extension;
     size_t dot_pos = path.rfind('.');
@@ -301,6 +332,12 @@ std::string Handler::getFileMimeType(const std::string& path) {
     return kMimeTypeFallback;
 }
 
+/**
+ * @brief Opens, reads, and serves a regular file as an HTTP 200 response.
+ * @param path Absolute or relative path to the file to serve
+ * @note Detects Content-Type from the file extension via getFileMimeType().
+ *       Sends 500 if the file cannot be opened or read.
+ */
 void Handler::serveFile(const std::string& path,
                         HandlerContext& handler_context) {
     int fd = open(path.c_str(), O_RDONLY);
@@ -341,7 +378,11 @@ void Handler::serveFile(const std::string& path,
                << RESET;
 }
 
-// generates an HTML page listing the contents of a directory (autoindex)
+/**
+ * @brief Generates and serves an HTML page listing the contents of a directory.
+ * @param path Path to the directory to list
+ * @note Filters out "." and ".." entries. Sends 500 if opendir() fails.
+ */
 void Handler::generateDirectoryListing(const std::string& path,
                                        HandlerContext& handler_context) {
     DIR* directory = opendir(path.c_str());
