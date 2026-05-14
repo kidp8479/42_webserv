@@ -234,18 +234,31 @@ void Handler::sendError(HttpConstants::HttpError error,
     sendError(error.code, error.reason, handler_context);
 }
 
-// TODO - incomplete
 void Handler::sendError(int code, const std::string& reason,
                         HandlerContext& handler_context) {
     LOG_WARNING() << "[Handler] sending error " << code << " " << reason;
 
-    // to add : look for existing error pages on disk
-    // return it
+    // look for existing error pages on disk and return it
+    const std::map<int, std::string>& error_pages =
+        handler_context.server.getErrorPages();
+    const std::map<int, std::string>::const_iterator it =
+        error_pages.find(code);
+    if (it != error_pages.end()) {
+        struct stat get_info;
+        if (stat(it->second.c_str(), &get_info) == 0 &&
+            S_ISREG(get_info.st_mode)) {
+            LOG_DEBUG() << "[Handler] using custom error page: " << GRN
+                        << it->second << RESET;
+            serveFile(it->second, handler_context);
+            return;
+        }
+        LOG_DEBUG() << "[Handler] custom error page not found on disk: " << RED
+                    << it->second << RESET << " - serving fallback error page";
+    }
     // it it does not exists : launch minimal hardcoded html response
-
     // replace this part with Charlie's Response setter when available
-    std::string body =
-        "<html><body><h1>" + toString(code) + reason + "</h1></body></html>";
+    std::string body = "<html><body><h1>" + toString(code) + " " + reason +
+                       "</h1></body></html>";
     std::string response =
         "HTTP/1.1 " + toString(code) + " " + reason + "\r\n" +
         "Content-Type: text/html\r\n" +
