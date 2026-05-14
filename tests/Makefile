@@ -26,18 +26,18 @@ SRCS = 	\
 		../config/ServerConfig.cpp \
 		../config/LocationConfig.cpp \
 		../core/Fd.cpp \
-		../logger/Logger.cpp \
 		../core/Server.cpp \
 		../core/EventLoop.cpp \
 		../core/Listener.cpp \
 		../core/ServerResources.cpp \
-		../utils/LogUtils.cpp \
 		../core/Client.cpp \
 		../core/Signal.cpp \
 		../handlers/Router.cpp \
 		../handlers/Handler.cpp \
 		../http/Request.cpp \
 		../http/Response.cpp \
+		../logger/Logger.cpp \
+		../utils/LogUtils.cpp \
 		
 
 all: $(BIN_DIR) $(OBJ_DIR) $(GTEST_OBJ) $(GTEST_MAIN_OBJ) $(TEST_BINS)
