@@ -33,8 +33,6 @@ int main(int argc, char** argv) {
         Server server(config);
         if (!server.start())
             return (EXIT_FAILURE);
-    } catch (const std::runtime_error& e) {
-        return EXIT_FAILURE;
     } catch (const std::exception& e) {
         LOG_ERROR() << "Fatal error: " << e.what();
         return EXIT_FAILURE;
