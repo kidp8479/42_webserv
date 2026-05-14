@@ -243,6 +243,7 @@ void Handler::sendError(int code, const std::string& reason,
     // return it
     // it it does not exists : launch minimal hardcoded html response
 
+    // replace this part with Charlie's Response setter when available
     std::string body =
         "<html><body><h1>" + toString(code) + reason + "</h1></body></html>";
     std::string response =
