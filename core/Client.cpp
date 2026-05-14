@@ -31,6 +31,7 @@ Client::Client(int fd, EventLoop& loop, const ServerResources& resources)
       bytes_sent_(0),
       state_(kReading),
       keep_alive_(true) {
+    request_.setMaxBodySize(resources_.serverConfig().getMaxBodySize());
 }
 
 /**
