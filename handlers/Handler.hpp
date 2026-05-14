@@ -1,10 +1,14 @@
 #ifndef HANDLER_HPP
 #define HANDLER_HPP
 
+#include <dirent.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <algorithm>
+#include <map>
 #include <sstream>
 
 #include "../config/LocationConfig.hpp"
@@ -52,7 +56,13 @@ private:
     static void sendError(int code, const std::string& reason,
                           HandlerContext& handler_context);
 
+    // utils
     static std::string toString(int code);
+    static std::string getFileMimeType(const std::string& path);
+    static void serveFile(const std::string& path,
+                          HandlerContext& handler_context);
+    static void generateDirectoryListing(const std::string& path,
+                                         HandlerContext& handler_context);
 };
 
 #endif
