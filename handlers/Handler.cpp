@@ -200,8 +200,19 @@ void Handler::handleStatic(HandlerContext& handler_context) {
         return;
     }
     if (S_ISDIR(get_info.st_mode)) {
-        std::string path_to_serve =
-            full_path + "/" + handler_context.location.getIndex();
+        const std::string& index = handler_context.location.getIndex();
+        if (index.empty()) {
+            if (handler_context.location.getDirectoryListing()) {
+                generateDirectoryListing(full_path, handler_context);
+            } else {
+                LOG_WARNING()
+                    << "[Handler] 403 - directory listing off, no index: "
+                    << RED << full_path << RESET;
+                sendError(HttpConstants::kForbidden, handler_context);
+            }
+            return;
+        }
+        std::string path_to_serve = full_path + "/" + index;
         LOG_DEBUG() << "[Handler] directory detected, trying index: " << GRN
                     << path_to_serve << RESET;
 
