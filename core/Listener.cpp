@@ -71,7 +71,7 @@ void Listener::acceptClients() {
             if (errno == EMFILE || errno == ENFILE) {
                 LOG_ERROR()
                     << "[Listener] fd limit reached: " << strerror(errno);
-				break;
+                break;
             }
             LOG_ERROR() << "[Listener] accept failed: " << strerror(errno);
             continue;  // try next iteration
