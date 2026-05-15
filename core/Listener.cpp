@@ -20,11 +20,13 @@
 Listener::Listener(int port, EventLoop& loop, const ServerResources& resources)
     : fd_(socket(AF_INET, SOCK_STREAM, 0)), loop_(loop), resources_(resources) {
     if (!fd_.valid()) {
+		LOG_ERROR() << "[Listener] socket() failed";
         throw std::runtime_error("[listener] socket() failed");
     }
     int opt = 1;
     if (setsockopt(fd_.getFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
         0) {
+		LOG_ERROR() << "[Listener] setsockopt() failed";
         throw std::runtime_error("[listener] setsockopt() failed");
     }
     sockaddr_in addr;
@@ -36,10 +38,12 @@ Listener::Listener(int port, EventLoop& loop, const ServerResources& resources)
 
     if (bind(fd_.getFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         std::ostringstream oss;
-        oss << "[listener] bind() failed on port " << port;
+        oss << "[Listener] bind() failed on port " << port;
+		LOG_ERROR() << oss.str();
         throw std::runtime_error(oss.str());
     }
     if (listen(fd_.getFd(), SOMAXCONN) < 0) {
+		LOG_ERROR() << "[Listener] listen() failed";
         throw std::runtime_error("[listener] listen() failed");
     }
     setNonBlocking(fd_.getFd());
