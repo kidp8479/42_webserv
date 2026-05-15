@@ -95,9 +95,6 @@ void Client::handle(short revents) {
         // if peer closed and we're still reading, we cant receive more bytes
         // anymore so if request is incomplete its a dead connection
         if (peer_closed && state_ == kReading) {
-            LOG_INFO() << "[Client] peer disconnected during read fd="
-                       << fd_.getFd();
-            cleanup();
             return closeConnection("peer disconnected during read");
         }
     } catch (const std::exception& e) {
@@ -117,19 +114,9 @@ void Client::read() {
     if (n == 0) {
         return closeConnection("client closed connection");
     }
-
+	// poll said ready, so failure here is a real error (no errno checks!)
     if (n < 0) {
-        // not an error just means no data available rn, try again
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            LOG_DEBUG() << "[Client] read EAGAIN / EWOULDBLOCK";
-            return;
-        }
-        // real error: connection reset, bad fd, kernel error
-        // maybe log debug here
-        LOG_ERROR() << "[Client] recv error fd=" << fd_.getFd()
-                    << " errno=" << errno;
-        cleanup();
-        return;
+        return closeConnection("recv error fd=", "ERROR");
     }
     LOG_DEBUG() << "[Client] read bytes=" << n;
     request_.append(buffer, n);
@@ -143,14 +130,7 @@ void Client::write() {
     ssize_t n = send(fd_.getFd(), data.c_str() + bytes_sent_,
                      data.size() - bytes_sent_, 0);
     if (n <= 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            LOG_DEBUG() << "[Client] write EAGAIN / EWOULDBLOCK";
-            return;
-        }
-        LOG_ERROR() << "[Client] send error fd=" << fd_.getFd()
-                    << " errno=" << errno;
-        cleanup();
-        return;
+        return closeConnection("send error fd=", "ERROR");
     }
     bytes_sent_ += n;
     LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
@@ -166,7 +146,6 @@ void Client::write() {
         bytes_sent_ = 0;
         request_.resetData();
         response_.reset();
-
         // switch back to read mode
         loop_.modifyHandler(this, POLLIN);
     }
