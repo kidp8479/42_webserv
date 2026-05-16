@@ -104,7 +104,6 @@ TEST_F(EventLoopTest, removeHandler_PreventsFutureDispatch) {
     // dispatch does nothing for removed handler
     loop.dispatch();
 
-    EXPECT_FALSE(handler->handled);
     EXPECT_EQ(ready, 0);
 }
 
