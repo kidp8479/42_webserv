@@ -81,13 +81,23 @@ void ConfigValidator::checkDuplicateHostPort(const Config& config) const {
 
     for (it1 = server_blocks.begin(); it1 < server_blocks.end(); ++it1) {
         for (it2 = it1 + 1; it2 < server_blocks.end(); ++it2) {
-            if ((*it1).getHost() == (*it2).getHost() &&
-                (*it1).getPort() == (*it2).getPort()) {
+			if ((*it1).getPort() != (*it2).getPort()) {
+				continue;
+			}
+            if ((*it1).getHost() == (*it2).getHost()) {
                 std::ostringstream oss;
                 oss << "Duplicate listen: " << (*it1).getHost() << ":"
                     << (*it1).getPort();
                 configError(oss.str());
             }
+			if ((*it1).getHost() == "0.0.0.0" || (*it2).getHost() == "0.0.0.0") {
+				std::ostringstream oss;
+				oss << "Conflicting listen: 0.0.0.0:" << (*it1).getPort()
+                    << " overlaps with " << ((*it1).getHost() == "0.0.0.0"
+                        ? (*it2).getHost() : (*it1).getHost())
+                    << ":" << (*it1).getPort();
+                configError(oss.str());
+			}
         }
     }
     LOG_DEBUG() << "ConfigValidator: no duplicated host:port pairs.";
