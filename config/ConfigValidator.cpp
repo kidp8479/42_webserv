@@ -64,6 +64,7 @@ void ConfigValidator::serverChecks(const Config& config) const {
         checkPort(*it);
         checkHost(*it);
         checkServerErrorCodes(*it);
+		checkLocationBlocks(*it);
         checkDuplicatePath(*it);
 
         locationChecks(*it);
@@ -279,4 +280,10 @@ void ConfigValidator::checkCgiBinaryPaths(
         }
     }
     LOG_DEBUG() << "ConfigValidator: valid CGI binary path(s).";
+}
+
+void ConfigValidator::checkLocationBlocks(const ServerConfig& server) const {
+	if (server.getLocationBlock().empty()) {
+		configError("Server block has no location blocks defined.");
+	}
 }
