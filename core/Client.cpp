@@ -169,7 +169,7 @@ void Client::closeConnection(const std::string& reason, const char* level) {
     if (std::string(level) == "WARNING") {
         LOG_WARNING() << "[Client] " << reason << " fd=" << fd_.getFd();
     } else if (std::string(level) == "ERROR") {
-        LOG_ERROR() << "[Client] " << reason << "fd=" << fd_.getFd();
+        LOG_ERROR() << "[Client] " << reason << " fd=" << fd_.getFd();
     } else {
         LOG_INFO() << "[Client] " << reason << " fd=" << fd_.getFd();
     }

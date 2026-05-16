@@ -44,7 +44,7 @@ Listener::Listener(int port, EventLoop& loop, const ServerResources& resources)
     }
     if (listen(fd_.getFd(), SOMAXCONN) < 0) {
 		LOG_ERROR() << "[Listener] listen() failed";
-        throw std::runtime_error("[listener] listen() failed");
+        throw std::runtime_error("[Listener] listen() failed");
     }
     setNonBlocking(fd_.getFd());
     loop_.addHandler(this, POLLIN);
@@ -88,7 +88,7 @@ void Listener::acceptClients() {
             loop_.addHandler(client, POLLIN);
         } catch (const std::exception& e) {
             close(client_fd);
-            LOG_ERROR() << "Listener] client setup failed: " << e.what();
+            LOG_ERROR() << "[Listener] client setup failed: " << e.what();
         }
     }
 }
@@ -109,7 +109,7 @@ void Listener::setNonBlocking(int fd) {
     // prevent fd leaking into child process
     if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
         std::ostringstream oss;
-        oss << "[listener] fcntl(F_SETFL) failed for fd " << fd;
+        oss << "[listener] fcntl(F_SETFD) failed for fd " << fd;
         throw std::runtime_error(oss.str());
     }
 }
