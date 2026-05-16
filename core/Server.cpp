@@ -41,10 +41,13 @@ void Server::setupListeners() {
     const std::vector<ServerConfig>& servers = config_.getServerBlock();
 
     for (size_t i = 0; i < servers.size(); i++) {
-        int port = servers[i].getPort();
+		ServerResources resources(servers[i]);
 
+		const ServerConfig& cfg = resources.serverConfig();
+		LOG_INFO() << "[Server] Starting listener on "
+                   << cfg.getHost() << ":" << cfg.getPort();
         Listener* listener =
-            new Listener(port, loop_, ServerResources(servers[i]));
+            new Listener(loop_, resources);
         listeners_.push_back(listener);
     }
 }

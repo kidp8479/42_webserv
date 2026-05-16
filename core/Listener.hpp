@@ -8,7 +8,7 @@
 
 class Listener : public IEventHandler {
 public:
-    Listener(int port, EventLoop& loop, const ServerResources& resources);
+    Listener(EventLoop& loop, const ServerResources& resources);
     ~Listener();
 
     int getFd() const;
@@ -20,6 +20,7 @@ private:
     Listener& operator=(const Listener&);
 
     bool isDone() const;
+	void setupSocket();
     void setNonBlocking(int fd);
     void acceptClients();
 
