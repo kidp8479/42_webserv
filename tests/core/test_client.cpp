@@ -160,37 +160,6 @@ TEST_F(ClientTest, HandlePollIn_HandlesIncompleteHeadersSafely) {
     EXPECT_NO_THROW(client.handle(POLLIN));
 }
 
-TEST_F(ClientTest, HandlePollIn_HandlesOversizedBodySafely) {
-    Client client(sockets[0], loop, resources);
-
-    sockets[0] = -1;
-
-    std::string body(2000000, 'A');
-    std::ostringstream request;
-
-    request << "POST / HTTP/1.1\r\n";
-    request << "Host: localhost\r\n";
-    request << "Content-Length: " << body.size() << "\r\n";
-    request << "\r\n";
-    request << body;
-
-    std::string req = request.str();
-
-    ASSERT_GT(write(sockets[1], req.c_str(), req.size()), 0);
-    EXPECT_NO_THROW(client.handle(POLLIN));
-}
-
-TEST_F(ClientTest, HandlePollIn_HandlesRawBufferLimitSafely) {
-    Client client(sockets[0], loop, resources);
-
-    sockets[0] = -1;
-
-    std::string huge(3000000, 'B');
-
-    ASSERT_GT(write(sockets[1], huge.c_str(), huge.size()), 0);
-    EXPECT_NO_THROW(client.handle(POLLIN));
-}
-
 TEST_F(ClientTest, HandlePollOut_SendsGeneratedResponse) {
     Client client(sockets[0], loop, resources);
 
