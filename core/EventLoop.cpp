@@ -17,7 +17,7 @@ EventLoop::~EventLoop() {
     LOG_INFO() << "[EventLoop] shutting down, cleaning up " << handlers_.size()
                << " handlers";
     for (size_t i = 0; i < handlers_.size(); i++) {
-        LOG_INFO() << "[EventLoop] destroying handler=" << handlers_[i]->name()
+        LOG_DEBUG() << "[EventLoop] destroying handler=" << handlers_[i]->name()
                    << " fd=" << poll_fds_[i].fd;
         delete handlers_[i];
     }
@@ -146,7 +146,7 @@ void EventLoop::dispatch() {
 void EventLoop::cleanup() {
     for (size_t i = 0; i < handlers_.size();) {
         if (handlers_[i]->isDone()) {
-            LOG_INFO() << "[EventLoop] removing fd=" << poll_fds_[i].fd
+            LOG_DEBUG() << "[EventLoop] removing fd=" << poll_fds_[i].fd
                        << " handler=" << handlers_[i]->name();
             delete handlers_[i];
 
