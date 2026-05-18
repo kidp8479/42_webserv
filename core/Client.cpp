@@ -114,7 +114,7 @@ void Client::read() {
     if (n == 0) {
         return closeConnection("client closed connection");
     }
-	// poll said ready, so failure here is a real error (no errno checks!)
+    // poll said ready, so failure here is a real error (no errno checks!)
     if (n < 0) {
         return closeConnection("recv error fd=", "ERROR");
     }
@@ -144,20 +144,20 @@ void Client::write() {
         // reset for next request
         state_ = kReading;
         bytes_sent_ = 0;
-        request_.resetData(); // keeps raw_, re parses any pipelined data
+        request_.resetData();  // keeps raw_, re parses any pipelined data
         response_.reset();
-		// if raw_ had any leftover bytes from pipelined request
-		if (request_.isComplete()) {
-			if (request_.isError()) {
-				return closeConnection("invalid pipelined request", "WARNING");
-			}
-			keep_alive_ = request_.shouldKeepAlive();
-			const LocationConfig& loc = resources_.router().resolve(request_);
-			Handler::run(request_, loc, response_);
-			state_ = kWriting;
-			loop_.modifyHandler(this, POLLOUT);
-			return ;
-		}
+        // if raw_ had any leftover bytes from pipelined request
+        if (request_.isComplete()) {
+            if (request_.isError()) {
+                return closeConnection("invalid pipelined request", "WARNING");
+            }
+            keep_alive_ = request_.shouldKeepAlive();
+            const LocationConfig& loc = resources_.router().resolve(request_);
+            Handler::run(request_, loc, response_);
+            state_ = kWriting;
+            loop_.modifyHandler(this, POLLOUT);
+            return;
+        }
         // switch back to read mode
         loop_.modifyHandler(this, POLLIN);
     }

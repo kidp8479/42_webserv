@@ -20,7 +20,7 @@ private:
     Listener& operator=(const Listener&);
 
     bool isDone() const;
-	void setupSocket();
+    void setupSocket();
     void setNonBlocking(int fd);
     void acceptClients();
 

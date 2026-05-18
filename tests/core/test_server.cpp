@@ -15,7 +15,7 @@ Config createDummyConfig(int port) {
     Config cfg;
     ServerConfig sconf;
 
-	sconf.setHost("127.0.0.1");
+    sconf.setHost("127.0.0.1");
     sconf.setPort(port);
 
     LocationConfig loc;
@@ -26,38 +26,37 @@ Config createDummyConfig(int port) {
     return cfg;
 }
 
-// Find a free port by binding to 0, reading what the OS picked, then releasing it
+// Find a free port by binding to 0, reading what the OS picked, then releasing
+// it
 int getFreePort() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-	
-	assert(fd >= 0);
 
-	sockaddr_in addr{};
-	addr.sin_family = AF_INET;
-	addr.sin_port = 0;
-	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    assert(fd >= 0);
 
-	assert(bind(fd, (sockaddr*)&addr, sizeof(addr)) == 0);
-	socklen_t len = sizeof(addr);
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = 0;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-	getsockname(fd, (sockaddr*)&addr, &len);
-	int port = ntohs(addr.sin_port);
+    assert(bind(fd, (sockaddr*)&addr, sizeof(addr)) == 0);
+    socklen_t len = sizeof(addr);
 
-	close(fd);  // release it — server will bind to it next
-	return port;
+    getsockname(fd, (sockaddr*)&addr, &len);
+    int port = ntohs(addr.sin_port);
+
+    close(fd);  // release it — server will bind to it next
+    return port;
 }
 
 class ServerTestFixture : public ::testing::Test {
 protected:
-	int port_os;
+    int port_os;
     Config cfg;     // shared config
     Server server;  // server instance
 
-    ServerTestFixture() :
-		port_os(getFreePort()),
-		cfg(createDummyConfig(port_os)),
-		server(cfg)
-	{}
+    ServerTestFixture()
+        : port_os(getFreePort()), cfg(createDummyConfig(port_os)), server(cfg) {
+    }
 
     // Wrappers
     int createSocket() {
@@ -106,10 +105,10 @@ TEST_F(ServerTestFixture, Constructor_CreatesMultipleListeningSockets) {
     ServerConfig s1;
     ServerConfig s2;
 
-	s1.setHost("127.0.0.1");
+    s1.setHost("127.0.0.1");
     s1.setPort(port1);
 
-	s2.setHost("127.0.0.1");
+    s2.setHost("127.0.0.1");
     s2.setPort(port2);
 
     LocationConfig loc;
@@ -129,16 +128,16 @@ TEST_F(ServerTestFixture, Constructor_CreatesMultipleListeningSockets) {
 }
 
 TEST(Server, Constructor_InvalidConfig_Throws) {
-	int port = getFreePort();
+    int port = getFreePort();
 
     Config cfg;
 
     ServerConfig s1;
     ServerConfig s2;
 
-	s1.setHost("127.0.0.1");
+    s1.setHost("127.0.0.1");
     s1.setPort(port);
-	s2.setHost("127.0.0.1");
+    s2.setHost("127.0.0.1");
     s2.setPort(port);  // duplicate port
 
     LocationConfig loc;
@@ -154,11 +153,11 @@ TEST(Server, Constructor_InvalidConfig_Throws) {
 }
 
 TEST(Server, Constructor_MinimalConfig_DoesNotCrash) {
-	int port = getFreePort();
+    int port = getFreePort();
     Config cfg;
 
     ServerConfig s;
-	s.setHost("127.0.0.1");
+    s.setHost("127.0.0.1");
     s.setPort(port);
 
     LocationConfig loc;
