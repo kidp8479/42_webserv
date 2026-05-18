@@ -291,8 +291,9 @@ void Handler::sendError(int code, const std::string& reason,
         LOG_DEBUG() << "[Handler] custom error page not found on disk: " << RED
                     << it->second << RESET << " - serving fallback error page";
     }
-    // it it does not exists : launch minimal hardcoded html response
-    // replace this part with Charlie's Response setter when available
+    // no custom page: build minimal hardcoded HTML response
+    // replace setRaw() calls with Charlie's setStatus/setHeader/setBody when
+    // available
     std::string body = "<html><body><h1>" + toString(code) + " " + reason +
                        "</h1></body></html>";
     std::string response =
@@ -366,7 +367,8 @@ void Handler::serveFile(const std::string& path,
     close(fd);
 
     const std::string& mime_type = getFileMimeType(path);
-    // replace this part with real setters for Response
+    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
+    // available
     std::string response =
         "HTTP/1.1 " + toString(static_cast<int>(HttpConstants::kOK.code)) +
         " " + HttpConstants::kOK.reason + "\r\n" +
@@ -400,7 +402,7 @@ void Handler::generateDirectoryListing(const std::string& path,
     std::string directory_list;
     while ((entry = readdir(directory)) != NULL) {
         std::string name = entry->d_name;
-        // we don' want people to access "." or ".."
+        // skip "." and ".." entries
         if (name == "." || name == "..") {
             continue;
         }
