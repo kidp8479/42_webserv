@@ -9,6 +9,7 @@
 
 ServerConfig createDummyServerConfig(int port) {
     ServerConfig sconf;
+	sconf.setHost("127.0.0.1");
     sconf.setPort(port);
 
     LocationConfig loc;
@@ -55,14 +56,14 @@ protected:
 };
 
 TEST_F(ListenerTestFixture, Constructor_CreatesValidSocket) {
-    Listener* listener = new Listener(port_os, loop, resources);
+    Listener* listener = new Listener(loop, resources);
 
     EXPECT_GT(listener->getFd(), 0);
     EXPECT_STREQ(listener->name(), "Listener");
 }
 
 TEST_F(ListenerTestFixture, Constructor_SetsSocketNonBlocking) {
-    Listener* listener = new Listener(port_os, loop, resources);
+    Listener* listener = new Listener(loop, resources);
 
     int flags = fcntl(listener->getFd(), F_GETFL, 0);
     EXPECT_TRUE(flags & O_NONBLOCK);

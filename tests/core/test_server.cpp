@@ -14,6 +14,8 @@
 Config createDummyConfig(int port) {
     Config cfg;
     ServerConfig sconf;
+
+	sconf.setHost("127.0.0.1");
     sconf.setPort(port);
 
     LocationConfig loc;
@@ -104,7 +106,10 @@ TEST_F(ServerTestFixture, Constructor_CreatesMultipleListeningSockets) {
     ServerConfig s1;
     ServerConfig s2;
 
+	s1.setHost("127.0.0.1");
     s1.setPort(port1);
+
+	s2.setHost("127.0.0.1");
     s2.setPort(port2);
 
     LocationConfig loc;
@@ -131,7 +136,9 @@ TEST(Server, Constructor_InvalidConfig_Throws) {
     ServerConfig s1;
     ServerConfig s2;
 
+	s1.setHost("127.0.0.1");
     s1.setPort(port);
+	s2.setHost("127.0.0.1");
     s2.setPort(port);  // duplicate port
 
     LocationConfig loc;
@@ -151,6 +158,7 @@ TEST(Server, Constructor_MinimalConfig_DoesNotCrash) {
     Config cfg;
 
     ServerConfig s;
+	s.setHost("127.0.0.1");
     s.setPort(port);
 
     LocationConfig loc;
