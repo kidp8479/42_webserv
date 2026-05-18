@@ -60,7 +60,7 @@ private:
     void parseUploadPath(LocationConfig& location_block);
     void parseCGI(LocationConfig& location_block);
     void parseReturn(LocationConfig& location_block);
-	std::string normalizeHost(const std::string& host) const;
+    std::string normalizeHost(const std::string& host) const;
 
     size_t index_;
     const std::vector<Token>* tokens_list_;

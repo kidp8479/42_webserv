@@ -65,8 +65,8 @@ void ConfigValidator::serverChecks(const Config& config) const {
         checkPort(*it);
         checkHost(*it);
         checkServerErrorCodes(*it);
-		checkClientMaxBodySize(*it);
-		checkLocationBlocks(*it);
+        checkClientMaxBodySize(*it);
+        checkLocationBlocks(*it);
         checkDuplicatePath(*it);
 
         locationChecks(*it);
@@ -83,25 +83,27 @@ void ConfigValidator::checkDuplicateHostPort(const Config& config) const {
 
     for (it1 = server_blocks.begin(); it1 < server_blocks.end(); ++it1) {
         for (it2 = it1 + 1; it2 < server_blocks.end(); ++it2) {
-			if ((*it1).getPort() != (*it2).getPort()) {
-				continue;
-			}
+            if ((*it1).getPort() != (*it2).getPort()) {
+                continue;
+            }
             if ((*it1).getHost() == (*it2).getHost()) {
                 std::ostringstream oss;
                 oss << "Duplicate listen: " << (*it1).getHost() << ":"
                     << (*it1).getPort();
                 configError(oss.str());
             }
-			if ((*it1).getHost() == "0.0.0.0" || (*it2).getHost() == "0.0.0.0") {
-				const std::string& specific_host = ((*it1).getHost() == "0.0.0.0")
-					? (*it2).getHost() : (*it1).getHost();
+            if ((*it1).getHost() == "0.0.0.0" ||
+                (*it2).getHost() == "0.0.0.0") {
+                const std::string& specific_host =
+                    ((*it1).getHost() == "0.0.0.0") ? (*it2).getHost()
+                                                    : (*it1).getHost();
 
-				std::ostringstream oss;
-				oss << "Conflicting listen: 0.0.0.0:" << (*it1).getPort()
-                    << " overlaps with " << specific_host
-                    << ":" << (*it1).getPort();
+                std::ostringstream oss;
+                oss << "Conflicting listen: 0.0.0.0:" << (*it1).getPort()
+                    << " overlaps with " << specific_host << ":"
+                    << (*it1).getPort();
                 configError(oss.str());
-			}
+            }
         }
     }
     LOG_DEBUG() << "ConfigValidator: no duplicated host:port pairs.";
@@ -296,22 +298,31 @@ void ConfigValidator::checkCgiBinaryPaths(
     LOG_DEBUG() << "ConfigValidator: valid CGI binary path(s).";
 }
 
+/**
+ * @brief Ensures the server has at least one location block defined.
+ * @throws std::runtime_error if no location blocks are present.
+ */
 void ConfigValidator::checkLocationBlocks(const ServerConfig& server) const {
-	if (server.getLocationBlock().empty()) {
-		configError("Server block has no location blocks defined.");
-	}
+    if (server.getLocationBlock().empty()) {
+        configError("Server block has no location blocks defined.");
+    }
+    LOG_DEBUG() << "ConfigValidator: valid server location block";
 }
 
-void ConfigValidator::checkClientMaxBodySize(
-	const ServerConfig& server) const {
-	size_t max_body_size = server.getMaxBodySize();
+/**
+ * @brief Validates that client_max_body_size is within supported limits.
+ * @throws std::runtime_error if the configured size exceeds the maximum
+ * supported body size.
+ */
+void ConfigValidator::checkClientMaxBodySize(const ServerConfig& server) const {
+    size_t max_body_size = server.getMaxBodySize();
 
-	if (max_body_size > kMaxSupportedBodySize) {
-		std::ostringstream oss;
-		oss << "Client max body size exceeeds supported limit ("
-			<< kMaxSupportedBodySize << " bytes)";
+    if (max_body_size > kMaxSupportedBodySize) {
+        std::ostringstream oss;
+        oss << "Client max body size exceeeds supported limit ("
+            << kMaxSupportedBodySize << " bytes)";
 
-		configError(oss.str());
-	}
-	LOG_DEBUG() << "ConfigValidator: valid client max body size.";
+        configError(oss.str());
+    }
+    LOG_DEBUG() << "ConfigValidator: valid client max body size.";
 }
