@@ -17,8 +17,8 @@ EventLoop::~EventLoop() {
     LOG_INFO() << "[EventLoop] shutting down, cleaning up " << handlers_.size()
                << " handlers";
     for (size_t i = 0; i < handlers_.size(); i++) {
-        LOG_INFO() << "[EventLoop] destroying handler=" << handlers_[i]->name()
-                   << " fd=" << poll_fds_[i].fd;
+        LOG_DEBUG() << "[EventLoop] destroying handler=" << handlers_[i]->name()
+                    << " fd=" << poll_fds_[i].fd;
         delete handlers_[i];
     }
     handlers_.clear();
@@ -106,8 +106,8 @@ int EventLoop::wait(int timeout) {
     //  checks are any of thes ready RIGHT NOW?, if yes it fills revents
     //  the number returned is how many revents filled out
     if (ret == -1) {
-        LOG_WARNING() << "System call interrupted";
         if (errno == EINTR) {
+            LOG_WARNING() << "System call interrupted";
             return 0;  // normal interrupt
         }
         LOG_ERROR() << "[EventLoop] poll() failed: " << strerror(errno);
@@ -116,6 +116,7 @@ int EventLoop::wait(int timeout) {
     LOG_DEBUG() << "[EventLoop] poll returned ready_fds=" << ret;
     return ret;
 }
+
 /**
  * here is our polymorphism in action: reactor pattern
  * reacts differently depending on which object it is
@@ -145,8 +146,8 @@ void EventLoop::dispatch() {
 void EventLoop::cleanup() {
     for (size_t i = 0; i < handlers_.size();) {
         if (handlers_[i]->isDone()) {
-            LOG_INFO() << "[EventLoop] removing fd=" << poll_fds_[i].fd
-                       << " handler=" << handlers_[i]->name();
+            LOG_DEBUG() << "[EventLoop] removing fd=" << poll_fds_[i].fd
+                        << " handler=" << handlers_[i]->name();
             delete handlers_[i];
 
             size_t last = handlers_.size() - 1;

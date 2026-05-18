@@ -1,6 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
+#include <sstream>
 #include <string>
 
 #include "Request.hpp"
@@ -26,15 +27,15 @@ public:
 
     const std::string& getRaw() const;
     void reset();
-
     // what Pauline needs for the handler:
     // void setStatus(int code, const std::string& reason);
     // void setHeader(const std::string& key, const std::string& value);
     // void setBody(const std::string& body);
 
-    // will be obsolete when the 3 above methods are implemented, could be
-    // deleted in the end
+    // temporary: used by Handler until Charlie implements
+    // setStatus/setHeader/setBody
     void setRaw(const std::string& raw);
+    void buildError(int code, const std::string& reason);
 
 private:
     std::string raw_;

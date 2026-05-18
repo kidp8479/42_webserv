@@ -24,7 +24,11 @@ bool Server::start() {
         if (!g_running) {
             break;
         }
-        if (ready <= 0)
+        if (ready < 0) {
+            LOG_ERROR() << "[Server] Event loop wait failed";
+            return false;
+        }
+        if (ready == 0)
             continue;
         loop_.dispatch();
         // remove dead handlers
@@ -37,10 +41,12 @@ void Server::setupListeners() {
     const std::vector<ServerConfig>& servers = config_.getServerBlock();
 
     for (size_t i = 0; i < servers.size(); i++) {
-        int port = servers[i].getPort();
+        ServerResources resources(servers[i]);
 
-        Listener* listener =
-            new Listener(port, loop_, ServerResources(servers[i]));
+        const ServerConfig& cfg = resources.getServerConfig();
+        LOG_INFO() << "[Server] Starting listener on " << cfg.getHost() << ":"
+                   << cfg.getPort();
+        Listener* listener = new Listener(loop_, resources);
         listeners_.push_back(listener);
     }
 }

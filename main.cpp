@@ -8,6 +8,11 @@
 #include "core/Signal.hpp"
 #include "logger/Logger.hpp"
 
+// 2 catch blocks are intentional here because
+// runtime errors must be logged at the source to prevent double prints
+// all other std::exceptions must NOT be logged as well
+// yes its not perfect, but we did not have the hindsight when we first
+// decided this.  just go with it for now.
 int main(int argc, char** argv) {
     signal(SIGINT, handleSigInt);
     signal(SIGPIPE, SIG_IGN);
@@ -32,7 +37,7 @@ int main(int argc, char** argv) {
 
         Server server(config);
         if (!server.start())
-            return (EXIT_FAILURE);
+            return EXIT_FAILURE;
     } catch (const std::runtime_error& e) {
         return EXIT_FAILURE;
     } catch (const std::exception& e) {

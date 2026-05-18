@@ -28,6 +28,7 @@ private:
     void read();
     void write();
     void cleanup();
+    void closeConnection(const std::string& reason, const char* level = "INFO");
 
     Fd fd_;
     // reference to the server's loop_

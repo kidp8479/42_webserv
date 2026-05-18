@@ -242,8 +242,9 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
     if (delimiter_pos == std::string::npos) {
         configError(current_token, "expected \"host:port\"");
     }
+    std::string host = current_token.value.substr(0, delimiter_pos);
 
-    server_block.setHost(current_token.value.substr(0, delimiter_pos));
+    server_block.setHost(normalizeHost(host));
     server_block.setPort(toInt(current_token.value.substr(delimiter_pos + 1)));
     LOG_DEBUG() << "[ConfigBuilder] listen -> " << GRN << server_block.getHost()
                 << ":" << server_block.getPort() << RESET;
@@ -617,4 +618,18 @@ void ConfigBuilder::parseReturn(LocationConfig& location_block) {
 
     index_++;
     expectSemicolon();
+}
+
+/**
+ * @brief Normalizes a host string, converting "localhost" to "127.0.0.1".
+ * @param host The host string to normalize
+ * @return The normalized host string
+ */
+std::string ConfigBuilder::normalizeHost(const std::string& host) const {
+    if (host == "localhost") {
+        LOG_DEBUG() << "[ConfigBuilder] localhost normalized -> " << GRN
+                    << "127.0.0.1" << RESET;
+        return "127.0.0.1";
+    }
+    return host;
 }

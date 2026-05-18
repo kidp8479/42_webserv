@@ -24,17 +24,14 @@ SRCS = 	\
 		../config/ConfigParser.cpp \
 		../config/ConfigTokenizer.cpp \
 		../config/ConfigValidator.cpp \
-		../config/LocationConfig.cpp \
+		../config/ConfigTokenizer.cpp \
+		../config/ConfigBuilder.cpp \
+		../logger/Logger.cpp \
+		../config/Config.cpp \
 		../config/ServerConfig.cpp \
-		../core/Client.cpp \
-		../core/EventLoop.cpp \
-		../core/Fd.cpp \
-		../core/Listener.cpp \
-		../core/Server.cpp \
-		../core/ServerResources.cpp \
-		../core/Signal.cpp \
-		../handlers/Router.cpp \
-		../handlers/Handler.cpp \
+		../config/LocationConfig.cpp \
+		../server/Fd.cpp \
+		../server/Client.cpp \
 		../http/Request.cpp \
 		../http/Response.cpp \
 		../logger/Logger.cpp \

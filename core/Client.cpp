@@ -2,7 +2,6 @@
 
 #include <sys/socket.h>
 
-#include <cerrno>
 #include <string>
 
 #include "../handlers/Handler.hpp"
@@ -31,11 +30,11 @@ Client::Client(int fd, EventLoop& loop, const ServerResources& resources)
       bytes_sent_(0),
       state_(kReading),
       keep_alive_(true) {
+    request_.setMaxBodySize(resources_.getServerConfig().getMaxBodySize());
 }
 
 /**
  * @brief Destroys the Client.
- *
  * Releases owned resources (socket managed by Fd).
  */
 Client::~Client() {
@@ -43,7 +42,6 @@ Client::~Client() {
 
 /**
  * @brief Returns the client socket file descriptor.
- *
  * @return The underlying socket fd
  */
 int Client::getFd() const {
@@ -55,34 +53,58 @@ void Client::handle(short revents) {
         LOG_DEBUG() << "[Client] ENTER handle fd=" << fd_.getFd()
                     << " state=" << stateToStr(state_)
                     << " events=" << LogUtils::pollToStr(revents);
-        // conceptually since poll events are bit masks..
-        // does revents contain the POLLIN bit? if yes the result is non zero
+        // handle failures and disconnects (fatal socket states)
+        if (revents & (POLLERR | POLLNVAL)) {
+            return closeConnection("socket error/hangup", "WARNING");
+        }
+        // POLLHUP means peer closed it's side of the connection so there
+        // may still be unread bytes buffered in the kernel so we dont
+        // instantly clean up here.
+        bool peer_closed = false;
+        if (revents & POLLHUP) {
+            LOG_INFO() << "[Client] POLLHUP fd=" << fd_.getFd();
+            peer_closed = true;
+        }
+        // read available data first
         if (revents & POLLIN && state_ == kReading) {
             LOG_DEBUG() << "[Client] POLLIN detected";
             read();
         }
-
+        // request finished parsing
         if (state_ == kReading && request_.isComplete()) {
+            // isError() check removed intentionally: Handler::requestIsError()
+            // handles it and sends a proper HTTP error response. Closing here
+            // would bypass the handler and send nothing back to the client.
             keep_alive_ = request_.shouldKeepAlive();
-
             LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
                        << " switching " << stateToStr(state_) << " → kWriting";
 
-            const LocationConfig& location =
+            const LocationConfig& loc =
                 resources_.getRouter().resolve(request_.getPath());
-            const ServerConfig& server = resources_.getServerConfig();
-            Handler::run(request_, location, server, response_);
+            Handler::run(request_, loc, resources_.getServerConfig(),
+                         response_);
             state_ = kWriting;
-
             LOG_DEBUG() << "[Client] enabling POLLOUT";
             loop_.modifyHandler(this, POLLOUT);
         }
-        // if revents contain POLLOUT
+        // write response
         if (revents & POLLOUT && state_ == kWriting) {
             LOG_DEBUG() << "[Client] write triggered";
             write();
         }
-    } catch (...) {
+        // if peer closed and we're still reading, we cant receive more bytes
+        // anymore so if request is incomplete its a dead connection
+        if (peer_closed && state_ == kReading) {
+            return closeConnection("peer disconnected during read");
+        }
+    } catch (const std::exception& e) {
+        // TODO: exception here (ex: Router::resolve() no match) closes
+        // connection without sending anything - client gets a TCP reset instead
+        // of a 500. Fix: set a 500 response and switch to kWriting instead of
+        // calling cleanup().
+        LOG_ERROR() << "[Client] exception: " << e.what();
+        cleanup();
+    } catch (...) {  // universal fall back
         cleanup();
     }
 }
@@ -94,23 +116,11 @@ void Client::read() {
     ssize_t n = recv(fd_.getFd(), buffer, kBufferSize, 0);
     // client disconnected cleanly
     if (n == 0) {
-        LOG_INFO() << "[Client] client closed connection fd=" << fd_.getFd();
-        cleanup();
-        return;
+        return closeConnection("client closed connection");
     }
-
+    // poll said ready, so failure here is a real error (no errno checks!)
     if (n < 0) {
-        // not an error just means no data available rn, try again
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            LOG_DEBUG() << "[Client] read EAGAIN / EWOULDBLOCK";
-            return;
-        }
-        // real error: connection reset, bad fd, kernel error
-        // maybe log debug here
-        LOG_ERROR() << "[Client] recv error fd=" << fd_.getFd()
-                    << " errno=" << errno;
-        cleanup();
-        return;
+        return closeConnection("recv error fd=", "ERROR");
     }
     LOG_DEBUG() << "[Client] read bytes=" << n;
     request_.append(buffer, n);
@@ -123,35 +133,36 @@ void Client::write() {
 
     ssize_t n = send(fd_.getFd(), data.c_str() + bytes_sent_,
                      data.size() - bytes_sent_, 0);
-
     if (n <= 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            LOG_DEBUG() << "[Client] write EAGAIN / EWOULDBLOCK";
-            return;
-        }
-        LOG_ERROR() << "[Client] send error fd=" << fd_.getFd()
-                    << " errno=" << errno;
-        cleanup();
-        return;
+        return closeConnection("send error fd=", "ERROR");
     }
-
     bytes_sent_ += n;
     LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
 
     if (bytes_sent_ >= data.size()) {
         LOG_INFO() << "[Client] response complete fd=" << fd_.getFd();
         if (!keep_alive_) {
-            LOG_INFO() << "[Client] closing connection fd=" << fd_.getFd();
-            cleanup();
-            return;
+            return closeConnection("closing connection");
         }
         LOG_INFO() << "[Client] keeping connection alive fd=" << fd_.getFd();
         // reset for next request
         state_ = kReading;
         bytes_sent_ = 0;
-        request_.resetData();
+        request_.resetData();  // keeps raw_, re parses any pipelined data
         response_.reset();
-
+        // if raw_ had any leftover bytes from pipelined request
+        if (request_.isComplete()) {
+            // same as above: isError() check removed so Handler sends the
+            // HTTP error response instead of silently dropping the connection.
+            keep_alive_ = request_.shouldKeepAlive();
+            const LocationConfig& loc =
+                resources_.getRouter().resolve(request_.getPath());
+            Handler::run(request_, loc, resources_.getServerConfig(),
+                         response_);
+            state_ = kWriting;
+            loop_.modifyHandler(this, POLLOUT);
+            return;
+        }
         // switch back to read mode
         loop_.modifyHandler(this, POLLIN);
     }
@@ -169,4 +180,15 @@ bool Client::isDone() const {
 
 const char* Client::name() const {
     return "Client";
+}
+
+void Client::closeConnection(const std::string& reason, const char* level) {
+    if (std::string(level) == "WARNING") {
+        LOG_WARNING() << "[Client] " << reason << " fd=" << fd_.getFd();
+    } else if (std::string(level) == "ERROR") {
+        LOG_ERROR() << "[Client] " << reason << " fd=" << fd_.getFd();
+    } else {
+        LOG_INFO() << "[Client] " << reason << " fd=" << fd_.getFd();
+    }
+    cleanup();
 }
