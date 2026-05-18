@@ -20,6 +20,8 @@ const HttpError kNoContent = {204, "No Content"};
 // 3xx status code - redirection
 const HttpError kMovedPermanently = {301, "Moved Permanently"};
 const HttpError kFound = {302, "Found"};
+const HttpError kTemporaryRedirect = {307, "Temporary Redirect"};
+const HttpError kPermanentRedirect = {308, "Permanent Redirect"};
 
 // 4xx status code - client's side error response
 const HttpError kBadRequest = {400, "Bad Request"};

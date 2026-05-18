@@ -166,11 +166,34 @@ void Handler::dispatch(HandlerContext& handler_context) {
 
 /**
  * @brief Handles redirect location blocks. Sends a redirect response.
- * @note TODO: implement with real Location header using getReturnCode() +
- *       getReturnUrl(). Currently a stub.
+ * @note Builds status line and Location header from getReturnCode() +
+ *       getReturnUrl(). Validator guarantees code is in [300-399].
  */
 void Handler::handleReturn(HandlerContext& handler_context) {
-    handler_context.response.setRaw("HTTP/1.1 301 Moved Permanently\r\n\r\n");
+    int return_code = handler_context.location.getReturnCode();
+    const std::string& return_url = handler_context.location.getReturnUrl();
+
+    std::string reason;
+    if (return_code == HttpConstants::kMovedPermanently.code) {
+        reason = HttpConstants::kMovedPermanently.reason;
+    } else if (return_code == HttpConstants::kFound.code) {
+        reason = HttpConstants::kFound.reason;
+    } else if (return_code == HttpConstants::kTemporaryRedirect.code) {
+        reason = HttpConstants::kTemporaryRedirect.reason;
+    } else if (return_code == HttpConstants::kPermanentRedirect.code) {
+        reason = HttpConstants::kPermanentRedirect.reason;
+    } else {
+        reason = "Redirect";
+    }
+
+    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
+    // available
+    std::string response = "HTTP/1.1 " + toString(return_code) + " " + reason +
+                           "\r\n" + "Location: " + return_url + "\r\n" +
+                           "Content-Length: 0\r\n" + "\r\n";
+    handler_context.response.setRaw(response);
+    LOG_INFO() << BR_CYN "[Handler] redirect " << return_code << " -> "
+               << return_url << RESET;
 }
 
 /**
@@ -412,6 +435,8 @@ void Handler::generateDirectoryListing(const std::string& path,
 
     std::string body =
         "<html><body><ul>" + directory_list + "</ul></body></html>";
+    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
+    // available
     std::string response =
         "HTTP/1.1 " + toString(static_cast<int>(HttpConstants::kOK.code)) +
         " " + HttpConstants::kOK.reason + "\r\n" +
