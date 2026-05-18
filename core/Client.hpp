@@ -29,6 +29,7 @@ private:
     void write();
     void cleanup();
     void closeConnection(const std::string& reason, const char* level = "INFO");
+	bool isTimedOut() const;
 
     Fd fd_;
     // reference to the server's loop_
@@ -41,6 +42,7 @@ private:
     Request request_;
     Response response_;
     bool keep_alive_;
+	Timeout timeout_;
 };
 
 #endif
