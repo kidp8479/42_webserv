@@ -3,6 +3,18 @@
 
 #include <ctime>
 
+namespace TimeoutSeconds {
+	static const int kClient = 60;
+	static const int kCGI = 30; // for later
+}
+
+// poll expect time in milliseconds
+// the separation of then namespaces prevents accidentally passing
+// seconds where milliseconds are expected (and have silent failures)
+namespace TimeoutMs {
+	static const int kPollHeartbeat = 10000;
+}
+
 class Timeout {
 public:
 	Timeout();
