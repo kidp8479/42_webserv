@@ -119,6 +119,7 @@ void Client::read() {
     if (n < 0) {
         return closeConnection("recv error fd=", "ERROR");
     }
+	timeout_.reset();
     LOG_DEBUG() << "[Client] read bytes=" << n;
     request_.append(buffer, n);
 }
@@ -133,6 +134,8 @@ void Client::write() {
     if (n <= 0) {
         return closeConnection("send error fd=", "ERROR");
     }
+	// reset on successful write
+	tiemout_.reset();
     bytes_sent_ += n;
     LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
 
@@ -187,4 +190,11 @@ void Client::closeConnection(const std::string& reason, const char* level) {
         LOG_INFO() << "[Client] " << reason << " fd=" << fd_.getFd();
     }
     cleanup();
+}
+
+bool Client::isTimedOut() const {
+	if (state == kDone) {
+		return false;
+	}
+	return timeout_.expired();
 }
