@@ -20,7 +20,7 @@ bool Server::start() {
     LOG_INFO() << "Server starting...";
     while (g_running) {
         // sleeps until something happens
-        int ready = loop_.wait(10000);
+        int ready = loop_.wait(TimeoutMs::kPollHeartbeat);
         if (!g_running) {
             break;
         }
