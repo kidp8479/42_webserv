@@ -14,6 +14,7 @@ const int kMinErrorPage = 400;
 const int kMaxErrorPage = 599;
 const int kMinRedirectPage = 300;
 const int kMaxRedirectPage = 399;
+const size_t kMaxSupportedBodySize = 104857600;
 }  // namespace
 
 ConfigValidator::ConfigValidator() {
@@ -64,6 +65,7 @@ void ConfigValidator::serverChecks(const Config& config) const {
         checkPort(*it);
         checkHost(*it);
         checkServerErrorCodes(*it);
+		checkClientMaxBodySize(*it);
 		checkLocationBlocks(*it);
         checkDuplicatePath(*it);
 
@@ -298,4 +300,18 @@ void ConfigValidator::checkLocationBlocks(const ServerConfig& server) const {
 	if (server.getLocationBlock().empty()) {
 		configError("Server block has no location blocks defined.");
 	}
+}
+
+void ConfigValidator::checkClientMaxBodySize(
+	const ServerConfig& server) const {
+	size_t max_body_size = server.getMaxBodySize();
+
+	if (max_body_size > kMaxSupportedBodySize) {
+		std::ostringstream oss;
+		oss << "Client max body size exceeeds supported limit ("
+			<< kMaxSupportedBodySize << " bytes)";
+
+		configError(oss.str());
+	}
+	LOG_DEBUG() << "ConfigValidator: valid client max body size.";
 }
