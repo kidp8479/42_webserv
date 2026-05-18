@@ -52,6 +52,17 @@ void Handler::run(const Request& request, const LocationConfig& location,
     }
 
     dispatch(handler_context);
+
+    // HEAD: same response as GET but no body, Content-Length stays untouched.
+    // String manipulation on raw response is temporary, replace with
+    // response.setBody("") once Charlie's API lands.
+    if (handler_context.request.getMethod() == "HEAD") {
+        const std::string& raw = handler_context.response.getRaw();
+        size_t header_end = raw.find("\r\n\r\n");
+        if (header_end != std::string::npos) {
+            handler_context.response.setRaw(raw.substr(0, header_end + 4));
+        }
+    }
 }
 
 /**
@@ -78,7 +89,7 @@ bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
     const std::string& request_method = handler_context.request.getMethod();
 
     if (request_method != "GET" && request_method != "POST" &&
-        request_method != "DELETE") {
+        request_method != "DELETE" && request_method != "HEAD") {
         LOG_WARNING() << "[Handler] 501 - method not implemented: "
                       << request_method;
         sendError(HttpConstants::kNotImplemented, handler_context);
@@ -91,14 +102,26 @@ bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
  * @brief Checks if the request method is listed in the location's allowed
  * methods.
  * @return true if the method is not in the allowed list (405 sent)
+ * @note HEAD is not listed in config files. We follow nginx: if GET is allowed
+ *       on this location, HEAD is too. So we just check GET on HEAD's behalf.
  */
 bool Handler::methodNotAllowedCheck(HandlerContext& handler_context) {
     const std::string& request_method = handler_context.request.getMethod();
     const std::vector<std::string> allowed_method =
         handler_context.location.getMethods();
 
-    if (std::find(allowed_method.begin(), allowed_method.end(),
-                  request_method) == allowed_method.end()) {
+    // redirect blocks have no methods directive, any method is allowed
+    if (handler_context.location.getReturnCode() !=
+        LocationConfig::kNoRedirect) {
+        return false;
+    }
+
+    // HEAD works wherever GET works, check GET instead
+    const std::string& check_method =
+        (request_method == "HEAD") ? std::string("GET") : request_method;
+
+    if (std::find(allowed_method.begin(), allowed_method.end(), check_method) ==
+        allowed_method.end()) {
         LOG_WARNING() << "[Handler] 405 - method not allowed: "
                       << request_method;
         sendError(HttpConstants::kMethodNotAllowed, handler_context);

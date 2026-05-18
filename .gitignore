@@ -32,5 +32,10 @@ obj/
 # ─── uploads (generated at runtime, not tracked) ──────────────────────────────
 www/uploads/
 
-# ─── test binaries - ignore all bin directories ────────────────────────────────
+# ─── test binaries - ignore all bin directories ───────────────────────────────
 bin/
+
+# ─── tester from 42 intra ─────────────────────────────────────────────────────
+tester
+cgi_tester
+*.sh
