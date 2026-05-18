@@ -91,10 +91,12 @@ void ConfigValidator::checkDuplicateHostPort(const Config& config) const {
                 configError(oss.str());
             }
 			if ((*it1).getHost() == "0.0.0.0" || (*it2).getHost() == "0.0.0.0") {
+				const std::string& specific_host = ((*it1).getHost() == "0.0.0.0")
+					? (*it2).getHost() : (*it1).getHost();
+
 				std::ostringstream oss;
 				oss << "Conflicting listen: 0.0.0.0:" << (*it1).getPort()
-                    << " overlaps with " << ((*it1).getHost() == "0.0.0.0"
-                        ? (*it2).getHost() : (*it1).getHost())
+                    << " overlaps with " << specific_host
                     << ":" << (*it1).getPort();
                 configError(oss.str());
 			}
