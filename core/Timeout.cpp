@@ -9,18 +9,18 @@ Timeout::Timeout() :
 
 Timeout::Timeout(int limit_seconds) :
 	last_activity_(std::time(NULL)),
-	limit_seconds_(limitseconds) {
+	limit_seconds_(limit_seconds) {
 }
 
 Timeout::Timeout(const Timeout& other) :
 	last_activity_(other.last_activity_),
-	limit_seconds_(other.limit_seconds) {
+	limit_seconds_(other.limit_seconds_) {
 }
 
 Timeout& Timeout::operator=(const Timeout& other) {
 	if (this != &other) {
-		last_activity_(other.last_activity_);
-		limit_seconds_(other.limit_seconds_);
+		last_activity_ = other.last_activity_;
+		limit_seconds_ = other.limit_seconds_;
 	}
 	return *this;
 }
