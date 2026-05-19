@@ -227,7 +227,8 @@ void Handler::handleReturn(HandlerContext& handler_context) {
  * @note TODO: implement fork/execve/pipe. Currently a stub.
  */
 void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
-    handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
+    // TODO: implement fork/execve/pipe
+    sendError(HttpConstants::kNotImplemented, handler_context);
 }
 
 /**
@@ -236,7 +237,8 @@ void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
  *       Currently a stub.
  */
 void Handler::handleUpload(HandlerContext& handler_context) {
-    handler_context.response.setRaw("HTTP/1.1 200 OK\r\n\r\n");
+    // TODO: implement file write to getUploadPath(), return 201 Created
+    sendError(HttpConstants::kNotImplemented, handler_context);
 }
 
 /**
