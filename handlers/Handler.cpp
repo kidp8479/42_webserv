@@ -306,6 +306,11 @@ void Handler::handleStatic(HandlerContext& handler_context) {
         LOG_DEBUG() << "[Handler] file detected, serving: " << GRN << full_path
                     << RESET;
         serveFile(full_path, handler_context);
+    } else {
+        // symlink, device, socket, etc not something we serve
+        LOG_WARNING() << "[Handler] 403 - not a regular file or directory: "
+                      << RED << full_path << RESET;
+        sendError(HttpConstants::kForbidden, handler_context);
     }
 }
 
