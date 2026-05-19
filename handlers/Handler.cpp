@@ -369,9 +369,13 @@ void Handler::sendError(int code, const std::string& reason,
 std::string Handler::toString(int code) {
     std::ostringstream oss;
     oss << code;
-    std::string converted_code = oss.str();
+    return oss.str();
+}
 
-    return converted_code;
+std::string Handler::toString(size_t n) {
+    std::ostringstream oss;
+    oss << n;
+    return oss.str();
 }
 
 /**
