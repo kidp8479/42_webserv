@@ -26,6 +26,7 @@ SRCS = main.cpp \
 	   core/Server.cpp \
 	   core/ServerResources.cpp \
 	   core/Signal.cpp \
+	   core/Timeout.cpp \
 	   handlers/Handler.cpp \
 	   handlers/Router.cpp \
 	   http/Request.cpp \
