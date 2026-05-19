@@ -4,7 +4,7 @@
 #include <ctime>
 
 namespace TimeoutSeconds {
-	static const int kClient = 60;
+	static const int kClient = 5; // set at 60, reduce value for testing
 	static const int kCGI = 30; // for later
 }
 
@@ -12,7 +12,7 @@ namespace TimeoutSeconds {
 // the separation of then namespaces prevents accidentally passing
 // seconds where milliseconds are expected (and have silent failures)
 namespace TimeoutMs {
-	static const int kPollHeartbeat = 10000;
+	static const int kPollHeartbeat = 10000; //set at 10000, reduce for testing
 }
 
 class Timeout {
@@ -21,7 +21,7 @@ public:
 	explicit Timeout(int limit_seconds);
 	Timeout(const Timeout& other);
 	Timeout& operator=(const Timeout& other);
-	~Timeout() {}
+	~Timeout();
 
 	void reset();
 	bool expired() const;
