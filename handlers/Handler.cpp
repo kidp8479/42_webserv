@@ -74,6 +74,7 @@ bool Handler::requestIsError(HandlerContext& handler_context) {
     if (handler_context.request.isError()) {
         LOG_WARNING() << "[Handler] " << handler_context.request.getErrorCode()
                       << ": " << handler_context.request.getErrorMessage();
+
         sendError(handler_context.request.getErrorCode(),
                   handler_context.request.getErrorMessage(), handler_context);
         return true;
@@ -92,6 +93,7 @@ bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
         request_method != "DELETE" && request_method != "HEAD") {
         LOG_WARNING() << "[Handler] 501 - method not implemented: "
                       << request_method;
+
         sendError(HttpConstants::kNotImplemented, handler_context);
         return true;
     }
@@ -124,6 +126,7 @@ bool Handler::methodNotAllowedCheck(HandlerContext& handler_context) {
         allowed_method.end()) {
         LOG_WARNING() << "[Handler] 405 - method not allowed: "
                       << request_method;
+
         sendError(HttpConstants::kMethodNotAllowed, handler_context);
         return true;
     }
@@ -331,7 +334,7 @@ void Handler::sendError(int code, const std::string& reason,
             S_ISREG(get_info.st_mode)) {
             LOG_DEBUG() << "[Handler] using custom error page: " << GRN
                         << it->second << RESET;
-            serveFile(it->second, handler_context);
+            serveFile(it->second, handler_context, code, reason);
             return;
         }
         LOG_DEBUG() << "[Handler] custom error page not found on disk: " << RED
@@ -380,13 +383,19 @@ std::string Handler::getFileMimeType(const std::string& path) {
 }
 
 /**
- * @brief Opens, reads, and serves a regular file as an HTTP 200 response.
- * @param path Absolute or relative path to the file to serve
- * @note Detects Content-Type from the file extension via getFileMimeType().
+ * @brief Opens, reads, and serves a regular file as an HTTP response.
+ * @param path   Absolute or relative path to the file to serve
+ * @param code   HTTP status code (default 200 for normal file serving)
+ * @param reason HTTP reason phrase (default "OK")
+ * @note code/reason default to 200 OK for regular static file serving.
+ *       sendError() passes the actual error code so custom error pages are
+ *       served with the correct status line instead of a misleading 200.
+ *       Detects Content-Type from the file extension via getFileMimeType().
  *       Sends 500 if the file cannot be opened or read.
  */
 void Handler::serveFile(const std::string& path,
-                        HandlerContext& handler_context) {
+                        HandlerContext& handler_context, int code,
+                        const std::string& reason) {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         LOG_WARNING()
@@ -416,8 +425,7 @@ void Handler::serveFile(const std::string& path,
     // replace setRaw() with Charlie's setStatus/setHeader/setBody when
     // available
     std::string response =
-        "HTTP/1.1 " + toString(static_cast<int>(HttpConstants::kOK.code)) +
-        " " + HttpConstants::kOK.reason + "\r\n" +
+        "HTTP/1.1 " + toString(code) + " " + reason + "\r\n" +
         "Content-Type: " + mime_type + "\r\n" +
         "Content-Length: " + toString(static_cast<int>(body.size())) + "\r\n" +
         "\r\n" + body;

@@ -372,7 +372,7 @@ TEST_F(TestHttpHandler, CustomErrorPageServedWhenConfigured) {
 
     Handler::run(req, loc_, server_, response_);
 
-    EXPECT_NE(response_.getRaw().find("200"), std::string::npos);
+    EXPECT_NE(response_.getRaw().find("404"), std::string::npos);
     EXPECT_NE(response_.getRaw().find("Custom 404"), std::string::npos);
 }
 
