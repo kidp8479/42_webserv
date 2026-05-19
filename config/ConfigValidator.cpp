@@ -288,7 +288,7 @@ void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
  */
 void ConfigValidator::checkMethods(const LocationConfig& location) const {
     // ambiguous blocks (multiple discriminants) are handled by Handler at
-    // runtime — we can't know which type applies, so skip the methods check
+    // runtime, we can't know which type applies, so skip the methods check
     size_t discriminants = 0;
     if (location.getReturnCode() != LocationConfig::kNoRedirect) {
         discriminants++;
