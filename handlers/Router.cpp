@@ -10,10 +10,10 @@ Router::~Router() {
 }
 
 /**
- * @brief Logs an error and throws a std::runtime_error with a "Router: "
+ * @brief Logs an error and throws a std::runtime_error with a "[Router] "
  * prefix.
  *
- * @param msg The error message (without the "Router: " prefix)
+ * @param msg The error message (without the "[Router] " prefix)
  * @throws std::runtime_error always
  */
 void Router::routerError(const std::string& msg) const {
