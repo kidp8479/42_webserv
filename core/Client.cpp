@@ -72,15 +72,20 @@ void Client::handle(short revents) {
         }
         // request finished parsing
         if (state_ == kReading && request_.isComplete()) {
-            // isError() check removed intentionally: Handler::requestIsError()
-            // handles it and sends a proper HTTP error response. Closing here
-            // would bypass the handler and send nothing back to the client.
+            // if the request is malformed, skip routing, getPath() may be
+            // empty/garbage and Router::resolve() would throw before Handler
+            // gets a chance to send the proper error response. Use a fallback
+            // location instead: Handler::requestIsError() fires immediately
+            // and never touches the location.
             keep_alive_ = request_.shouldKeepAlive();
             LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
                        << " switching " << stateToStr(state_) << " → kWriting";
 
+            const LocationConfig fallback;
             const LocationConfig& loc =
-                resources_.getRouter().resolve(request_.getPath());
+                request_.isError()
+                    ? fallback
+                    : resources_.getRouter().resolve(request_.getPath());
             Handler::run(request_, loc, resources_.getServerConfig(),
                          response_);
             state_ = kWriting;
@@ -152,11 +157,13 @@ void Client::write() {
         response_.reset();
         // if raw_ had any leftover bytes from pipelined request
         if (request_.isComplete()) {
-            // same as above: isError() check removed so Handler sends the
-            // HTTP error response instead of silently dropping the connection.
+            // same as above: skip routing on malformed requests
             keep_alive_ = request_.shouldKeepAlive();
+            const LocationConfig fallback;
             const LocationConfig& loc =
-                resources_.getRouter().resolve(request_.getPath());
+                request_.isError()
+                    ? fallback
+                    : resources_.getRouter().resolve(request_.getPath());
             Handler::run(request_, loc, resources_.getServerConfig(),
                          response_);
             state_ = kWriting;
