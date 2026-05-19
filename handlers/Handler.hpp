@@ -49,6 +49,12 @@ private:
     static void handleUpload(HandlerContext& handler_context);
     static void handleStatic(HandlerContext& handler_context);
 
+    // helpers for handleStatic()
+    static void resolveDirectory(const std::string& full_path,
+                                 HandlerContext& handler_context);
+    static void deleteFile(const std::string& full_path,
+                           HandlerContext& handler_context);
+
     // error handling
     static void sendError(HttpConstants::HttpError error,
                           HandlerContext& handler_context);

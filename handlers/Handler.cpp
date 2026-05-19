@@ -193,7 +193,7 @@ void Handler::dispatch(HandlerContext& handler_context) {
 /**
  * @brief Handles redirect location blocks. Sends a redirect response.
  * @note Builds status line and Location header from getReturnCode() +
- *       getReturnUrl(). Validator guarantees code is in [300-399].
+ *       getReturnUrl(). ConfigValidator guarantees code is in [300-399].
  */
 void Handler::handleReturn(HandlerContext& handler_context) {
     int return_code = handler_context.location.getReturnCode();
@@ -244,14 +244,12 @@ void Handler::handleUpload(HandlerContext& handler_context) {
 /**
  * @brief Handles static file location blocks. Serves files or directory
  * listings.
- * @note Resolves full_path = root + URI, then dispatches based on what stat()
- *       finds: regular file => serve it, directory => try index then listing,
- *       nothing => 404. Empty index string is handled explicitly to avoid
- *       stat()-ing the directory itself (which would always succeed).
+ * @note Resolves full_path = root + URI, stat()s the result, then dispatches:
+ *       DELETE => deleteFile (TODO), directory => resolveDirectory, regular
+ * file => serveFile, anything else => 403.
  */
 void Handler::handleStatic(HandlerContext& handler_context) {
     const std::string& path = handler_context.request.getPath();
-    // fix: reject directory traversal attempts, reject any path containing ".."
     if (path.find("..") != std::string::npos) {
         LOG_WARNING() << "[Handler] 403 - directory traversal attempt: " << RED
                       << path << RESET;
@@ -270,50 +268,83 @@ void Handler::handleStatic(HandlerContext& handler_context) {
         sendError(HttpConstants::kNotFound, handler_context);
         return;
     }
-    if (S_ISDIR(get_info.st_mode)) {
-        const std::string& index = handler_context.location.getIndex();
-        if (index.empty()) {
-            if (handler_context.location.getDirectoryListing()) {
-                generateDirectoryListing(full_path, handler_context);
-            } else {
-                LOG_WARNING()
-                    << "[Handler] 403 - directory listing off, no index: "
-                    << RED << full_path << RESET;
-                sendError(HttpConstants::kForbidden, handler_context);
-            }
+
+    if (handler_context.request.getMethod() == "DELETE") {
+        if (!S_ISREG(get_info.st_mode)) {
+            LOG_WARNING() << "[Handler] 403 - DELETE on non-regular file: "
+                          << RED << full_path << RESET;
+            sendError(HttpConstants::kForbidden, handler_context);
             return;
         }
-        std::string path_to_serve = full_path + "/" + index;
-        LOG_DEBUG() << "[Handler] directory detected, trying index: " << GRN
-                    << path_to_serve << RESET;
+        deleteFile(full_path, handler_context);  // TODO
+        return;
+    }
 
-        // index not found: fall back to directory listing or 403
-        if (stat(path_to_serve.c_str(), &get_info) != 0) {
-            if (handler_context.location.getDirectoryListing()) {
-                generateDirectoryListing(full_path, handler_context);
-            } else {
-                LOG_WARNING()
-                    << "[Handler] 403 - directory listing off, no index: "
-                    << RED << full_path << RESET;
-                sendError(HttpConstants::kForbidden, handler_context);
-            }
-        } else if (S_ISREG(get_info.st_mode)) {
-            serveFile(path_to_serve, handler_context);
-        } else {
-            LOG_WARNING() << "[Handler] 403 - index is not a regular file: "
-                          << RED << path_to_serve << RESET;
-            sendError(HttpConstants::kForbidden, handler_context);
-        }
+    if (S_ISDIR(get_info.st_mode)) {
+        resolveDirectory(full_path, handler_context);
     } else if (S_ISREG(get_info.st_mode)) {
         LOG_DEBUG() << "[Handler] file detected, serving: " << GRN << full_path
                     << RESET;
         serveFile(full_path, handler_context);
     } else {
-        // symlink, device, socket, etc not something we serve
         LOG_WARNING() << "[Handler] 403 - not a regular file or directory: "
                       << RED << full_path << RESET;
         sendError(HttpConstants::kForbidden, handler_context);
     }
+}
+
+/**
+ * @brief Resolves a directory path: tries the index file first, falls back to
+ * directory listing or 403 if listing is off.
+ * @note Empty index string skips directly to listing/403 without stat()-ing
+ *       the directory itself (which would always succeed).
+ */
+void Handler::resolveDirectory(const std::string& full_path,
+                               HandlerContext& handler_context) {
+    const std::string& index = handler_context.location.getIndex();
+    if (index.empty()) {
+        if (handler_context.location.getDirectoryListing()) {
+            generateDirectoryListing(full_path, handler_context);
+        } else {
+            LOG_WARNING() << "[Handler] 403 - directory listing off, no index: "
+                          << RED << full_path << RESET;
+            sendError(HttpConstants::kForbidden, handler_context);
+        }
+        return;
+    }
+
+    std::string path_to_serve = full_path + "/" + index;
+    LOG_DEBUG() << "[Handler] directory detected, trying index: " << GRN
+                << path_to_serve << RESET;
+
+    struct stat get_info;
+    if (stat(path_to_serve.c_str(), &get_info) != 0) {
+        if (handler_context.location.getDirectoryListing()) {
+            generateDirectoryListing(full_path, handler_context);
+        } else {
+            LOG_WARNING() << "[Handler] 403 - directory listing off, no index: "
+                          << RED << full_path << RESET;
+            sendError(HttpConstants::kForbidden, handler_context);
+        }
+    } else if (S_ISREG(get_info.st_mode)) {
+        serveFile(path_to_serve, handler_context);
+    } else {
+        LOG_WARNING() << "[Handler] 403 - index is not a regular file: " << RED
+                      << path_to_serve << RESET;
+        sendError(HttpConstants::kForbidden, handler_context);
+    }
+}
+
+/**
+ * @brief Deletes a regular file from disk and returns 204 No Content.
+ * @note Caller guarantees full_path is a regular file (S_ISREG checked in
+ *       handleStatic). TODO: implement unlink() + 204 response.
+ */
+void Handler::deleteFile(const std::string& full_path,
+                         HandlerContext& handler_context) {
+    (void)full_path;
+    // TODO: unlink(full_path), return 204 No Content
+    sendError(HttpConstants::kNotImplemented, handler_context);
 }
 
 /**
