@@ -272,7 +272,21 @@ TEST_F(TestHttpHandler, UnknownRedirectCodeHasFallbackReason) {
 /* tests for handleStatic - serve regular file
    [PASS] => file exists on disk, 200 + correct Content-Type
    [FAIL] => file not found, 404
+   [FAIL] => path contains "..", directory traversal attempt => 403
 */
+TEST_F(TestHttpHandler, DirectoryTraversalIs403) {
+    Request req = makeRequest(
+        "GET /../../etc/passwd HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "\r\n");
+
+    ASSERT_FALSE(req.isError());
+
+    Handler::run(req, loc_, server_, response_);
+
+    EXPECT_NE(response_.getRaw().find("403"), std::string::npos);
+}
+
 TEST_F(TestHttpHandler, StaticFileServed200) {
     Request req = makeRequest(
         "GET /hello.html HTTP/1.1\r\n"

@@ -248,8 +248,16 @@ void Handler::handleUpload(HandlerContext& handler_context) {
  *       stat()-ing the directory itself (which would always succeed).
  */
 void Handler::handleStatic(HandlerContext& handler_context) {
-    const std::string full_path =
-        handler_context.location.getRoot() + handler_context.request.getPath();
+    const std::string& path = handler_context.request.getPath();
+    // fix: reject directory traversal attempts, reject any path containing ".."
+    if (path.find("..") != std::string::npos) {
+        LOG_WARNING() << "[Handler] 403 - directory traversal attempt: " << RED
+                      << path << RESET;
+        sendError(HttpConstants::kForbidden, handler_context);
+        return;
+    }
+
+    const std::string full_path = handler_context.location.getRoot() + path;
     LOG_DEBUG() << "[Handler] full path (root + uri) is: " << GRN << full_path
                 << RESET;
 
