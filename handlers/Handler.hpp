@@ -58,6 +58,7 @@ private:
 
     // utils
     static std::string toString(int code);
+    static std::string toString(size_t n);
     static std::string getFileMimeType(const std::string& path);
     // default arguments: regular file serving uses 200 OK, sendError() passes
     // the actual error code/reason so the custom error page is served with the
