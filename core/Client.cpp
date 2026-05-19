@@ -9,6 +9,7 @@
 #include "../handlers/Router.hpp"
 #include "../logger/Logger.hpp"
 #include "../utils/LogUtils.hpp"
+#include "Timeout.hpp"
 
 // helper for consistent logging
 static const char* stateToStr(Client::State s) {
@@ -135,7 +136,7 @@ void Client::write() {
         return closeConnection("send error fd=", "ERROR");
     }
 	// reset on successful write
-	tiemout_.reset();
+	timeout_.reset();
     bytes_sent_ += n;
     LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
 
@@ -193,7 +194,7 @@ void Client::closeConnection(const std::string& reason, const char* level) {
 }
 
 bool Client::isTimedOut() const {
-	if (state == kDone) {
+	if (state_ == kDone) {
 		return false;
 	}
 	return timeout_.expired();
