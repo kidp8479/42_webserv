@@ -109,7 +109,7 @@ bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
  */
 bool Handler::methodNotAllowedCheck(HandlerContext& handler_context) {
     const std::string& request_method = handler_context.request.getMethod();
-    const std::vector<std::string> allowed_method =
+    const std::vector<std::string>& allowed_method =
         handler_context.location.getMethods();
 
     // redirect blocks have no methods directive, any method is allowed
