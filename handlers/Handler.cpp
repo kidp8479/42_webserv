@@ -313,7 +313,8 @@ void Handler::resolveDirectory(const std::string& full_path,
         return;
     }
 
-    std::string path_to_serve = full_path + "/" + index;
+    std::string path_to_serve =
+        full_path + (full_path[full_path.size() - 1] == '/' ? "" : "/") + index;
     LOG_DEBUG() << "[Handler] directory detected, trying index: " << GRN
                 << path_to_serve << RESET;
 
