@@ -5,6 +5,7 @@
 #include "EventLoop.hpp"
 #include "ServerResources.hpp"
 #include "Signal.hpp"
+#include "Timeout.hpp"
 
 Server::Server(const Config& config) : config_(config), loop_() {
     setupListeners();

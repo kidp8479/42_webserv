@@ -7,6 +7,7 @@
 #include "Fd.hpp"
 #include "IEventHandler.hpp"
 #include "ServerResources.hpp"
+#include "Timeout.hpp"
 
 class Client : public IEventHandler {
 public:
