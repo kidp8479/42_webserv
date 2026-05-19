@@ -1,34 +1,20 @@
 #include "Response.hpp"
 
-Response::Response() : raw_("") {
+#include <sstream>
+
+Response::Response() {
 }
 
-/**
- * @brief Builds a temporary HTTP response from a request.
- *
- * Generates a minimal valid HTTP/1.1 response used for early server testing.
- * The response is currently static and does not depend on request content.
- *
- * @note This is a placeholder implementation used to unblock server
- *       development and end-to-end socket testing.
- *       It will be replaced by a full HTTP response generator in the
- *       dedicated HTTP layer (Charlie’s part).
- *
- * @param request Parsed HTTP request (currently unused in this stub)
- */
-void Response::buildFrom(const Request& request) {
-    if (request.isError()) {
-        buildError(request.getErrorCode(), request.getErrorMessage());
-        return;
+/********************************** Utils ***********************************/
+
+static std::string setToLower(std::string& s) {
+    for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
+        s_it[0] = std::tolower(s_it[0]);
     }
-
-    // minimal valid HTTP response
-    raw_ =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Length: 11\r\n"
-        "\r\n"
-        "Hello World";
+    return (s);
 }
+
+/********************************* Builders *********************************/
 
 void Response::buildError(int code, const std::string& reason) {
     std::ostringstream body;
@@ -56,7 +42,7 @@ void Response::buildError(int code, const std::string& reason) {
  * @return Constant reference to the internal raw HTTP response buffer
  */
 const std::string& Response::getRaw() const {
-    return raw_;
+    return (raw_);
 }
 
 void Response::reset() {
@@ -72,4 +58,50 @@ void Response::reset() {
 // by the 3 setters above when ready and can be deleted in the end
 void Response::setRaw(const std::string& raw) {
     raw_ = raw;
+}
+
+void Response::setStatus(int code, const std::string& reason) {
+    std::ostringstream code_stream;
+    code_stream << "HTTP/1.1" << " " << code;
+    if (!reason.empty())
+        code_stream << " " << reason;
+    status_ = code_stream.str();
+    updateRaw();
+}
+
+void Response::setHeader(const std::string& key, const std::string& value) {
+    std::string key_lower(key);
+    setToLower(key_lower);
+    if (key_lower == "set-cookie") {
+        cookies_.push_back(value);
+    }
+    else if (headers_.count(key_lower) == 0)
+        headers_[key_lower] = value;
+    else {
+        std::string new_val = headers_[key_lower] + ", " + value;
+        headers_[key_lower] = new_val;
+    }
+    updateRaw();
+}
+
+void Response::setBody(const std::string& body) {
+    body_ = body;
+    updateRaw();
+}
+
+void Response::updateRaw() {
+    std::string raw_new;
+    raw_new += status_ + "\r\n";
+    std::map<std::string, std::string>::const_iterator h_it, h_ite;
+    h_ite = headers_.end();
+    for (h_it = headers_.begin(); h_it != h_ite; h_it++) {
+        raw_new += h_it->first + ": " + h_it->second + "\r\n";
+    }
+    std::vector<std::string>::const_iterator c_it, c_ite;
+    c_ite = cookies_.end();
+    for (c_it = cookies_.begin(); c_it != c_ite; c_it++) {
+        raw_new += "Set-Cookie: " + c_it[0] + "\r\n";
+    }
+    raw_new += "\r\n" + body_;
+    raw_ = raw_new;
 }

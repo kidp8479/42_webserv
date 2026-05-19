@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "Request.hpp"
 
@@ -24,23 +25,33 @@ public:
     Response();
 
     void buildFrom(const Request& request);
+    void buildError(int code, const std::string& reason);
 
     const std::string& getRaw() const;
     void reset();
+
     // what Pauline needs for the handler:
     // void setStatus(int code, const std::string& reason);
     // void setHeader(const std::string& key, const std::string& value);
     // void setBody(const std::string& body);
+    void setStatus(int code, const std::string& reason);
+    void setHeader(const std::string& key, const std::string& value);
+    void setBody(const std::string& body);
 
-    // temporary: used by Handler until Charlie implements
-    // setStatus/setHeader/setBody
+    // will be obsolete when the 3 above methods are implemented, could be
+    // deleted in the end
     void setRaw(const std::string& raw);
-    void buildError(int code, const std::string& reason);
 
 private:
     std::string raw_;
     // + whatever members you need to store the infos for the above methods
     // needed
+    std::string status_;
+    std::string body_;
+    std::map<std::string, std::string> headers_;
+    std::vector<std::string> cookies_;
+
+    void setRaw();
 };
 
 #endif
