@@ -78,8 +78,12 @@ void Client::handle(short revents) {
             keep_alive_ = request_.shouldKeepAlive();
             LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
                        << " switching " << stateToStr(state_) << " → kWriting";
+			
+			const LocationConfig fallback;
+            const LocationConfig& loc = request_.isError()
+				? fallback
+				: resources_.getRouter().resolve(request_.getPath());
 
-            const LocationConfig& loc = resources_.getRouter().resolve(request_.getPath());
             Handler::run(request_, loc, resources_.getServerConfig(), response_);
             state_ = kWriting;
             LOG_DEBUG() << "[Client] enabling POLLOUT";
@@ -165,12 +169,14 @@ void Client::write() {
         response_.reset();
         // if raw_ had any leftover bytes from pipelined request
         if (request_.isComplete()) {
-            if (request_.isError()) {
-                return closeConnection("invalid pipelined request", "WARNING");
-            }
-            keep_alive_ = request_.shouldKeepAlive();
-            const LocationConfig& loc = resources_.router().resolve(request_);
-            Handler::run(request_, loc, response_);
+			keep_alive_ = request_.shouldKeepAlive();
+
+            const LocationConfig fallback;
+			const LocationConfig& loc = request_.isError()
+				? fallback
+				: resources_.getRouter().resolve(request_.getPath());
+
+			Handler::run(request_, loc, resources_.getServerConfig(), response_);
             state_ = kWriting;
             loop_.modifyHandler(this, POLLOUT);
             return;
