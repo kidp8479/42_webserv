@@ -346,13 +346,26 @@ void Handler::resolveDirectory(const std::string& full_path,
 /**
  * @brief Deletes a regular file from disk and returns 204 No Content.
  * @note Caller guarantees full_path is a regular file (S_ISREG checked in
- *       handleStatic). TODO: implement unlink() + 204 response.
+ *       handleStatic). Returns 500 if std::remove() fails.
  */
 void Handler::deleteFile(const std::string& full_path,
                          HandlerContext& handler_context) {
-    (void)full_path;
-    // TODO: unlink(full_path), return 204 No Content
-    sendError(HttpConstants::kNotImplemented, handler_context);
+    if (std::remove(full_path.c_str()) != 0) {
+        LOG_WARNING() << "[Handler] 500 - internal server error "
+                      << "-  failed to delete resource " << RED << full_path
+                      << RESET;
+
+        sendError(HttpConstants::kInternalServerError, handler_context);
+        return;
+    }
+    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
+    // available
+    std::string response = "HTTP/1.1 " +
+                           toString(HttpConstants::kNoContent.code) + " " +
+                           HttpConstants::kNoContent.reason + "\r\n" +
+                           "Content-Length: 0\r\n" + "\r\n";
+    handler_context.response.setRaw(response);
+    LOG_INFO() << BR_CYN "[Handler] deleted resource : " << full_path << RESET;
 }
 
 /**

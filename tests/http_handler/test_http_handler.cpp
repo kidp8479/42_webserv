@@ -1,4 +1,7 @@
 #include <gtest/gtest.h>
+#include <sys/stat.h>
+
+#include <fstream>
 
 #include "../../config/LocationConfig.hpp"
 #include "../../config/ServerConfig.hpp"
@@ -388,6 +391,31 @@ TEST_F(TestHttpHandler, CustomErrorPageServedWhenConfigured) {
 
     EXPECT_NE(response_.getRaw().find("404"), std::string::npos);
     EXPECT_NE(response_.getRaw().find("Custom 404"), std::string::npos);
+}
+
+TEST_F(TestHttpHandler, DeleteFileReturns204AndRemovesFile) {
+    std::string path = "../http_handler/static_test_files/delete_me.txt";
+    std::ofstream f(path.c_str());
+    f << "delete me";
+    f.close();
+
+    std::vector<std::string> methods;
+    methods.push_back("GET");
+    methods.push_back("DELETE");
+    loc_.setMethods(methods);
+
+    Request req = makeRequest(
+        "DELETE /delete_me.txt HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "\r\n");
+
+    ASSERT_FALSE(req.isError());
+    Handler::run(req, loc_, server_, response_);
+
+    EXPECT_NE(response_.getRaw().find("204"), std::string::npos);
+
+    struct stat info;
+    EXPECT_NE(stat(path.c_str(), &info), 0);
 }
 
 TEST_F(TestHttpHandler, MissingCustomErrorPageFallsBackToHardcoded) {

@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cstdio>
 #include <map>
 #include <sstream>
 
