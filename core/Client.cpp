@@ -75,16 +75,12 @@ void Client::handle(short revents) {
         }
         // request finished parsing
         if (state_ == kReading && request_.isComplete()) {
-            // invalid request close connection immediately
-            if (request_.isError()) {
-                return closeConnection("invalid request", "WARNING");
-            }
             keep_alive_ = request_.shouldKeepAlive();
             LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
                        << " switching " << stateToStr(state_) << " → kWriting";
 
-            const LocationConfig& loc = resources_.router().resolve(request_);
-            Handler::run(request_, loc, response_);
+            const LocationConfig& loc = resources_.getRouter().resolve(request_.getPath());
+            Handler::run(request_, loc, resources_.getServerConfig(), response_);
             state_ = kWriting;
             LOG_DEBUG() << "[Client] enabling POLLOUT";
             loop_.modifyHandler(this, POLLOUT);
@@ -100,8 +96,24 @@ void Client::handle(short revents) {
             return closeConnection("peer disconnected during read");
         }
     } catch (const std::exception& e) {
+
         LOG_ERROR() << "[Client] exception: " << e.what();
-        cleanup();
+        if (state == kReading) {
+			// Response is built manually here because this catch is outside Handler::run()
+			// if Router::resolve() throws, no handler context exists, so we can't use
+			// Handler::sendError(). last resort for misconfigured servers
+			// missing a catch-all '/' location block.
+			response_.setRaw(
+				"HTTP/1.1 500 Internal Server Error\r\n"
+				"Content-Length: 0\r\n\r\n"
+				);
+			keep_alive_ = false;
+			bytes_sent_ = 0;
+			state_ = kWriting;
+			loop.modifyHandler(this, POLLOUT);
+		} else {
+			cleanup();
+		}
     } catch (...) {  // universal fall back
         cleanup();
     }
