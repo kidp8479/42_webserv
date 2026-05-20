@@ -34,7 +34,7 @@ const std::map<std::string, std::string> kMimeTypes = initMimeTypes();
 void Handler::run(const Request& request, const LocationConfig& location,
                   const ServerConfig& server, Response& response) {
     LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
-               << " target: " << request.getTarget() << RESET;
+               << " -  target: " << request.getTarget() << RESET;
 
     HandlerContext handler_context = {request, location, server, response};
 
@@ -192,8 +192,10 @@ void Handler::dispatch(HandlerContext& handler_context) {
 
 /**
  * @brief Handles redirect location blocks. Sends a redirect response.
- * @note Builds status line and Location header from getReturnCode() +
- *       getReturnUrl(). ConfigValidator guarantees code is in [300-399].
+ * @note Builds a minimal response: status line + Location header + empty body.
+ *       The server's job stops here. The client (browser, curl -L) reads the
+ *       3xx code, picks up the Location header, and fires a new request on its
+ *       own. ConfigValidator guarantees code is in [300-399].
  */
 void Handler::handleReturn(HandlerContext& handler_context) {
     int return_code = handler_context.location.getReturnCode();
@@ -242,14 +244,19 @@ void Handler::handleUpload(HandlerContext& handler_context) {
 }
 
 /**
- * @brief Handles static file location blocks. Serves files or directory
- * listings.
- * @note Resolves full_path = root + URI, stat()s the result, then dispatches:
- *       DELETE on regular file => deleteFile, DELETE on non-regular => 403,
- *       directory => resolveDirectory, regular file => serveFile, else => 403.
+ * @brief Handles static file location blocks.
+ * @note Flow:
+ *       1. Reject paths containing ".." (directory traversal) => 403
+ *       2. Build full_path = root + URI, stat() it => 404 if not found
+ *       3. DELETE: regular file => deleteFile(), anything else => 403
+ *       4. GET/HEAD: directory => resolveDirectory() (index, autoindex, or 403)
+ *                    regular file => serveFile()
+ *                    anything else (symlink, device...) => 403
+ *       HEAD body stripping happens in run() after dispatch, not here.
  */
 void Handler::handleStatic(HandlerContext& handler_context) {
     const std::string& path = handler_context.request.getPath();
+    // reject path with ".." it is a vector of attack
     if (path.find("..") != std::string::npos) {
         LOG_WARNING() << "[Handler] 403 - directory traversal attempt: " << RED
                       << path << RESET;
@@ -375,6 +382,7 @@ void Handler::sendError(int code, const std::string& reason,
         handler_context.server.getErrorPages();
     const std::map<int, std::string>::const_iterator it =
         error_pages.find(code);
+
     if (it != error_pages.end()) {
         struct stat get_info;
         if (stat(it->second.c_str(), &get_info) == 0 &&
@@ -387,7 +395,7 @@ void Handler::sendError(int code, const std::string& reason,
         LOG_DEBUG() << "[Handler] custom error page not found on disk: " << RED
                     << it->second << RESET << " - serving fallback error page";
     }
-    // no custom page: build minimal hardcoded HTML response
+    // no custom page found: build minimal hardcoded HTML response
     // replace setRaw() calls with Charlie's setStatus/setHeader/setBody when
     // available
     std::string body = "<html><body><h1>" + toString(code) + " " + reason +
@@ -406,9 +414,9 @@ std::string Handler::toString(int code) {
     return oss.str();
 }
 
-std::string Handler::toString(size_t n) {
+std::string Handler::toString(size_t code) {
     std::ostringstream oss;
-    oss << n;
+    oss << code;
     return oss.str();
 }
 
@@ -492,6 +500,7 @@ void Handler::serveFile(const std::string& path,
  */
 void Handler::generateDirectoryListing(const std::string& path,
                                        HandlerContext& handler_context) {
+    // DIR* is basically FILE* but for directories, opendir() opens the stream
     DIR* directory = opendir(path.c_str());
     if (directory == NULL) {
         LOG_WARNING() << "[Handler] 500 - internal server error - could not "
@@ -511,6 +520,8 @@ void Handler::generateDirectoryListing(const std::string& path,
         if (name == "." || name == "..") {
             continue;
         }
+        // <li> is a list item, <a href="name"> makes it a clickable link to
+        // that entry
         directory_list += "<li><a href=\"" + name + "\">" + name + "</a></li>";
     }
     closedir(directory);
