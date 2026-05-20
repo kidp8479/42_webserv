@@ -4,15 +4,14 @@
 <body>
     <h1>webserv</h1>
     <p>42 school project - HTTP server in C++98</p>
-    <p>if you see this page it means that:</p>
+    <p>if you see this page, the full request cycle completed successfully:</p>
   <ul>
-      <li>Diana's socket layer accepted your connection and handed it to Client</li>
-      <li>Charlie's Request parser read and validated your HTTP request</li>
-      <li>The Router resolved your URI to the correct location block</li>
-      <li>Handler ran all pre-dispatch checks (isError, 501, 405, conflicting block)</li>
-      <li>handleStatic found the file on disk, read it, and wrote the response</li>
-      <li>Diana's Client sent the raw HTTP response back over the socket</li>
-      <li>Your browser rendered this page</li>
+      <li>the event loop accepted your TCP connection and handed it to the client handler</li>
+      <li>the request parser read your HTTP request and validated the method, headers, and body</li>
+      <li>the Router resolved your URI to the best matching location block using longest-prefix match</li>
+      <li>the Handler ran all pre-dispatch checks: request validity, method support, method allowed, no conflicting block</li>
+      <li>the static file handler resolved the full path, found the file on disk, detected its MIME type, and built the response</li>
+      <li>the raw HTTP response was sent back over the socket</li>
   </ul>
 </body>
 </html>
