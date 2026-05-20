@@ -60,13 +60,17 @@ void Response::setRaw(const std::string& raw) {
     raw_ = raw;
 }
 
-void Response::setStatus(int code, const std::string& reason) {
+void Response::setStatus(int code, const std::string& reason = "") {
     std::ostringstream code_stream;
     code_stream << "HTTP/1.1" << " " << code;
     if (!reason.empty())
         code_stream << " " << reason;
     status_ = code_stream.str();
     updateRaw();
+}
+
+void Response::setStatus(HttpConstants::HttpError error) {
+    setStatus(error.code, error.reason);
 }
 
 void Response::setHeader(const std::string& key, const std::string& value) {

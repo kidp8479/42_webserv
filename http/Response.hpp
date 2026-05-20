@@ -34,7 +34,8 @@ public:
     // void setStatus(int code, const std::string& reason);
     // void setHeader(const std::string& key, const std::string& value);
     // void setBody(const std::string& body);
-    void setStatus(int code, const std::string& reason);
+    void setStatus(int code, const std::string& reason = "");
+    void setStatus(HttpConstants::HttpError error);
     void setHeader(const std::string& key, const std::string& value);
     void setBody(const std::string& body);
 
@@ -51,7 +52,7 @@ private:
     std::map<std::string, std::string> headers_;
     std::vector<std::string> cookies_;
 
-    void setRaw();
+    void updateRaw();
 };
 
 #endif
