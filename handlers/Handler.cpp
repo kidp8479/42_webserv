@@ -83,8 +83,8 @@ bool Handler::requestIsError(HandlerContext& handler_context) {
 }
 
 /**
- * @brief Checks if the request method is one of the three implemented methods.
- * @return true if the method is not GET, POST, or DELETE (501 sent)
+ * @brief Checks if the request method is one of the implemented methods.
+ * @return true if the method is not GET, POST, DELETE, or HEAD (501 sent)
  */
 bool Handler::methodNotImplementedCheck(HandlerContext& handler_context) {
     const std::string& request_method = handler_context.request.getMethod();
@@ -245,8 +245,8 @@ void Handler::handleUpload(HandlerContext& handler_context) {
  * @brief Handles static file location blocks. Serves files or directory
  * listings.
  * @note Resolves full_path = root + URI, stat()s the result, then dispatches:
- *       DELETE => deleteFile (TODO), directory => resolveDirectory, regular
- * file => serveFile, anything else => 403.
+ *       DELETE on regular file => deleteFile, DELETE on non-regular => 403,
+ *       directory => resolveDirectory, regular file => serveFile, else => 403.
  */
 void Handler::handleStatic(HandlerContext& handler_context) {
     const std::string& path = handler_context.request.getPath();
