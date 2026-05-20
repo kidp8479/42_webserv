@@ -165,6 +165,21 @@ TEST_F(TestHttpHandler, AmbiguousLocationBlockIs500) {
     EXPECT_NE(response_.getRaw().find("500"), std::string::npos);
 }
 
+TEST_F(TestHttpHandler, PostOnStaticBlockIs500) {
+    Request req = makeRequest(
+        "POST /hello.html HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "Content-Length: 0\r\n"
+        "\r\n");
+
+    ASSERT_FALSE(req.isError());
+
+    // loc_ has no upload_path set: POST on a static block is a .conf error
+    Handler::run(req, loc_, server_, response_);
+
+    EXPECT_NE(response_.getRaw().find("500"), std::string::npos);
+}
+
 /* tests for handleReturn - redirect location block
    [PASS] => 301 redirect: status line contains 301, Location header set
    [PASS] => 302 redirect: status line contains 302, Location header set

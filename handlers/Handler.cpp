@@ -298,16 +298,26 @@ void Handler::handleUpload(HandlerContext& handler_context) {
 /**
  * @brief Handles static file location blocks.
  * @note Flow:
- *       1. Reject paths containing ".." (directory traversal) => 403
- *       2. Build full_path = root + URI, stat() it => 404 if not found
- *       3. DELETE: regular file => deleteFile(), anything else => 403
- *       4. GET/HEAD: directory => resolveDirectory() (index, autoindex, or 403)
+ *       1. POST with no upload_path => .conf writer error => 500
+ *       2. Reject paths containing ".." (directory traversal) => 403
+ *       3. Build full_path = root + URI, stat() it => 404 if not found
+ *       4. DELETE: regular file => deleteFile(), anything else => 403
+ *       5. GET/HEAD: directory => resolveDirectory() (index, autoindex, or 403)
  *                    regular file => serveFile()
  *                    anything else (symlink, device...) => 403
  *       HEAD body stripping happens in run() after dispatch, not here.
  */
 void Handler::handleStatic(HandlerContext& handler_context) {
     const std::string& path = handler_context.request.getPath();
+
+    // POST on a static block means upload_path was not set: .conf writer error
+    if (handler_context.request.getMethod() == "POST") {
+        LOG_WARNING()
+            << "[Handler] 500 - POST on static block with no upload_path";
+        sendError(HttpConstants::kInternalServerError, handler_context);
+        return;
+    }
+
     // reject path with ".." it is a vector of attack
     if (path.find("..") != std::string::npos) {
         LOG_WARNING() << "[Handler] 403 - directory traversal attempt: " << RED
@@ -465,11 +475,10 @@ void Handler::sendError(int code, const std::string& reason,
     // available
     std::string body = "<html><body><h1>" + toString(code) + " " + reason +
                        "</h1></body></html>";
-    std::string response =
-        "HTTP/1.1 " + toString(code) + " " + reason + "\r\n" +
-        "Content-Type: text/html\r\n" +
-        "Content-Length: " + toString(static_cast<int>(body.size())) + "\r\n" +
-        "\r\n" + body;
+    std::string response = "HTTP/1.1 " + toString(code) + " " + reason +
+                           "\r\n" + "Content-Type: text/html\r\n" +
+                           "Content-Length: " + toString(body.size()) + "\r\n" +
+                           "\r\n" + body;
     handler_context.response.setRaw(response);
 }
 
@@ -548,11 +557,10 @@ void Handler::serveFile(const std::string& path,
     const std::string& mime_type = getFileMimeType(path);
     // replace setRaw() with Charlie's setStatus/setHeader/setBody when
     // available
-    std::string response =
-        "HTTP/1.1 " + toString(code) + " " + reason + "\r\n" +
-        "Content-Type: " + mime_type + "\r\n" +
-        "Content-Length: " + toString(static_cast<int>(body.size())) + "\r\n" +
-        "\r\n" + body;
+    std::string response = "HTTP/1.1 " + toString(code) + " " + reason +
+                           "\r\n" + "Content-Type: " + mime_type + "\r\n" +
+                           "Content-Length: " + toString(body.size()) + "\r\n" +
+                           "\r\n" + body;
     handler_context.response.setRaw(response);
     LOG_INFO() << BR_CYN "[Handler] " << path << " served successfully"
                << RESET;
@@ -599,8 +607,7 @@ void Handler::generateDirectoryListing(const std::string& path,
         "HTTP/1.1 " + toString(static_cast<int>(HttpConstants::kOK.code)) +
         " " + HttpConstants::kOK.reason + "\r\n" +
         "Content-Type: text/html\r\n" +
-        "Content-Length: " + toString(static_cast<int>(body.size())) + "\r\n" +
-        "\r\n" + body;
+        "Content-Length: " + toString(body.size()) + "\r\n" + "\r\n" + body;
     handler_context.response.setRaw(response);
     LOG_INFO() << BR_CYN "[Handler] directory listing of " << path
                << " served successfully" << RESET;
