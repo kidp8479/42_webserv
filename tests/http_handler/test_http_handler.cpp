@@ -32,6 +32,11 @@ protected:
         server_.addLocationBlock(loc_);
     }
 
+    void TearDown() {
+        std::remove(
+            "../http_handler/static_test_files/uploads_test/test_file.txt");
+    }
+
     LocationConfig loc_;
     ServerConfig server_;
     Response response_;
