@@ -534,7 +534,15 @@ void Handler::serveFile(const std::string& path,
         LOG_WARNING()
             << "[Handler] 500 - internal server error - could not open file: "
             << RED << path << RESET;
-        sendError(HttpConstants::kInternalServerError, handler_context);
+        // no sendError() here: if this file IS the custom 500 error page and
+        // open fails, calling sendError() would call serveFile() again => loop
+        std::string err_body =
+            "<html><body><h1>500 Internal Server Error</h1></body></html>";
+        handler_context.response.setRaw(
+            "HTTP/1.1 500 Internal Server Error\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: " +
+            toString(err_body.size()) + "\r\n\r\n" + err_body);
         return;
     }
 
@@ -549,7 +557,14 @@ void Handler::serveFile(const std::string& path,
         LOG_WARNING()
             << "[Handler] 500 - internal server error - read error on file: "
             << RED << path << RESET;
-        sendError(HttpConstants::kInternalServerError, handler_context);
+        // same recursion guard as above
+        std::string err_body =
+            "<html><body><h1>500 Internal Server Error</h1></body></html>";
+        handler_context.response.setRaw(
+            "HTTP/1.1 500 Internal Server Error\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: " +
+            toString(err_body.size()) + "\r\n\r\n" + err_body);
         return;
     }
     close(fd);
