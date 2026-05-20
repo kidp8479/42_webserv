@@ -15,6 +15,7 @@ const size_t kDefaultMaxURISize = 8192;      // 8KB
 
 // 2xx status code - success
 const HttpError kOK = {200, "OK"};
+const HttpError kCreated = {201, "Created"};
 const HttpError kNoContent = {204, "No Content"};
 
 // 3xx status code - redirection

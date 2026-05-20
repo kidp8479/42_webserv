@@ -235,12 +235,64 @@ void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
 
 /**
  * @brief Handles upload location blocks. Writes the request body to disk.
- * @note TODO: implement file write to getUploadPath(), return 201 Created.
- *       Currently a stub.
+ * @note Filename extracted from URI if present, falls back to
+ *       "uploaded_file_<timestamp>" if the URI has no filename part.
+ *       Returns 500 if the file cannot be created or written.
  */
 void Handler::handleUpload(HandlerContext& handler_context) {
-    // TODO: implement file write to getUploadPath(), return 201 Created
-    sendError(HttpConstants::kNotImplemented, handler_context);
+    const std::string& upload_path = handler_context.location.getUploadPath();
+    const std::string& path = handler_context.request.getPath();
+    const std::string& body = handler_context.request.getBody();
+    std::string file_name;
+    std::string full_upload_path;
+    size_t last_slash = path.rfind('/');
+
+    // if the path is empty or if it had no '/' ad a delimiter or if the last
+    // '/' is at the end of the name, construct a fallback name "uploaded_file_"
+    // + timestamp of creation so that the name stays unique
+    if (last_slash == std::string::npos || path.empty() ||
+        last_slash + 1 >= path.size()) {
+        file_name =
+            "uploaded_file_" + toString(static_cast<size_t>(time(NULL)));
+    }
+    // if there is a valid name to extract, construct normally
+    else {
+        file_name = path.substr(last_slash + 1);
+    }
+
+    full_upload_path = upload_path + "/" + file_name;
+    LOG_DEBUG() << "[Handler] built full_upload_path is " << GRN
+                << full_upload_path << RESET;
+
+    // open in create mode with right permission to write
+    int open_fd =
+        open(full_upload_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (open_fd < 0) {
+        LOG_WARNING()
+            << "[Handler] 500 - internal server error - could not create file: "
+            << RED << full_upload_path << RESET;
+        sendError(HttpConstants::kInternalServerError, handler_context);
+        return;
+    }
+
+    int bytes_written = write(open_fd, body.c_str(), body.size());
+    if (bytes_written < 0 || static_cast<size_t>(bytes_written) !=
+                                 handler_context.request.getBody().size()) {
+        close(open_fd);
+        LOG_WARNING() << "[Handler] 500 - internal server error - could not "
+                         "write to file: "
+                      << RED << full_upload_path << RESET;
+        sendError(HttpConstants::kInternalServerError, handler_context);
+        return;
+    }
+    close(open_fd);
+    std::string response = "HTTP/1.1 " +
+                           toString(HttpConstants::kCreated.code) + " " +
+                           HttpConstants::kCreated.reason + "\r\n" +
+                           "Content-Length: 0\r\n" + "\r\n";
+    handler_context.response.setRaw(response);
+    LOG_INFO() << BR_CYN "[Handler] uploaded " << file_name << " to "
+               << full_upload_path << RESET;
 }
 
 /**

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <ctime>
 #include <map>
 #include <sstream>
 
