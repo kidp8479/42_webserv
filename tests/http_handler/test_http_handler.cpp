@@ -434,3 +434,48 @@ TEST_F(TestHttpHandler, MissingCustomErrorPageFallsBackToHardcoded) {
     EXPECT_NE(response_.getRaw().find("404"), std::string::npos);
     EXPECT_NE(response_.getRaw().find("Not Found"), std::string::npos);
 }
+
+/* tests for handleUpload
+   [PASS] => upload success
+   [FAIL] => upload failed
+*/
+
+TEST_F(TestHttpHandler, HandleUploadSuccessIs201) {
+    Request req = makeRequest(
+        "POST /upload_test/test_file.txt HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "Content-Length: 13\r\n"
+        "\r\n"
+        "hello upload!");
+
+    ASSERT_FALSE(req.isError());
+
+    loc_.setUploadPath("../http_handler/static_test_files/uploads_test");
+
+    Handler::run(req, loc_, server_, response_);
+
+    EXPECT_NE(response_.getRaw().find("201"), std::string::npos);
+
+    struct stat info;
+    EXPECT_EQ(
+        stat("../http_handler/static_test_files/uploads_test/test_file.txt",
+             &info),
+        0);
+}
+
+TEST_F(TestHttpHandler, HandleUploadInvalidPathIs500) {
+    Request req = makeRequest(
+        "POST /upload_test/test_file.txt HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "Content-Length: 13\r\n"
+        "\r\n"
+        "hello upload!");
+
+    ASSERT_FALSE(req.isError());
+
+    loc_.setUploadPath("../http_handler/static_test_files/does_not_exist");
+
+    Handler::run(req, loc_, server_, response_);
+
+    EXPECT_NE(response_.getRaw().find("500"), std::string::npos);
+}
