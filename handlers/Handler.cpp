@@ -350,6 +350,16 @@ void Handler::handleStatic(HandlerContext& handler_context) {
     }
 
     if (S_ISDIR(get_info.st_mode)) {
+        if (path[path.size() - 1] != '/') {
+            std::string response =
+                "HTTP/1.1 301 Moved Permanently\r\n"
+                "Location: " +
+                path +
+                "/\r\n"
+                "Content-Length: 0\r\n\r\n";
+            handler_context.response.setRaw(response);
+            return;
+        }
         resolveDirectory(full_path, handler_context);
     } else if (S_ISREG(get_info.st_mode)) {
         LOG_DEBUG() << "[Handler] file detected, serving: " << GRN << full_path

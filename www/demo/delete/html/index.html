@@ -1,0 +1,42 @@
+<!-- two ways to interact:
+       - /files link: browse available files (GET only, clicking does not delete)
+       - form below: type a filename and click DELETE to send a DELETE request via fetch() -->
+
+<!DOCTYPE html>
+<html>
+<head><title>webserv - delete demo</title></head>
+<body>
+    <h1>webserv - delete demo</h1>
+    <p>42 school project - HTTP/1.1 server in C++98</p>
+    <p>click a filename below to delete it from the server. the server returns <code>204 No Content</code> on success.</p>
+    <p><a href="/files">browse files available for deletion</a></p>
+    <hr>
+    <h2>delete a file</h2>
+    <input type="text" id="filename" placeholder="filename to delete" />
+    <button onclick="deleteFile()">DELETE</button>
+    // result paragraph is empty on load, filled by JS after the server responds
+    <p id="result"></p>
+    <script>
+        function deleteFile() {
+            // read whatever the user typed in the input field
+            var name = document.getElementById('filename').value;
+            // do nothing if the field is empty
+            if (!name) return;
+            // fetch() sends an HTTP request from the browser
+            // HTML forms only support GET and POST, so fetch() is the only way to send DELETE
+            // this builds the request: DELETE /files/<name>
+            fetch('/files/' + name, { method: 'DELETE' })
+                // .then() runs when the server responds - r is the response object
+                .then(function(r) {
+                    // 204 No Content = success, anything else = error
+                    document.getElementById('result').textContent =
+                        r.status === 204 ? name + ' deleted successfully' : 'error ' + r.status;
+                })
+                // .catch() runs if the request never reached the server (network error, server down)
+                .catch(function() {
+                    document.getElementById('result').textContent = 'request failed';
+                });
+        }
+    </script>
+</body>
+</html>

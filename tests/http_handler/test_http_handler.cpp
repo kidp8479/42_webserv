@@ -348,7 +348,7 @@ TEST_F(TestHttpHandler, StaticFileNotFoundIs404) {
 */
 TEST_F(TestHttpHandler, DirectoryWithIndexServed200) {
     Request req = makeRequest(
-        "GET /subdir HTTP/1.1\r\n"
+        "GET /subdir/ HTTP/1.1\r\n"
         "Host: localhost\r\n"
         "\r\n");
 
@@ -362,9 +362,24 @@ TEST_F(TestHttpHandler, DirectoryWithIndexServed200) {
     EXPECT_NE(response_.getRaw().find("Index page"), std::string::npos);
 }
 
-TEST_F(TestHttpHandler, DirectoryNoIndexListingOffIs403) {
+TEST_F(TestHttpHandler, DirectoryWithoutTrailingSlashIs301) {
     Request req = makeRequest(
         "GET /emptydir HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "\r\n");
+
+    ASSERT_FALSE(req.isError());
+
+    Handler::run(req, loc_, server_, response_);
+
+    EXPECT_NE(response_.getRaw().find("301"), std::string::npos);
+    EXPECT_NE(response_.getRaw().find("Location: /emptydir/"),
+              std::string::npos);
+}
+
+TEST_F(TestHttpHandler, DirectoryNoIndexListingOffIs403) {
+    Request req = makeRequest(
+        "GET /emptydir/ HTTP/1.1\r\n"
         "Host: localhost\r\n"
         "\r\n");
 
@@ -378,7 +393,7 @@ TEST_F(TestHttpHandler, DirectoryNoIndexListingOffIs403) {
 
 TEST_F(TestHttpHandler, DirectoryNoIndexListingOnServes200) {
     Request req = makeRequest(
-        "GET /emptydir HTTP/1.1\r\n"
+        "GET /emptydir/ HTTP/1.1\r\n"
         "Host: localhost\r\n"
         "\r\n");
 

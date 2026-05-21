@@ -66,4 +66,7 @@ format:
 
 # ─── Phony ────────────────────────────────────────────────────────────────────
 
-.PHONY: all clean fclean re format
+demo:
+	@bash reset_demo.sh
+
+.PHONY: all clean fclean re format demo
