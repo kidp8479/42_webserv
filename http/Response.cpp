@@ -33,6 +33,10 @@ void Response::buildError(int code, const std::string& reason) {
     raw_ = response.str();
 }
 
+void Response::buildError(HttpConstants::HttpError error) {
+    buildError(error.code, error.reason);
+}
+
 /**
  * @brief Retrieves the raw HTTP response string.
  *

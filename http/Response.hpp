@@ -26,6 +26,7 @@ public:
 
     void buildFrom(const Request& request);
     void buildError(int code, const std::string& reason);
+    void buildError(HttpConstants::HttpError error);
 
     const std::string& getRaw() const;
     void reset();
