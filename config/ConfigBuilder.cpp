@@ -163,7 +163,7 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     index_ = 0;
     tokens_list_ = &raw_tokens;
 
-    LOG_DEBUG() << BR_YEL "ConfigBuilder: starting build, "
+    LOG_DEBUG() << BR_YEL "[ConfigBuilder] starting build, "
                 << tokens_list_->size() << " tokens" << RESET;
 
     while (index_ < tokens_list_->size()) {
@@ -180,7 +180,7 @@ Config ConfigBuilder::build(const std::vector<Token>& raw_tokens) {
     for (size_t i = 0; i < config.getServerBlock().size(); i++) {
         total_locations += config.getServerBlock()[i].getLocationBlock().size();
     }
-    LOG_INFO() << BR_CYN "ConfigBuilder: build complete - "
+    LOG_INFO() << BR_CYN "[ConfigBuilder] build complete - "
                << config.getServerBlock().size() << " server block(s), "
                << total_locations << " location block(s)" << RESET;
     return config;
@@ -198,7 +198,7 @@ ServerConfig ConfigBuilder::parseServerBlock() {
     bool max_body_size_seen = false;
 
     index_++;
-    LOG_DEBUG() << BR_YEL "ConfigBuilder: parsing server block" << RESET;
+    LOG_DEBUG() << BR_YEL "[ConfigBuilder] parsing server block" << RESET;
     expectOpenBrace();
 
     while (index_ < tokens_list_->size() && currentToken().value != "}") {
@@ -246,7 +246,7 @@ void ConfigBuilder::parseListen(ServerConfig& server_block) {
 
     server_block.setHost(normalizeHost(host));
     server_block.setPort(toInt(current_token.value.substr(delimiter_pos + 1)));
-    LOG_DEBUG() << "ConfigBuilder: listen -> " << GRN << server_block.getHost()
+    LOG_DEBUG() << "[ConfigBuilder] listen -> " << GRN << server_block.getHost()
                 << ":" << server_block.getPort() << RESET;
 
     index_++;
@@ -316,8 +316,8 @@ void ConfigBuilder::parseClientBodySize(ServerConfig& server_block,
     }
 
     server_block.setMaxBodySize(byte_size);
-    LOG_DEBUG() << "ConfigBuilder: client_max_body_size -> " << GRN << byte_size
-                << " bytes" << RESET;
+    LOG_DEBUG() << "[ConfigBuilder] client_max_body_size -> " << GRN
+                << byte_size << " bytes" << RESET;
 
     index_++;
     expectSemicolon();
@@ -346,8 +346,8 @@ void ConfigBuilder::parseErrorPage(ServerConfig& server_block) {
 
     const std::string& path = currentToken().value;
     server_block.addErrorPage(code, path);
-    LOG_DEBUG() << "ConfigBuilder: error_page -> " << GRN << code << " " << path
-                << RESET;
+    LOG_DEBUG() << "[ConfigBuilder] error_page -> " << GRN << code << " "
+                << path << RESET;
 
     index_++;
     expectSemicolon();
@@ -369,7 +369,7 @@ LocationConfig ConfigBuilder::parseLocationBlock() {
     checkBounds("after \"location\", expected path");
 
     location_block.setPath(currentToken().value);
-    LOG_DEBUG() << BR_YEL "ConfigBuilder: parsing location block \""
+    LOG_DEBUG() << BR_YEL "[ConfigBuilder] parsing location block \""
                 << location_block.getPath() << "\"" << RESET;
     index_++;
     expectOpenBrace();
@@ -443,8 +443,8 @@ void ConfigBuilder::parseMethods(LocationConfig& location_block) {
             "DELETE)");
     }
     for (size_t i = 0; i < collect_methods.size(); i++) {
-        LOG_DEBUG() << "ConfigBuilder: methods -> " << GRN << collect_methods[i]
-                    << RESET;
+        LOG_DEBUG() << "[ConfigBuilder] methods -> " << GRN
+                    << collect_methods[i] << RESET;
     }
     location_block.setMethods(collect_methods);
 
@@ -466,7 +466,7 @@ void ConfigBuilder::parseRoot(LocationConfig& location_block) {
         configError(currentToken(), "duplicate \"root\" directive");
     }
     location_block.setRoot(currentToken().value);
-    LOG_DEBUG() << "ConfigBuilder: root -> " << GRN << location_block.getRoot()
+    LOG_DEBUG() << "[ConfigBuilder] root -> " << GRN << location_block.getRoot()
                 << RESET;
 
     index_++;
@@ -488,7 +488,7 @@ void ConfigBuilder::parseIndex(LocationConfig& location_block) {
         configError(currentToken(), "duplicate \"index\" directive");
     }
     location_block.setIndex(currentToken().value);
-    LOG_DEBUG() << "ConfigBuilder: index -> " << GRN
+    LOG_DEBUG() << "[ConfigBuilder] index -> " << GRN
                 << location_block.getIndex() << RESET;
 
     index_++;
@@ -522,7 +522,7 @@ void ConfigBuilder::parseAutoIndex(LocationConfig& location_block, bool& seen) {
     }
 
     location_block.setDirectoryListing(directory_listing);
-    LOG_DEBUG() << "ConfigBuilder: autoindex -> " << GRN
+    LOG_DEBUG() << "[ConfigBuilder] autoindex -> " << GRN
                 << (directory_listing ? "on" : "off") << RESET;
 
     index_++;
@@ -544,7 +544,7 @@ void ConfigBuilder::parseUploadPath(LocationConfig& location_block) {
         configError(currentToken(), "duplicate \"upload_path\" directive");
     }
     location_block.setUploadPath(currentToken().value);
-    LOG_DEBUG() << "ConfigBuilder: upload_path -> " << GRN
+    LOG_DEBUG() << "[ConfigBuilder] upload_path -> " << GRN
                 << location_block.getUploadPath() << RESET;
 
     index_++;
@@ -579,7 +579,7 @@ void ConfigBuilder::parseCGI(LocationConfig& location_block) {
     std::string cgi_binary_path = currentToken().value;
 
     location_block.addCgiInterpreter(cgi_extension, cgi_binary_path);
-    LOG_DEBUG() << "ConfigBuilder: cgi -> " << GRN << cgi_extension << " => "
+    LOG_DEBUG() << "[ConfigBuilder] cgi -> " << GRN << cgi_extension << " => "
                 << cgi_binary_path << RESET;
 
     index_++;
@@ -613,17 +613,22 @@ void ConfigBuilder::parseReturn(LocationConfig& location_block) {
 
     location_block.setReturnCode(return_code);
     location_block.setReturnUrl(return_path);
-    LOG_DEBUG() << "ConfigBuilder: return -> " << GRN << return_code << " "
+    LOG_DEBUG() << "[ConfigBuilder] return -> " << GRN << return_code << " "
                 << return_path << RESET;
 
     index_++;
     expectSemicolon();
 }
 
+/**
+ * @brief Normalizes a host string, converting "localhost" to "127.0.0.1".
+ * @param host The host string to normalize
+ * @return The normalized host string
+ */
 std::string ConfigBuilder::normalizeHost(const std::string& host) const {
     if (host == "localhost") {
-        LOG_DEBUG() << "ConfigBuilder: localhost normalized -> "
-			<< GRN << "127.0.0.1" << RESET;
+        LOG_DEBUG() << "[ConfigBuilder] localhost normalized -> " << GRN
+                    << "127.0.0.1" << RESET;
         return "127.0.0.1";
     }
     return host;

@@ -29,14 +29,14 @@ const std::vector<Token>& ConfigTokenizer::getTokenList() const {
 }
 
 /**
- * @brief Logs an error and throws a std::runtime_error with a "Config: "
- * prefix.
+ * @brief Logs an error and throws a std::runtime_error with a
+ * "[ConfigTokenizer] " prefix.
  *
- * @param msg The error message (without the "Config: " prefix)
+ * @param msg The error message (without the "[ConfigTokenizer] " prefix)
  * @throws std::runtime_error always
  */
 void ConfigTokenizer::configError(const std::string& msg) const {
-    std::string full = "Config: " + msg;
+    std::string full = "[ConfigTokenizer] " + msg;
     LOG_ERROR() << full;
     throw std::runtime_error(full);
 }
@@ -78,7 +78,7 @@ void ConfigTokenizer::checkPathExists() {
     } else {
         configError("path error: " + file_path_ + ": " + std::strerror(errno));
     }
-    LOG_DEBUG() << "Config: " << file_path_ << " exists";
+    LOG_DEBUG() << "[ConfigTokenizer] " << file_path_ << " exists";
 }
 
 /**
@@ -92,7 +92,7 @@ void ConfigTokenizer::checkReadable() {
     if (!config_file.is_open()) {
         configError("cannot read: " + file_path_ + ": " + std::strerror(errno));
     }
-    LOG_DEBUG() << "Config: " << file_path_ << " opened successfully";
+    LOG_DEBUG() << "[ConfigTokenizer] " << file_path_ << " opened successfully";
 }
 
 /**
@@ -122,7 +122,7 @@ void ConfigTokenizer::checkExtension() {
     if (extension != "conf") {
         configError("wrong file extension");
     }
-    LOG_DEBUG() << "Config: correct file extension";
+    LOG_DEBUG() << "[ConfigTokenizer] correct file extension";
 }
 
 /**
@@ -136,7 +136,7 @@ void ConfigTokenizer::checkNotEmpty() {
     if (config_file.peek() == std::ifstream::traits_type::eof()) {
         configError(file_path_ + " is empty");
     }
-    LOG_DEBUG() << "Config: file is not empty";
+    LOG_DEBUG() << "[ConfigTokenizer] file is not empty";
 }
 
 /**
@@ -180,7 +180,7 @@ void ConfigTokenizer::tokenize() {
     //                 << "] = '" << GRN << tokens_list_[i].value << RESET <<
     //                 "'";
     // }
-    LOG_INFO() << BR_CYN "ConfigTokenizer: tokenization done - "
+    LOG_INFO() << BR_CYN "[ConfigTokenizer] tokenization done - "
                << tokens_list_.size() << " tokens extracted" << RESET;
 }
 

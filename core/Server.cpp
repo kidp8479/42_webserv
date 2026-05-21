@@ -41,7 +41,7 @@ void Server::setupListeners() {
     for (size_t i = 0; i < servers.size(); i++) {
         ServerResources resources(servers[i]);
 
-        const ServerConfig& cfg = resources.serverConfig();
+        const ServerConfig& cfg = resources.getServerConfig();
         LOG_INFO() << "[Server] Starting listener on " << cfg.getHost() << ":"
                    << cfg.getPort();
         Listener* listener = new Listener(loop_, resources);

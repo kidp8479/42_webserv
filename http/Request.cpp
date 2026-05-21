@@ -392,7 +392,7 @@ void Request::parseStartLine() {
             if (target_.size() > max_uri_size_)
                 return (setError(HttpConstants::kURITooLong));
             if (protocol_ != "HTTP/1.1" && protocol_ != "HTTP/1.0")
-                return (setError(HttpConstants::kHTTPNotSupported));
+                return (setError(HttpConstants::kVersionNotSupported));
 
             at_start_line_ = false;
         }

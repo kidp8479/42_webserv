@@ -2,7 +2,6 @@
 
 #include <sys/socket.h>
 
-#include <cerrno>
 #include <string>
 
 #include "../handlers/Handler.hpp"
@@ -66,7 +65,7 @@ void Client::handle(short revents) {
             LOG_INFO() << "[Client] POLLHUP fd=" << fd_.getFd();
             peer_closed = true;
         }
-        // read avaliable data first
+        // read available data first
         if (revents & POLLIN && state_ == kReading) {
             LOG_DEBUG() << "[Client] POLLIN detected";
             read();
