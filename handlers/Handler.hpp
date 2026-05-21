@@ -22,8 +22,8 @@
 
 class Handler {
 public:
-    static void run(const Request& request, const LocationConfig& location,
-                    const ServerConfig& server, Response& response);
+    static bool run(const Request& request, const LocationConfig& location,
+                    Client& client);
 
 private:
     Handler();
@@ -34,8 +34,7 @@ private:
     struct HandlerContext {
         const Request& request;
         const LocationConfig& location;
-        const ServerConfig& server;
-        Response& response;
+        Client& client;
     };
 
     // helpers for run()
