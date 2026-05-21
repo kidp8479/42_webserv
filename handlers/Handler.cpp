@@ -28,8 +28,11 @@ const std::map<std::string, std::string> kMimeTypes = initMimeTypes();
 }  // namespace
 
 /**
- * @brief Entry point for request handling. Runs pre-dispatch checks in order,
- * then delegates to the appropriate handler based on the location block type.
+ * @brief Handles an HTTP request through validation and dispatch.
+ * Runs pre-dispatch checks (error, method, routing). If all pass,
+ * delegates processing to the appropriate handler.
+ * HEAD requests reuse GET response but strip the body after dispatch.
+ * @return true if a response is ready to be sent, false otherwise.
  */
 bool Handler::run(const Request& request, const LocationConfig& location,
                   Client& client) {
@@ -166,28 +169,35 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
 }
 
 /**
- * @brief Routes to the appropriate handler based on the location block type.
- * @note Called only after all pre-dispatch checks pass, so exactly one
- *       discriminant is guaranteed to be set (or none, defaulting to static).
+ * @brief Dispatches request to the correct handler based on location config.
+ * Routing priority:
+ * - Return/redirect rule
+ * - CGI interpreter handling
+ * - Upload handling
+ * - Static file serving (default)
+ * @return true if response handling completed or is in progress.
  */
-void Handler::dispatch(HandlerContext& handler_context) {
+bool Handler::dispatch(HandlerContext& handler_context) {
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
         LOG_DEBUG() << BR_YEL "[Handler] return location block detected"
                     << RESET;
         handleReturn(handler_context);
+		return true;
     } else if (!handler_context.location.getCgiInterpreters().empty()) {
         LOG_DEBUG() << BR_YEL "[Handler] CGI location block detected" << RESET;
-        handleCgiInterpreters(handler_context);
+        return handleCgiInterpreters(handler_context);
     } else if (!handler_context.location.getUploadPath().empty()) {
         LOG_DEBUG() << BR_YEL "[Handler] upload location block detected"
                     << RESET;
         handleUpload(handler_context);
+		return true;
     } else {
         LOG_DEBUG() << BR_YEL
             "[Handler] serve static files location block detected"
                     << RESET;
         handleStatic(handler_context);
+		return true;
     }
 }
 
