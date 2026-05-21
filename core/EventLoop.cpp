@@ -107,7 +107,7 @@ int EventLoop::wait(int timeout) {
     //  the number returned is how many revents filled out
     if (ret == -1) {
         if (errno == EINTR) {
-            LOG_WARNING() << "System call interrupted";
+            LOG_WARNING() << "[EventLoop] system call interrupted";
             return 0;  // normal interrupt
         }
         LOG_ERROR() << "[EventLoop] poll() failed: " << strerror(errno);
