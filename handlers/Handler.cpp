@@ -345,7 +345,7 @@ void Handler::handleStatic(HandlerContext& handler_context) {
             sendError(HttpConstants::kForbidden, handler_context);
             return;
         }
-        deleteFile(full_path, handler_context);  // TODO
+        deleteFile(full_path, handler_context);
         return;
     }
 
