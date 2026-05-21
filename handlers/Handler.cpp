@@ -34,7 +34,7 @@ const std::map<std::string, std::string> kMimeTypes = initMimeTypes();
 void Handler::run(const Request& request, const LocationConfig& location,
                   const ServerConfig& server, Response& response) {
     LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
-               << " -  target: " << request.getTarget() << RESET;
+               << " - target: " << request.getTarget() << RESET;
 
     HandlerContext handler_context = {request, location, server, response};
 
