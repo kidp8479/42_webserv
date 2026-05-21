@@ -351,6 +351,9 @@ void Handler::handleStatic(HandlerContext& handler_context) {
 
     if (S_ISDIR(get_info.st_mode)) {
         if (path[path.size() - 1] != '/') {
+            LOG_INFO() << BR_CYN
+                "[Handler] 301 - directory trailing slash redirect: "
+                       << path << " -> " << path << "/" << RESET;
             std::string response =
                 "HTTP/1.1 301 Moved Permanently\r\n"
                 "Location: " +

@@ -7,6 +7,8 @@
     <p>the server accepts raw file uploads via POST. use curl to test:</p>
     <pre>curl -X POST http://127.0.0.1:8084/upload --data-binary @yourfile.txt</pre>
     <p>if the upload succeeded, the server returns <code>201 Created</code> and the file is saved in <code>www/demo/upload/received/</code>.</p>
+    <p>browse uploaded files: <a href="/received/">http://127.0.0.1:8084/received/</a> (note the trailing slash)</p>
+    <p>curl: <code>curl -L http://127.0.0.1:8084/received</code> (-L follows the trailing slash redirect)</p>
     <p>browser form upload (multipart/form-data) is handled by CGI - not yet implemented.</p>
 </body>
 </html>

@@ -8,13 +8,14 @@
 <body>
     <h1>webserv - delete demo</h1>
     <p>42 school project - HTTP/1.1 server in C++98</p>
+    <p>curl test: <code>curl -X DELETE http://127.0.0.1:8085/files/file1.txt</code></p>
     <p>click a filename below to delete it from the server. the server returns <code>204 No Content</code> on success.</p>
     <p><a href="/files">browse files available for deletion</a></p>
     <hr>
     <h2>delete a file</h2>
     <input type="text" id="filename" placeholder="filename to delete" />
     <button onclick="deleteFile()">DELETE</button>
-    // result paragraph is empty on load, filled by JS after the server responds
+    <!-- result paragraph is empty on load, filled by JS after the server responds -->
     <p id="result"></p>
     <script>
         function deleteFile() {
