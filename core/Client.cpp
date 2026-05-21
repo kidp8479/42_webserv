@@ -2,7 +2,6 @@
 
 #include <sys/socket.h>
 
-#include <cerrno>
 #include <string>
 
 #include "../handlers/Handler.hpp"
@@ -31,7 +30,7 @@ Client::Client(int fd, EventLoop& loop, const ServerResources& resources)
       bytes_sent_(0),
       state_(kReading),
       keep_alive_(true) {
-    request_.setMaxBodySize(resources_.serverConfig().getMaxBodySize());
+    request_.setMaxBodySize(resources_.getServerConfig().getMaxBodySize());
 }
 
 /**
@@ -66,23 +65,29 @@ void Client::handle(short revents) {
             LOG_INFO() << "[Client] POLLHUP fd=" << fd_.getFd();
             peer_closed = true;
         }
-        // read avaliable data first
+        // read available data first
         if (revents & POLLIN && state_ == kReading) {
             LOG_DEBUG() << "[Client] POLLIN detected";
             read();
         }
         // request finished parsing
         if (state_ == kReading && request_.isComplete()) {
-            // invalid request close connection immediately
-            if (request_.isError()) {
-                return closeConnection("invalid request", "WARNING");
-            }
+            // if the request is malformed, skip routing, getPath() may be
+            // empty/garbage and Router::resolve() would throw before Handler
+            // gets a chance to send the proper error response. Use a fallback
+            // location instead: Handler::requestIsError() fires immediately
+            // and never touches the location.
             keep_alive_ = request_.shouldKeepAlive();
             LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
                        << " switching " << stateToStr(state_) << " → kWriting";
 
-            const LocationConfig& loc = resources_.router().resolve(request_);
-            Handler::run(request_, loc, response_);
+            const LocationConfig fallback;
+            const LocationConfig& loc =
+                request_.isError()
+                    ? fallback
+                    : resources_.getRouter().resolve(request_.getPath());
+            Handler::run(request_, loc, resources_.getServerConfig(),
+                         response_);
             state_ = kWriting;
             LOG_DEBUG() << "[Client] enabling POLLOUT";
             loop_.modifyHandler(this, POLLOUT);
@@ -98,6 +103,10 @@ void Client::handle(short revents) {
             return closeConnection("peer disconnected during read");
         }
     } catch (const std::exception& e) {
+        // TODO: exception here (ex: Router::resolve() no match) closes
+        // connection without sending anything - client gets a TCP reset instead
+        // of a 500. Fix: set a 500 response and switch to kWriting instead of
+        // calling cleanup().
         LOG_ERROR() << "[Client] exception: " << e.what();
         cleanup();
     } catch (...) {  // universal fall back
@@ -148,12 +157,15 @@ void Client::write() {
         response_.reset();
         // if raw_ had any leftover bytes from pipelined request
         if (request_.isComplete()) {
-            if (request_.isError()) {
-                return closeConnection("invalid pipelined request", "WARNING");
-            }
+            // same as above: skip routing on malformed requests
             keep_alive_ = request_.shouldKeepAlive();
-            const LocationConfig& loc = resources_.router().resolve(request_);
-            Handler::run(request_, loc, response_);
+            const LocationConfig fallback;
+            const LocationConfig& loc =
+                request_.isError()
+                    ? fallback
+                    : resources_.getRouter().resolve(request_.getPath());
+            Handler::run(request_, loc, resources_.getServerConfig(),
+                         response_);
             state_ = kWriting;
             loop_.modifyHandler(this, POLLOUT);
             return;

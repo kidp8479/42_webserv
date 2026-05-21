@@ -27,11 +27,20 @@ public:
 
     const std::string& getRaw() const;
     void reset();
+    // what Pauline needs for the handler:
+    // void setStatus(int code, const std::string& reason);
+    // void setHeader(const std::string& key, const std::string& value);
+    // void setBody(const std::string& body);
+
+    // temporary: used by Handler until Charlie implements
+    // setStatus/setHeader/setBody
     void setRaw(const std::string& raw);
     void buildError(int code, const std::string& reason);
 
 private:
     std::string raw_;
+    // + whatever members you need to store the infos for the above methods
+    // needed
 };
 
 #endif

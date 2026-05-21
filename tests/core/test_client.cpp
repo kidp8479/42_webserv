@@ -15,6 +15,13 @@ ServerConfig createDummyServerConfig(int port = 8083) {
 
     LocationConfig loc;
     loc.setPath("/");
+    loc.setRoot("../http_handler/static_test_files");
+    loc.setIndex("hello.html");
+    std::vector<std::string> methods;
+    methods.push_back("GET");
+    methods.push_back("POST");
+    methods.push_back("DELETE");
+    loc.setMethods(methods);
 
     sconf.addLocationBlock(loc);
 

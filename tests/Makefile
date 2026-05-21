@@ -19,25 +19,26 @@ VPATH := $(sort $(dir $(TEST_SRCS)))
 
 # shared sources (no test files here)
 SRCS = 	\
-		../config/ConfigValidator.cpp \
-		../config/ConfigTokenizer.cpp \
-		../config/ConfigBuilder.cpp \
-		../config/Config.cpp \
-		../config/ServerConfig.cpp \
-		../config/LocationConfig.cpp \
-		../core/Fd.cpp \
-		../core/Server.cpp \
-		../core/EventLoop.cpp \
-		../core/Listener.cpp \
-		../core/ServerResources.cpp \
-		../core/Client.cpp \
-		../core/Signal.cpp \
-		../handlers/Router.cpp \
-		../handlers/Handler.cpp \
-		../http/Request.cpp \
-		../http/Response.cpp \
-		../logger/Logger.cpp \
-		../utils/LogUtils.cpp \
+    ../config/Config.cpp \
+	../config/ConfigBuilder.cpp \
+	../config/ConfigParser.cpp \
+	../config/ConfigTokenizer.cpp \
+	../config/ConfigValidator.cpp \
+	../config/LocationConfig.cpp \
+	../config/ServerConfig.cpp \
+	../core/Client.cpp \
+	../core/EventLoop.cpp \
+	../core/Fd.cpp \
+	../core/Listener.cpp \
+	../core/Server.cpp \
+	../core/ServerResources.cpp \
+	../core/Signal.cpp \
+	../handlers/Handler.cpp \
+	../handlers/Router.cpp \
+	../http/Request.cpp \
+	../http/Response.cpp \
+	../logger/Logger.cpp \
+	../utils/LogUtils.cpp \
 		
 
 all: $(BIN_DIR) $(OBJ_DIR) $(GTEST_OBJ) $(GTEST_MAIN_OBJ) $(TEST_BINS)

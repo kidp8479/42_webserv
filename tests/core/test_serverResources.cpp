@@ -21,7 +21,7 @@ TEST(ServerResources, Constructor_StoresServerConfig) {
 
     ServerResources resources(sconf);
 
-    EXPECT_EQ(resources.serverConfig().getPort(), 8080);
+    EXPECT_EQ(resources.getServerConfig().getPort(), 8080);
 }
 
 TEST(ServerResources, Constructor_DoesNotThrow) {
@@ -35,7 +35,7 @@ TEST(ServerResources, Constructor_InitializesRouter) {
 
     ServerResources resources(sconf);
 
-    EXPECT_NO_THROW(resources.router());
+    EXPECT_NO_THROW(resources.getRouter());
 }
 
 TEST(ServerResources, CopyConstructor_RebindsRouterCorrectly) {
@@ -44,5 +44,5 @@ TEST(ServerResources, CopyConstructor_RebindsRouterCorrectly) {
     ServerResources original(sconf);
     ServerResources copy(original);
 
-    EXPECT_NO_THROW(copy.router());
+    EXPECT_NO_THROW(copy.getRouter());
 }

@@ -11,8 +11,8 @@ public:
     ServerResources(const ServerResources& other);
     ~ServerResources();
 
-    const Router& router() const;
-    const ServerConfig& serverConfig() const;
+    const Router& getRouter() const;
+    const ServerConfig& getServerConfig() const;
 
 private:
     ServerResources& operator=(const ServerResources&);

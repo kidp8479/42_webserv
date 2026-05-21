@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head><title>webserv - static file serving demo</title></head>
+<body>
+    <h1>webserv</h1>
+    <p>42 school project - HTTP server in C++98</p>
+    <p>I'm a dedicated web page that showcases the static file serving feature</p>
+    <p>if you see this page, the full request cycle completed successfully:</p>
+  <p>curl test: <code>curl http://127.0.0.1:8082/index.html</code></p>
+  <ul>
+      <li>the event loop accepted your TCP connection and handed it to the client handler</li>
+      <li>the request parser read your HTTP request and validated the method, headers, and body</li>
+      <li>the Router resolved your URI to the best matching location block using longest-prefix match</li>
+      <li>the Handler ran all pre-dispatch checks: request validity, method support, method allowed, no conflicting block</li>
+      <li>the static file handler resolved the full path, found the file on disk, detected its MIME type, and built the response</li>
+      <li>the raw HTTP response was sent back over the socket</li>
+  </ul>
+</body>
+</html>
+    

@@ -39,6 +39,7 @@ private:
     void checkPath(const LocationConfig& location) const;
     void checkDuplicatePath(const ServerConfig& server) const;
     void checkReturnCode(const LocationConfig& location) const;
+    void checkMethods(const LocationConfig& location) const;
     void checkCgiBinaryPaths(const LocationConfig& location) const;
     void checkClientMaxBodySize(const ServerConfig& server) const;
 };

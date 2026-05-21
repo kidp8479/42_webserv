@@ -1,15 +1,31 @@
 #ifndef ROUTER_HPP
 #define ROUTER_HPP
-#include "../config/Config.hpp"
-#include "../config/LocationConfig.hpp"
-#include "../http/Request.hpp"
 
+#include "../config/LocationConfig.hpp"
+#include "../config/ServerConfig.hpp"
+
+/**
+ * @brief Resolves an HTTP request URI to the matching LocationConfig.
+ *
+ * Implements longest-prefix match against the location blocks of a
+ * ServerConfig. Given a URI, iterates all locations and returns the one
+ * whose path is the longest prefix of the URI. Throws if no location matches.
+ *
+ * @note No regex support - prefix matching only, per subject requirements.
+ */
 class Router {
 public:
-    explicit Router(const ServerConfig& config_server);
-    const LocationConfig& resolve(const Request& request) const;
+    Router(const ServerConfig& server_config);
+    ~Router();
+
+    const LocationConfig& resolve(const std::string& uri) const;
 
 private:
-    const ServerConfig& config_server_;
+    void routerError(const std::string& msg) const;
+
+    Router(const Router& copy);
+    Router& operator=(const Router& other);
+
+    const ServerConfig& server_config_;
 };
 #endif

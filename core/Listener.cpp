@@ -40,7 +40,7 @@ Listener::~Listener() {
 }
 
 void Listener::setupSocket() {
-    const ServerConfig& config = resources_.serverConfig();
+    const ServerConfig& config = resources_.getServerConfig();
 
     struct addrinfo hints;
     struct addrinfo* res = NULL;
