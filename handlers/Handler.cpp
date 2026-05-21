@@ -31,38 +31,39 @@ const std::map<std::string, std::string> kMimeTypes = initMimeTypes();
  * @brief Entry point for request handling. Runs pre-dispatch checks in order,
  * then delegates to the appropriate handler based on the location block type.
  */
-void Handler::run(const Request& request, const LocationConfig& location,
-                  const ServerConfig& server, Response& response) {
+bool Handler::run(const Request& request, const LocationConfig& location,
+                  Client& client) {
     LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
                << " -  target: " << request.getTarget() << RESET;
 
-    HandlerContext handler_context = {request, location, server, response};
+    HandlerContext handler_context = {request, location, client};
 
     if (requestIsError(handler_context)) {
-        return;
+        return true;
     }
     if (methodNotImplementedCheck(handler_context)) {
-        return;
+        return true;
     }
     if (methodNotAllowedCheck(handler_context)) {
-        return;
+        return true;
     }
     if (locationBlockDiscriminantCheck(handler_context)) {
-        return;
+        return true;
     }
 
-    dispatch(handler_context);
+    bool response_ready = dispatch(handler_context);
 
     // HEAD: same response as GET but no body, Content-Length stays untouched.
     // String manipulation on raw response is temporary, replace with
     // response.setBody("") once Charlie's API lands.
-    if (handler_context.request.getMethod() == "HEAD") {
-        const std::string& raw = handler_context.response.getRaw();
+    if (response_ready && handler_context.request.getMethod() == "HEAD") {
+        const std::string& raw = handler_context.client.getResponse().getRaw();
         size_t header_end = raw.find("\r\n\r\n");
         if (header_end != std::string::npos) {
-            handler_context.response.setRaw(raw.substr(0, header_end + 4));
+            handler_context.client.getResponse.setRaw(raw.substr(0, header_end + 4));
         }
     }
+	return response_ready;
 }
 
 /**
