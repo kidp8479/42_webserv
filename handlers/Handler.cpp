@@ -230,7 +230,7 @@ void Handler::handleReturn(HandlerContext& handler_context) {
     std::string response = "HTTP/1.1 " + toString(return_code) + " " + reason +
                            "\r\n" + "Location: " + return_url + "\r\n" +
                            "Content-Length: 0\r\n" + "\r\n";
-    handler_context.response.setRaw(response);
+    handler_context.client.getResponse().setRaw(response);
     LOG_INFO() << BR_CYN "[Handler] redirect " << return_code << " -> "
                << return_url << RESET;
 }
@@ -301,7 +301,7 @@ void Handler::handleUpload(HandlerContext& handler_context) {
                            toString(HttpConstants::kCreated.code) + " " +
                            HttpConstants::kCreated.reason + "\r\n" +
                            "Content-Length: 0\r\n" + "\r\n";
-    handler_context.response.setRaw(response);
+    handler_context.client.getResponse().setRaw(response);
     LOG_INFO() << BR_CYN "[Handler] uploaded " << file_name << " to "
                << full_upload_path << RESET;
 }
@@ -371,7 +371,7 @@ void Handler::handleStatic(HandlerContext& handler_context) {
                 path +
                 "/\r\n"
                 "Content-Length: 0\r\n\r\n";
-            handler_context.response.setRaw(response);
+            handler_context.client.getResponse().setRaw(response);
             return;
         }
         resolveDirectory(full_path, handler_context);
@@ -450,7 +450,7 @@ void Handler::deleteFile(const std::string& full_path,
                            toString(HttpConstants::kNoContent.code) + " " +
                            HttpConstants::kNoContent.reason + "\r\n" +
                            "Content-Length: 0\r\n" + "\r\n";
-    handler_context.response.setRaw(response);
+    handler_context.client.getResponse().setRaw(response);
     LOG_INFO() << BR_CYN "[Handler] deleted resource : " << full_path << RESET;
 }
 
@@ -503,7 +503,7 @@ void Handler::sendError(int code, const std::string& reason,
                            "\r\n" + "Content-Type: text/html\r\n" +
                            "Content-Length: " + toString(body.size()) + "\r\n" +
                            "\r\n" + body;
-    handler_context.response.setRaw(response);
+    handler_context.client.getResponse().setRaw(response);
 }
 
 std::string Handler::toString(int code) {
@@ -562,7 +562,7 @@ void Handler::serveFile(const std::string& path,
         // open fails, calling sendError() would call serveFile() again => loop
         std::string err_body =
             "<html><body><h1>500 Internal Server Error</h1></body></html>";
-        handler_context.response.setRaw(
+        handler_context.client.getResponse().setRaw(
             "HTTP/1.1 500 Internal Server Error\r\n"
             "Content-Type: text/html\r\n"
             "Content-Length: " +
@@ -584,7 +584,7 @@ void Handler::serveFile(const std::string& path,
         // same recursion guard as above
         std::string err_body =
             "<html><body><h1>500 Internal Server Error</h1></body></html>";
-        handler_context.response.setRaw(
+        handler_context.client.getResponse().setRaw(
             "HTTP/1.1 500 Internal Server Error\r\n"
             "Content-Type: text/html\r\n"
             "Content-Length: " +
@@ -600,7 +600,7 @@ void Handler::serveFile(const std::string& path,
                            "\r\n" + "Content-Type: " + mime_type + "\r\n" +
                            "Content-Length: " + toString(body.size()) + "\r\n" +
                            "\r\n" + body;
-    handler_context.response.setRaw(response);
+    handler_context.client.getResponse().setRaw(response);
     LOG_INFO() << BR_CYN "[Handler] " << path << " served successfully"
                << RESET;
 }
@@ -647,7 +647,7 @@ void Handler::generateDirectoryListing(const std::string& path,
         " " + HttpConstants::kOK.reason + "\r\n" +
         "Content-Type: text/html\r\n" +
         "Content-Length: " + toString(body.size()) + "\r\n" + "\r\n" + body;
-    handler_context.response.setRaw(response);
+    handler_context.client.getResponse().setRaw(response);
     LOG_INFO() << BR_CYN "[Handler] directory listing of " << path
                << " served successfully" << RESET;
 }
