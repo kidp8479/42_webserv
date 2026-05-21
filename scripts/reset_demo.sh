@@ -1,6 +1,6 @@
 #!/bin/bash
 find www/demo/upload/received -type f ! -name ".gitkeep" -delete
-find www/default/upload -type f ! -name ".gitkeep" -delete
+find www/default/upload/received -type f ! -name ".gitkeep" -delete
 find www/demo/delete/files -type f ! -name ".gitkeep" -delete
 find www/default/delete -type f ! -name ".gitkeep" -delete
 echo "hello from webserv demo" > www/demo/delete/files/file1.txt
