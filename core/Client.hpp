@@ -26,7 +26,9 @@ public:
 	//new getters Handler and cgi need
 	EventLoop& getLoop();
 	Response& getResponse();
-	const ServerResources& getResources();
+	const ServerResources& getResources() const;
+	const ServerConfig& getServerConfig() const ;
+	const Router& getRouter() const;
 
 	// called by CgiProcess when it has a result
 	void receiveResponse(const std::string& raw);

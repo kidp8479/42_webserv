@@ -232,6 +232,14 @@ const ServerResources& Client::getResources() {
 	return resources_;
 }
 
+const ServerConfig& Client::getServerConfig() const {
+	return resources_.getServerConfig();
+}
+
+const Router&Client::getRouter() const {
+	return resources_.getRouter();
+}
+
 void Client::receiveResponse(const std::string& raw) {
 	response_.setRaw(raw);
 	bytes_sent_ = 0;
