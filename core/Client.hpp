@@ -11,26 +11,37 @@
 
 class Client : public IEventHandler {
 public:
-    enum State { kReading, kWriting, kDone };
+    enum State { kReading, kWaitingCgi, kWriting, kDone };
     static const size_t kBufferSize = 4096;
 
     explicit Client(int fd, EventLoop& loop, const ServerResources& resources);
     ~Client();
 
     int getFd() const;
+    bool isDone() const;
     void handle(short revents);
+	bool isTimedOut() const;
     const char* name() const;
+
+	//new getters Handler and cgi need
+	EventLoop& getLoop();
+	Response& getResponse();
+	const ServerResources& getResources();
+
+	// called by CgiProcess when it has a result
+	void receiveResponse(const std::string& raw);
+
+	// called by CgiProcess on timeout or error
+	void receiveError(const std::string& raw);
 
 private:
     Client(const Client&);
     Client& operator=(const Client&);
 
-    bool isDone() const;
     void read();
     void write();
     void cleanup();
     void closeConnection(const std::string& reason, const char* level = "INFO");
-	bool isTimedOut() const;
 
     Fd fd_;
     // reference to the server's loop_

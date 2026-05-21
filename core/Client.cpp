@@ -16,6 +16,8 @@ static const char* stateToStr(Client::State s) {
     switch (s) {
         case Client::kReading:
             return "kReading";
+		case Client::kWaitingCgi:
+			return "kWaitingCgi";
         case Client::kWriting:
             return "kWriting";
         case Client::kDone:
@@ -56,13 +58,9 @@ void Client::handle(short revents) {
         LOG_DEBUG() << "[Client] ENTER handle fd=" << fd_.getFd()
                     << " state=" << stateToStr(state_)
                     << " events=" << LogUtils::pollToStr(revents);
-        // handle failures and disconnects (fatal socket states)
         if (revents & (POLLERR | POLLNVAL)) {
             return closeConnection("socket error/hangup", "WARNING");
         }
-        // POLLHUP means peer closed it's side of the connection so there
-        // may still be unread bytes buffered in the kernel so we dont
-        // instantly clean up here.
         bool peer_closed = false;
         if (revents & POLLHUP) {
             LOG_INFO() << "[Client] POLLHUP fd=" << fd_.getFd();
@@ -84,11 +82,16 @@ void Client::handle(short revents) {
 				? fallback
 				: resources_.getRouter().resolve(request_.getPath());
 
-            Handler::run(request_, loc, resources_.getServerConfig(), response_);
-            state_ = kWriting;
-            LOG_DEBUG() << "[Client] enabling POLLOUT";
-            loop_.modifyHandler(this, POLLOUT);
-        }
+            bool response_ready = Handler::run(request_, loc, *this);
+            if (response_ready) {
+				state_ = kWriting;
+				LOG_DEBUG() << "[Client] enabling POLLOUT";
+				loop_.modifyHandler(this, POLLOUT);
+			} else {
+				state_ = kWaitingCgi;
+				loop_.modifyHandler(this, 0);
+			}
+		}
         // write response
         if (revents & POLLOUT && state_ == kWriting) {
             LOG_DEBUG() << "[Client] write triggered";
@@ -102,7 +105,7 @@ void Client::handle(short revents) {
     } catch (const std::exception& e) {
 
         LOG_ERROR() << "[Client] exception: " << e.what();
-        if (state == kReading) {
+        if (state_ == kReading) {
 			// Response is built manually here because this catch is outside Handler::run()
 			// if Router::resolve() throws, no handler context exists, so we can't use
 			// Handler::sendError(). last resort for misconfigured servers
@@ -114,7 +117,7 @@ void Client::handle(short revents) {
 			keep_alive_ = false;
 			bytes_sent_ = 0;
 			state_ = kWriting;
-			loop.modifyHandler(this, POLLOUT);
+			loop_.modifyHandler(this, POLLOUT);
 		} else {
 			cleanup();
 		}
@@ -176,7 +179,7 @@ void Client::write() {
 				? fallback
 				: resources_.getRouter().resolve(request_.getPath());
 
-			Handler::run(request_, loc, resources_.getServerConfig(), response_);
+			Handler::run(request_, loc, *this);
             state_ = kWriting;
             loop_.modifyHandler(this, POLLOUT);
             return;
@@ -216,4 +219,28 @@ bool Client::isTimedOut() const {
 		return false;
 	}
 	return timeout_.expired();
+}
+
+EventLoop& Client::getLoop() {
+	return loop_;
+}
+
+Response& Client::getResponse() {
+	return response_;
+}
+
+const ServerResources& Client::getResources() {
+	return resources_;
+}
+
+void Client::receiveResponse(const std::string& raw) {
+	response_.setRaw(raw);
+	bytes_sent_ = 0;
+	state_ = kWriting;
+	loop_.modifyHandler(this, POLLOUT);
+}
+
+void Client::receiveError(const std::string& raw) {
+	keep_alive_ = false; // dont reuse connection after cgi failure
+	receiveResponse(raw);
 }
