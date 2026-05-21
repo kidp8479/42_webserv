@@ -69,8 +69,8 @@ void Response::setStatus(int code, const std::string& reason = "") {
     code_stream << "HTTP/1.1" << " " << code;
     if (!reason.empty())
         code_stream << " " << reason;
+    code_stream << "\r\n";
     status_ = code_stream.str();
-    status_ += "\r\n";
     updateRaw();
 }
 
