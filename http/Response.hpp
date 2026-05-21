@@ -49,9 +49,8 @@ private:
     // + whatever members you need to store the infos for the above methods
     // needed
     std::string status_;
+    std::string headers_;
     std::string body_;
-    std::map<std::string, std::string> headers_;
-    std::vector<std::string> cookies_;
 
     void updateRaw();
 };

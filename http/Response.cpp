@@ -70,6 +70,7 @@ void Response::setStatus(int code, const std::string& reason = "") {
     if (!reason.empty())
         code_stream << " " << reason;
     status_ = code_stream.str();
+    status_ += "\r\n";
     updateRaw();
 }
 
@@ -78,17 +79,7 @@ void Response::setStatus(HttpConstants::HttpError error) {
 }
 
 void Response::setHeader(const std::string& key, const std::string& value) {
-    std::string key_lower(key);
-    setToLower(key_lower);
-    if (key_lower == "set-cookie") {
-        cookies_.push_back(value);
-    }
-    else if (headers_.count(key_lower) == 0)
-        headers_[key_lower] = value;
-    else {
-        std::string new_val = headers_[key_lower] + ", " + value;
-        headers_[key_lower] = new_val;
-    }
+    headers_ += key + ": " + value + "\r\n";
     updateRaw();
 }
 
@@ -98,18 +89,5 @@ void Response::setBody(const std::string& body) {
 }
 
 void Response::updateRaw() {
-    std::string raw_new;
-    raw_new += status_ + "\r\n";
-    std::map<std::string, std::string>::const_iterator h_it, h_ite;
-    h_ite = headers_.end();
-    for (h_it = headers_.begin(); h_it != h_ite; h_it++) {
-        raw_new += h_it->first + ": " + h_it->second + "\r\n";
-    }
-    std::vector<std::string>::const_iterator c_it, c_ite;
-    c_ite = cookies_.end();
-    for (c_it = cookies_.begin(); c_it != c_ite; c_it++) {
-        raw_new += "Set-Cookie: " + c_it[0] + "\r\n";
-    }
-    raw_new += "\r\n" + body_;
-    raw_ = raw_new;
+    raw_ = status_ + headers_ + "\r\n" + body_;
 }
