@@ -63,7 +63,7 @@ bool Handler::run(const Request& request, const LocationConfig& location,
         const std::string& raw = handler_context.client.getResponse().getRaw();
         size_t header_end = raw.find("\r\n\r\n");
         if (header_end != std::string::npos) {
-            handler_context.client.getResponse.setRaw(raw.substr(0, header_end + 4));
+            handler_context.client.getResponse().setRaw(raw.substr(0, header_end + 4));
         }
     }
 	return response_ready;
@@ -236,10 +236,11 @@ void Handler::handleReturn(HandlerContext& handler_context) {
 }
 
 /**
- * @brief Handles CGI location blocks. Forks and executes the CGI script.
- * @note TODO: implement fork/execve/pipe. Currently a stub.
+ * @brief Handles CGI location blocks.
+ * handleCgiInterpreters: forks, registers CgiProcess, returns false
+ * Handler's job ends here — CgiProcess takes over
  */
-void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
+bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
     // TODO: implement fork/execve/pipe
     sendError(HttpConstants::kNotImplemented, handler_context);
 }
