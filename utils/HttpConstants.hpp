@@ -15,11 +15,14 @@ const size_t kDefaultMaxURISize = 8192;      // 8KB
 
 // 2xx status code - success
 const HttpError kOK = {200, "OK"};
+const HttpError kCreated = {201, "Created"};
 const HttpError kNoContent = {204, "No Content"};
 
 // 3xx status code - redirection
 const HttpError kMovedPermanently = {301, "Moved Permanently"};
 const HttpError kFound = {302, "Found"};
+const HttpError kTemporaryRedirect = {307, "Temporary Redirect"};
+const HttpError kPermanentRedirect = {308, "Permanent Redirect"};
 
 // 4xx status code - client's side error response
 const HttpError kBadRequest = {400, "Bad Request"};

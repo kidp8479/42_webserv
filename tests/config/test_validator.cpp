@@ -201,6 +201,25 @@ TEST(ConfigValidator_checkReturnCode, NoThrowsIfValidReturn) {
 [FAIL] => CGI binary path is relative (no leading '/')
 [PASS] => CGI binary path is absolute
 */
+/* tests for checkMethods()
+   [FAIL] => non-redirect location block has no methods directive
+   [PASS] => redirect block has no methods directive (exempt by design)
+*/
+TEST(ConfigValidator_checkMethods, ThrowsIfNoMethodsOnStaticBlock) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/location/"
+                               "invalid_no_methods.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkMethods, NoThrowsIfRedirectBlockHasNoMethods) {
+    EXPECT_NO_THROW(buildFromFile(
+        "../config/validator_test_files/location/valid_return.conf"));
+}
+
+/* tests for checkCgiBinaryPaths()
+   [FAIL] => CGI binary path is relative (no leading '/')
+   [PASS] => CGI binary path is absolute
+*/
 TEST(ConfigValidator_checkCgiBinaryPaths, ThrowsIfCgiBinaryPathIsRelative) {
     EXPECT_THROW(buildFromFile("../config/validator_test_files/location/"
                                "invalid_cgi_binary_relative.conf"),

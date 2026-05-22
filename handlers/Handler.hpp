@@ -8,6 +8,8 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cstdio>
+#include <ctime>
 #include <map>
 #include <sstream>
 
@@ -49,6 +51,21 @@ private:
     static void handleUpload(HandlerContext& handler_context);
     static void handleStatic(HandlerContext& handler_context);
 
+    // helpers for handleStatic()
+    static void resolveDirectory(const std::string& full_path,
+                                 HandlerContext& handler_context);
+    static void deleteFile(const std::string& full_path,
+                           HandlerContext& handler_context);
+    // default arguments: regular file serving uses 200 OK, sendError() passes
+    // the actual error code/reason so the custom error page is served with the
+    // correct status line instead of a misleading 200
+    static void serveFile(
+        const std::string& path, HandlerContext& handler_context,
+        int code = HttpConstants::kOK.code,
+        const std::string& reason = HttpConstants::kOK.reason);
+    static void generateDirectoryListing(const std::string& path,
+                                         HandlerContext& handler_context);
+
     // error handling
     static void sendError(HttpConstants::HttpError error,
                           HandlerContext& handler_context);
@@ -58,11 +75,8 @@ private:
 
     // utils
     static std::string toString(int code);
+    static std::string toString(size_t n);
     static std::string getFileMimeType(const std::string& path);
-    static void serveFile(const std::string& path,
-                          HandlerContext& handler_context);
-    static void generateDirectoryListing(const std::string& path,
-                                         HandlerContext& handler_context);
 };
 
 #endif

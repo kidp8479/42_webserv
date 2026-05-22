@@ -230,6 +230,7 @@ void ConfigValidator::locationChecks(const ServerConfig& server) const {
 
         checkPath(*it);
         checkReturnCode(*it);
+        checkMethods(*it);
         checkCgiBinaryPaths(*it);
     }
 }
@@ -276,6 +277,45 @@ void ConfigValidator::checkReturnCode(const LocationConfig& location) const {
         configError("Return code set. A valid return url must be set");
     }
     LOG_DEBUG() << "[ConfigValidator] valid return code.";
+}
+
+/**
+ * @brief Checks that non-redirect location blocks have at least one method.
+ * @note Redirect blocks have no methods directive by design - any method
+ *       triggers the redirect. All other blocks must explicitly list methods
+ *       so a missing directive causes a clear config error at startup rather
+ *       than a silent 405 at runtime.
+ */
+void ConfigValidator::checkMethods(const LocationConfig& location) const {
+    // ambiguous blocks (multiple discriminants) are handled by Handler at
+    // runtime, we can't know which type applies, so skip the methods check
+    size_t discriminants = 0;
+    if (location.getReturnCode() != LocationConfig::kNoRedirect) {
+        discriminants++;
+    }
+    if (!location.getCgiInterpreters().empty()) {
+        discriminants++;
+    }
+    if (!location.getUploadPath().empty()) {
+        discriminants++;
+    }
+    if (discriminants > 1) {
+        LOG_DEBUG()
+            << "[ConfigValidator] ambiguous block, skipping methods check.";
+        return;
+    }
+    // redirect blocks have no methods directive by design
+    if (location.getReturnCode() != LocationConfig::kNoRedirect) {
+        LOG_DEBUG()
+            << "[ConfigValidator] redirect block, skipping methods check.";
+        return;
+    }
+    if (location.getMethods().empty()) {
+        configError("Location block \"" + location.getPath() +
+                    "\" has no methods directive. At least one method (GET "
+                    "POST DELETE) is required.");
+    }
+    LOG_DEBUG() << "[ConfigValidator] valid methods directive.";
 }
 
 /**
