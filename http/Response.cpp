@@ -55,6 +55,9 @@ const std::string& Response::getRaw() const {
 
 void Response::reset() {
     raw_.clear();
+    status_.clear();
+    headers_.clear();
+    body_.clear();
 }
 
 // handler uses this for now to unblock dev time, but this call will be replaced
