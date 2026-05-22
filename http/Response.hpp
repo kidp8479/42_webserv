@@ -15,10 +15,6 @@
  * The response is stored internally as a fully-formed HTTP message and can
  * be retrieved for transmission over the network.
  *
- * @note This is currently a temporary stub implementation used to unblock
- *       server development.
- *       It will be replaced and fully implemented by the HTTP/parsing layer
- *       (Charlie’s part) in a later stage of the project.
  */
 class Response {
 public:
@@ -35,8 +31,7 @@ public:
     void setHeader(const std::string& key, const std::string& value);
     void setBody(const std::string& body);
 
-    // will be obsolete when the 3 above methods are implemented, could be
-    // deleted in the end
+    //obsoleted by the above setters
     void setRaw(const std::string& raw);
 
 private:
