@@ -5,15 +5,6 @@
 Response::Response() {
 }
 
-/********************************** Utils ***********************************/
-
-static std::string setToLower(std::string& s) {
-    for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
-        s_it[0] = std::tolower(s_it[0]);
-    }
-    return (s);
-}
-
 /********************************* Builders *********************************/
 
 /**
@@ -77,7 +68,7 @@ void Response::setRaw(const std::string& raw) {
 /**
  * @brief Sets the reponse's status line and updates raw
  */
-void Response::setStatus(int code, const std::string& reason = "") {
+void Response::setStatus(int code, const std::string& reason) {
     std::ostringstream code_stream;
     code_stream << "HTTP/1.1" << " " << code;
     if (!reason.empty())

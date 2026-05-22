@@ -26,7 +26,7 @@ public:
     const std::string& getRaw() const;
     void reset();
 
-    void setStatus(int code, const std::string& reason = "");
+    void setStatus(int code, const std::string& reason);
     void setStatus(HttpConstants::HttpError error);
     void setHeader(const std::string& key, const std::string& value);
     void setBody(const std::string& body);
