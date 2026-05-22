@@ -24,17 +24,12 @@ class Response {
 public:
     Response();
 
-    void buildFrom(const Request& request);
     void buildError(int code, const std::string& reason);
     void buildError(HttpConstants::HttpError error);
 
     const std::string& getRaw() const;
     void reset();
 
-    // what Pauline needs for the handler:
-    // void setStatus(int code, const std::string& reason);
-    // void setHeader(const std::string& key, const std::string& value);
-    // void setBody(const std::string& body);
     void setStatus(int code, const std::string& reason = "");
     void setStatus(HttpConstants::HttpError error);
     void setHeader(const std::string& key, const std::string& value);
@@ -46,8 +41,6 @@ public:
 
 private:
     std::string raw_;
-    // + whatever members you need to store the infos for the above methods
-    // needed
     std::string status_;
     std::string headers_;
     std::string body_;

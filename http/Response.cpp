@@ -37,6 +37,8 @@ void Response::buildError(HttpConstants::HttpError error) {
     buildError(error.code, error.reason);
 }
 
+/********************************* Getters **********************************/
+
 /**
  * @brief Retrieves the raw HTTP response string.
  *
@@ -49,14 +51,11 @@ const std::string& Response::getRaw() const {
     return (raw_);
 }
 
+/********************************* Setters **********************************/
+
 void Response::reset() {
     raw_.clear();
 }
-
-// what Pauline needs for handler:
-// void setStatus(int code, const std::string& reason);
-// void setHeader(const std::string& key, const std::string& value);
-// void setBody(const std::string& body);
 
 // handler uses this for now to unblock dev time, but this call will be replaced
 // by the 3 setters above when ready and can be deleted in the end
