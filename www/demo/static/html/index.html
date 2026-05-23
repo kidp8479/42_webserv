@@ -7,18 +7,16 @@
 </head>
 <body>
     <div class="framed primary">
-        <h2>webserv - static file serving</h2>
+        <h2>webserv - static file serving demo</h2>
         <p class="message"><span>webserv:</span> 42 school project - HTTP/1.1 server in C++98</p>
         <p class="message">If you see this page, the full request cycle completed successfully.</p>
         <p class="message">curl: <code>curl http://127.0.0.1:8082/index.html</code></p>
-        <ul>
-            <li>the event loop accepted your TCP connection and handed it to the client handler</li>
-            <li>the request parser read your HTTP request and validated the method, headers, and body</li>
-            <li>the Router resolved your URI to the best matching location block using longest-prefix match</li>
-            <li>the Handler ran all pre-dispatch checks: request validity, method support, method allowed, no conflicting block</li>
-            <li>the static file handler resolved the full path, found the file on disk, detected its MIME type, and built the response</li>
-            <li>the raw HTTP response was sent back over the socket</li>
-        </ul>
+        <p class="message">the event loop accepted your TCP connection and handed it to the client handler</p>
+        <p class="message">the request parser read your HTTP request and validated the method, headers, and body</p>
+        <p class="message">the Router resolved your URI to the best matching location block using longest-prefix match</p>
+        <p class="message">the Handler ran all pre-dispatch checks: request validity, method support, method allowed, no conflicting block</p>
+        <p class="message">the static file handler resolved the full path, found the file on disk, detected its MIME type, and built the response</p>
+        <p class="message">the raw HTTP response was sent back over the socket</p>
     </div>
 </body>
 </html>
