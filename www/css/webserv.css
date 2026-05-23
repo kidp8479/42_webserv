@@ -8,6 +8,16 @@ body {
 }
 
 .framed {
-    max-width: 480px;
+    max-width: 1280px;
     width: 100%;
+}
+
+.framed div {
+    margin-top: 16px;
+}
+
+.framed .button {
+    display: inline-block;
+    margin-bottom: 4px;
+    color: #ffff88;
 }
