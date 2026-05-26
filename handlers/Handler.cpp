@@ -242,7 +242,20 @@ void Handler::handleReturn(HandlerContext& handler_context) {
  */
 bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
     // TODO: implement fork/execve/pipe
-    sendError(HttpConstants::kNotImplemented, handler_context);
+	try {
+		CgiSpawner(handler_context.client.getLoop());
+
+		if (!spawner.spawn(handler_context)) {
+			LOG_WARNING() << "[Handler] CGI spawn failed";
+			sendError(HttpConstants::kInternalServerError, handler_context);
+			return true; // error response is ready
+		}
+		return false;
+	} catch (const std::exception& e) {
+		LOG_ERROR() << "[Handler] CGI exception: " << e.what();
+		sendError(HttpConstants::kNotImplemented, handler_context);
+		return true;
+	}
 }
 
 /**
