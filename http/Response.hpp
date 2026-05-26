@@ -31,7 +31,7 @@ public:
     void setHeader(const std::string& key, const std::string& value);
     void setBody(const std::string& body);
 
-    //obsoleted by the above setters
+    // obsoleted by the above setters
     void setRaw(const std::string& raw);
 
 private:

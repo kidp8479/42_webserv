@@ -16,10 +16,10 @@ void Response::buildError(int code, const std::string& reason) {
     status_stream << "HTTP/1.1 " << code << " " << reason << "\r\n";
     status_ = status_stream.str();
     body_stream << "<html><body><h1>" << code << " " << reason
-        << "</h1></body></html>";
+                << "</h1></body></html>";
     body_ = body_stream.str();
     header_stream << "Content-Length: " << body_.size() << "\r\n"
-        << "Connection: close\r\n";
+                  << "Connection: close\r\n";
     headers_ = header_stream.str();
 
     updateRaw();
