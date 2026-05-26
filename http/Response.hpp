@@ -19,6 +19,9 @@
 class Response {
 public:
     Response();
+    ~Response();
+    Response(const Response& other);
+    Response& operator=(const Response& other);
 
     void buildError(int code, const std::string& reason);
     void buildError(HttpConstants::HttpError error);

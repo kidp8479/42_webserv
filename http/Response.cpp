@@ -2,7 +2,42 @@
 
 #include <sstream>
 
+/*****************************************************************************
+ *                                  RESPONSE                                 *
+ *****************************************************************************/
+
+/**
+ * @brief Default Constructor.
+ */
 Response::Response() {
+}
+
+/**
+ * @brief Default Destructor.
+ */
+Response::~Response() {
+}
+
+/**
+ * @brief Copy Constructor.
+ * @param other Response to copy.
+ */
+Response::Response(const Response& other) {
+    *this = other;
+}
+
+/**
+ * @brief Response '=' operator overload.
+ * @param other Response to copy.
+ */
+Response& Response::operator=(const Response& other) {
+    if (this != &other) {
+        raw_ = other.raw_;
+        status_ = other.status_;
+        headers_ = other.headers_;
+        body_ = other.body_;
+    }
+    return (*this);
 }
 
 /********************************* Builders *********************************/
