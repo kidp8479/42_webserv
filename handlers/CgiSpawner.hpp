@@ -1,7 +1,6 @@
 #ifndef CGISPAWNER_HPP
 #define CGISPAWNER_HPP
 
-#include //pipes
 #include <vector>
 #include "../core/EventLoop.hpp"
 #include "Handler.hpp"
@@ -17,7 +16,7 @@ public:
 
 private:
 	CgiSpawner(const CgiSpawner&);
-	CgiSpanwer& operator=(const CgiSpawner&);
+	CgiSpawner& operator=(const CgiSpawner&);
 
 	EventLoop& loop_;
 
@@ -25,8 +24,8 @@ private:
 	
 	std::string resolveInterpreter(const HandlerContext& context,
 			const std::string& script_path);
-	
-	std::vector<char*> buildEnv(HandlerContext& ctx,
+	std::string buildScriptPath	(const HandlerContext& context);
+	std::vector<char*> buildEnv(HandlerContext& context,
 			const::vector<std::string>& env);
 };
 
