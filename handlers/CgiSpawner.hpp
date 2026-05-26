@@ -26,8 +26,7 @@ private:
 			const std::string& script_path);
 	std::string buildScriptPath	(const HandlerContext& context);
 	std::vector<std::string> buildEnvpStrings(const HandlerContext& context);
-	std::vector<char*> buildEnvp(HandlerContext& context,
-			const::vector<std::string>& env_strings);
+	std::vector<char*> buildEnvp(const::vector<std::string>& env_strings);
 };
 
 #endif
