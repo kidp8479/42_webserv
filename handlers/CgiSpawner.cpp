@@ -6,6 +6,8 @@ CgiSpawner::CgiSpawner(EventLoop& loop) : loop_(loop) {}
 
 CgiSpawner::~CgiSpawner() {}
 
+/**
+ */
 bool CgiSpawner::spawn(HandlerContext& context)
 {
     // resolve interpreter
@@ -76,7 +78,8 @@ bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2]) {
 	}
 }
 
-/** turn root + uri into a valid filesystem path
+/**
+ * turn root + uri into a valid filesystem path
  * some edge cases to consider
  * /var/www + /cgi-bin/a.py
  * /var/www/ + /cgi-bin/a.py
@@ -109,4 +112,41 @@ std::string CgiSpawner::buildScriptPath(const HandlerContext& context) {
 	return path;
 }
 
+std::vector<std::string> CgiSpawner::buildEnvStrings(
+		const HandlerContext& context) {
+	std::vector<std::string> env;
+	const Request& request = context.request;
 
+	env.push_back("REQUEST_METHOD=" + request.getMethod());
+	env.push_back("SCRIPT_NAME=" + request.getPath());
+	env.push_back("QUERY_STRING=" + request.getQuery());
+	env.push_back("REQUEST_URI=" + request.getTarget());
+	env.push_back("SERVER_PROTOCOL" + request.getProtocol());
+
+	std::ostringstream oss;
+	oss << request.getBody().size();
+
+	env.push_back("CONTENT_LENGTH=" + oss.str());
+	env.push_back("CONTENT_TYPE=" + request.getHeaderValue("Content-Type"));
+
+	return env;
+}
+
+/**
+ * example upload request:
+ * POST /cgi-bin/upload.py HTTP/1.1
+ * Content-Type: multipart/form-data; boundary=abc
+ * Content-Length: 5120
+ * Build environment that will be passed to execve() so CGI script can
+ * learn about the HTTP request
+ */
+std::vector<char*> buildEnvp(HandlerContext& context,
+		const::vector<std::string>& env_strings) {
+	std::vector<char*> envp;
+
+	for (size_t i = 0; i < env_strings.size(); ++i) {
+		envp.push_back(const_cast<char*>(env_strings[i].c_str()));
+	}
+	envp.push_back(NULL);
+	return envp;
+}
