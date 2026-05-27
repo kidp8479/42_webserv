@@ -108,6 +108,14 @@ protected:
     // chunk variants - evil misleading headers
     const char* chunk_evil1 = "Cookie: $EvilString=Content-Length:5\r\n";
 
+    // request with cookies
+    const char* cookie_request =
+        "GET / HTTP/1.1\r\n"
+        "Host: www.example.com\r\n"
+        "Cookie: theme=dark; login=name; test=42\r\n"
+        "Not-Cookie: This, Is, Not, A, Cookie\r\n"
+        "\r\n";
+
     void SetUp() override {
         req.clearData();
     }
@@ -617,8 +625,7 @@ TEST_F(RequestTestFixture, isComplete_DoubleEmptyLine) {
     EXPECT_TRUE(req.isError());
 }
 
-/********************************* Keep Alive
- * **********************************/
+/******************************** Keep Alive *********************************/
 
 TEST_F(RequestTestFixture, KeepAlive_HTTP1) {
     // Using protocol HTTP/1.1 keeps connections alive on completion
@@ -685,4 +692,19 @@ TEST_F(RequestTestFixture, KeepAlive_TransferEncodeCL) {
     EXPECT_TRUE(req.isComplete());
     EXPECT_FALSE(req.isError());
     EXPECT_FALSE(req.shouldKeepAlive());
+}
+
+/******************************** Get Cookies ********************************/
+
+TEST_F(RequestTestFixture, GetCookie_GetCookieList) {
+    //Using getHeaderList on a cookie header returns the values in a vector
+    req.append(cookie_request, strlen(cookie_request));
+    EXPECT_TRUE(req.isComplete());
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.shouldKeepAlive());
+    
+    std::vector<std::string> cookieList = req.getHeaderList("Cookie");
+    EXPECT_EQ(cookieList[0], "theme=dark");
+    EXPECT_EQ(cookieList[1], "login=name");
+    EXPECT_EQ(cookieList[2], "test=42");
 }
