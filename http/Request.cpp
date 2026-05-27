@@ -3,7 +3,6 @@
 #include <cctype>
 #include <iostream>
 #include <sstream>
-#include <vector>
 
 #include "../logger/Logger.hpp"
 
@@ -124,17 +123,18 @@ static bool isOnlyHexDigits(std::string s) {
     return (true);
 }
 
-static std::vector<std::string> listHeaders(const std::string s) {
+static std::vector<std::string> listHeaders(const std::string s,
+                                            const std::string sep = ",") {
     std::string val(s), element;
     std::vector<std::string> val_vect;
 
     while (!val.empty()) {
-        size_t comma_pos = val.find(",");
+        size_t comma_pos = val.find(sep);
         element = val.substr(0, comma_pos);
         val_vect.push_back(trim(element));
         val.erase(0, comma_pos);
         if (comma_pos != std::string::npos)
-            val.erase(0, 1);
+            val.erase(0, sep.size());
     }
     return (val_vect);
 }
@@ -213,6 +213,22 @@ std::string Request::getHeaderValue(const std::string key) const {
         value_get = c_it->second;
     }
     return (value_get);
+}
+
+/**
+ * @brief Get Vector of Header Values corresponding to key.
+ * @param key Header name to look for (case-insensitive).
+ */
+std::vector<std::string> Request::getHeaderList(const std::string key) const {
+    std::string key_lower(key);
+    std::vector<std::string> value_list_get;
+    if (headers_.count(setToLower(key_lower)) > 0) {
+        std::map<std::string, std::string>::const_iterator c_it;
+        std::string sep = (key_lower != "cookie") ? "," : ";";
+        c_it = headers_.find(key_lower);
+        value_list_get = listHeaders(c_it->second, sep);
+    }
+    return (value_list_get);
 }
 
 /**
@@ -431,8 +447,10 @@ void Request::parseHeaders() {
         std::string value = line.substr(line.find(':') + 1);
         trim(value);
         /*If header already exists, append value in comma-separated list*/
-        if (headers_.count(name) > 0 && !headers_[name].empty())
-            value = headers_[name] + ", " + value;
+        if (headers_.count(name) > 0 && !headers_[name].empty()) {
+            std::string sep = ((name != "cookie") ? ", " : "; ");
+            value = headers_[name] + sep + value;
+        }
         if (value.size() > max_header_size_)
             return (setError(HttpConstants::kHeaderTooLarge));
         headers_[name] = value;

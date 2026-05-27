@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "../utils/HttpConstants.hpp"
 
@@ -30,6 +31,7 @@ public:
     std::string getProtocol() const;
     std::string getBody() const;
     std::string getHeaderValue(const std::string key) const;
+    std::vector<std::string> getHeaderList(const std::string key) const;
 
     const std::map<std::string, std::string>& getHeaders() const;
 
