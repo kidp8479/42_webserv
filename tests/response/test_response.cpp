@@ -114,6 +114,14 @@ TEST_F(ResponseTestFixture, Set_Reset) {
     EXPECT_TRUE(resp.getRaw().empty());
 }
 
+TEST_F(ResponseTestFixture, Set_ResetSet) {
+    resp.setRaw(full_response);
+    resp.reset();
+    resp.setStatus(1, "Test");
+    resp.setBody("Woah nelly");
+    EXPECT_EQ(resp.getRaw(), "HTTP/1.1 1 Test\r\n\r\nWoah nelly");
+}
+
 TEST_F(ResponseTestFixture, Copy_FullResponse) {
     resp.setRaw(full_response);
     Response respCopy = resp;
