@@ -88,6 +88,9 @@ void Client::handle(short revents) {
                     : resources_.getRouter().resolve(request_.getPath());
             Handler::run(request_, loc, resources_.getServerConfig(),
                          response_);
+            if (!keep_alive_) {
+                response_.setHeader("Connection", "close");
+            }
             state_ = kWriting;
             LOG_DEBUG() << "[Client] enabling POLLOUT";
             loop_.modifyHandler(this, POLLOUT);
@@ -103,14 +106,20 @@ void Client::handle(short revents) {
             return closeConnection("peer disconnected during read");
         }
     } catch (const std::exception& e) {
-        // TODO: exception here (ex: Router::resolve() no match) closes
-        // connection without sending anything - client gets a TCP reset instead
-        // of a 500. Fix: set a 500 response and switch to kWriting instead of
-        // calling cleanup().
         LOG_ERROR() << "[Client] exception: " << e.what();
-        cleanup();
-    } catch (...) {  // universal fall back
-        cleanup();
+        keep_alive_ = false;
+        response_.buildError(HttpConstants::kInternalServerError);
+        response_.setHeader("Connection", "close");
+        bytes_sent_ = 0;
+        state_ = kWriting;
+        loop_.modifyHandler(this, POLLOUT);
+    } catch (...) {
+        keep_alive_ = false;
+        response_.buildError(HttpConstants::kInternalServerError);
+        response_.setHeader("Connection", "close");
+        bytes_sent_ = 0;
+        state_ = kWriting;
+        loop_.modifyHandler(this, POLLOUT);
     }
 }
 
@@ -166,6 +175,9 @@ void Client::write() {
                     : resources_.getRouter().resolve(request_.getPath());
             Handler::run(request_, loc, resources_.getServerConfig(),
                          response_);
+            if (!keep_alive_) {
+                response_.setHeader("Connection", "close");
+            }
             state_ = kWriting;
             loop_.modifyHandler(this, POLLOUT);
             return;
