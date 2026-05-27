@@ -97,6 +97,14 @@ TEST_F(ResponseTestFixture, Set_FullResponse) {
     EXPECT_EQ(resp.getRaw(), full_response);
 }
 
+TEST_F(ResponseTestFixture, Set_FullResponseStrangeOrder) {
+    resp.setHeader("Server", "Webserv");
+    resp.setBody("Hello");
+    resp.setStatus(200, "OK");
+    resp.setHeader("Content-Length", "5");
+    EXPECT_EQ(resp.getRaw(), full_response);
+}
+
 TEST_F(ResponseTestFixture, Build_Error) {
     resp.buildError(404, "Not Found");
     EXPECT_EQ(resp.getRaw(), error_response);
