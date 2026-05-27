@@ -25,7 +25,7 @@ struct Token {
  * @brief Phase 1 of config parsing: tokenizes a .conf file into a flat token
  * list.
  *
- * Validates the file (existence, permissions, extension, emptiness) then splits
+ * Validates the file (existence, readability, extension, emptiness) then splits
  * its content into tokens on whitespace, '{', '}', and ';'.
  * Comments starting with '#' are ignored.
  *

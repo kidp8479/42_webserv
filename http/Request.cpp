@@ -338,9 +338,8 @@ void Request::setMaxBodySize(size_t max_body_size) {
 }
 
 /**
- * @brief Sets error to true along with error message.
- * @param int Error code to set error_code_ to.
- * @param message Error message to set error_message_ to.
+ * @brief Sets error state from an HttpError struct, marks request complete.
+ * @param http_error Error containing the code and reason to record.
  */
 void Request::setError(HttpConstants::HttpError http_error) {
     error_ = true;

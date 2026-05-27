@@ -60,7 +60,7 @@ void Response::buildError(int code, const std::string& reason) {
 }
 
 /**
- * @brief Conveniance overload to generate error page from HttpError struct
+ * @brief Convenience overload to generate error page from HttpError struct.
  */
 void Response::buildError(HttpConstants::HttpError error) {
     buildError(error.code, error.reason);
@@ -93,14 +93,14 @@ void Response::reset() {
 }
 
 /**
- * @brief Overrirdes raw with string passed as argument
+ * @brief Overrides raw with string passed as argument.
  */
 void Response::setRaw(const std::string& raw) {
     raw_ = raw;
 }
 
 /**
- * @brief Sets the reponse's status line and updates raw
+ * @brief Sets the response's status line and updates raw.
  */
 void Response::setStatus(int code, const std::string& reason) {
     std::ostringstream code_stream;
@@ -113,14 +113,14 @@ void Response::setStatus(int code, const std::string& reason) {
 }
 
 /**
- * @brief Conveniance overload to set status using an HttpError struct
+ * @brief Convenience overload to set status using an HttpError struct.
  */
 void Response::setStatus(HttpConstants::HttpError error) {
     setStatus(error.code, error.reason);
 }
 
 /**
- * @brief Adds a header value to reponse's header string and updates raw
+ * @brief Adds a header value to response's header string and updates raw.
  */
 void Response::setHeader(const std::string& key, const std::string& value) {
     headers_ += key + ": " + value + "\r\n";
@@ -128,7 +128,7 @@ void Response::setHeader(const std::string& key, const std::string& value) {
 }
 
 /**
- * @brief Sets the reponse's body and updates raw
+ * @brief Sets the response's body and updates raw.
  */
 void Response::setBody(const std::string& body) {
     body_ = body;
