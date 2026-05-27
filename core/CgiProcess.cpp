@@ -20,9 +20,7 @@ void CgiProcess::handle(short revents) {
 		kill(pid_, SIGKILL);
 		waitpid(pid_, NULL, 0);
 		read_fd_.reset();
-		client_.receiveError(
-			"HTTP/1.1 504 Gateway Timeout\r\n"
-            "Content-Length: 0\r\n\r\n");
+		client_.receiveError(HttpConstants::kGatewayTimeout);
 		done_ = true;
 		return;
 	}
@@ -40,9 +38,7 @@ void CgiProcess::handle(short revents) {
 		kill(pid_, SIGKILL);
 		waitpid(pid_, NULL, 0);
 		read_fd_.reset();
-		client_.receiveError(
-            "HTTP/1.1 500 Internal Server Error\r\n"
-            "Content-Length: 0\r\n\r\n");
+		client_.receiveError(HttpConstants::kInternalServerError);
 		done_ = true;
 	}
 }
@@ -69,9 +65,7 @@ void CgiProcess::finish() {
 		separator = output_.find("\n\n");
 	}
 	if (separator == std::string::npos) {
-		client_.receiveError(
-		    "HTTP/1.1 500 Internal Server Error\r\n"
-            "Content-Length: 0\r\n\r\n");
+		client_.receiveError(HttpConstants::kInternalServerError);
 		done_ = true;
 		return;
 	}

@@ -34,7 +34,7 @@ public:
 	void receiveResponse(const std::string& raw);
 
 	// called by CgiProcess on timeout or error
-	void receiveError(const std::string& raw);
+	void receiveError(HttpConstants::HttpError error);
 
 private:
     Client(const Client&);

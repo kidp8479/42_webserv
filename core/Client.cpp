@@ -83,6 +83,9 @@ void Client::handle(short revents) {
 
             bool response_ready = Handler::run(request_, loc, *this);
             if (response_ready) {
+				if (!keep_alive_) {
+					response_.setHeader("Connection", "close");
+				}
 				state_ = kWriting;
 				LOG_DEBUG() << "[Client] enabling POLLOUT";
 				loop_.modifyHandler(this, POLLOUT);
@@ -104,25 +107,18 @@ void Client::handle(short revents) {
     } catch (const std::exception& e) {
 
         LOG_ERROR() << "[Client] exception: " << e.what();
-        if (state_ == kReading) {
-			// Response is built manually here because this catch is outside Handler::run()
-			// if Router::resolve() throws, no handler context exists, so we can't use
-			// Handler::sendError(). last resort for misconfigured servers
-			// missing a catch-all '/' location block.
-			response_.setRaw(
-				"HTTP/1.1 500 Internal Server Error\r\n"
-				"Content-Length: 0\r\n\r\n"
-				);
-			keep_alive_ = false;
-			bytes_sent_ = 0;
-			state_ = kWriting;
-			loop_.modifyHandler(this, POLLOUT);
+		if (state == kReading) {
+			receiveError(HttpConstants::kInternalServerError);
 		} else {
 			cleanup();
 		}
     } catch (...) {  // universal fall back
-        cleanup();
-    }
+		LOG_ERROR() << "[Client] Internal Server Error";
+		if (state == kReading) {
+		receiveError(HttpConstants::kInternalServerError);
+    } else {
+		cleanup();
+	}
 }
 
 void Client::read() {
@@ -178,7 +174,12 @@ void Client::write() {
 				? fallback
 				: resources_.getRouter().resolve(request_.getPath());
 
-			Handler::run(request_, loc, *this);
+			bool response_ready = Handler::run(request_, loc, *this);
+			if (response_ready) {
+				if (!keep_alive_) {
+					response_.setHeader("Connection", "close");
+				}
+			}
             state_ = kWriting;
             loop_.modifyHandler(this, POLLOUT);
             return;
@@ -247,7 +248,11 @@ void Client::receiveResponse(const std::string& raw) {
 	loop_.modifyHandler(this, POLLOUT);
 }
 
-void Client::receiveError(const std::string& raw) {
+void Client::receiveError(HttpConstants::HttpError error) {
 	keep_alive_ = false; // dont reuse connection after cgi failure
-	receiveResponse(raw);
+	response_.buildError(error);
+	response_.setHeader("Connection", "close");
+	bytes_sent_ = 0;
+	state_ = kWriting;
+	loop_.modifyHandler(this, POLLOUT);
 }
