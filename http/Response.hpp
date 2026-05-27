@@ -27,6 +27,8 @@ public:
     void buildError(HttpConstants::HttpError error);
 
     const std::string& getRaw() const;
+    std::vector<std::string> getCookieList() const;
+
     void reset();
 
     void setStatus(int code, const std::string& reason);
@@ -42,6 +44,8 @@ private:
     std::string status_;
     std::string headers_;
     std::string body_;
+
+    std::vector<std::string> cookies_;
 
     void updateRaw();
 };

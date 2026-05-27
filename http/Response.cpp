@@ -40,6 +40,15 @@ Response& Response::operator=(const Response& other) {
     return (*this);
 }
 
+/********************************** Utils ***********************************/
+
+static std::string setToLower(std::string& s) {
+    for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
+        s_it[0] = std::tolower(s_it[0]);
+    }
+    return (s);
+}
+
 /********************************* Builders *********************************/
 
 /**
@@ -80,6 +89,14 @@ const std::string& Response::getRaw() const {
     return (raw_);
 }
 
+/**
+ * @brief Creates a copy of the string vector of cookies.
+ * @return Copy of cookie vector
+ */
+std::vector<std::string> Response::getCookieList() const {
+    return (cookies_);
+}
+
 /********************************* Setters **********************************/
 
 /**
@@ -90,6 +107,7 @@ void Response::reset() {
     status_.clear();
     headers_.clear();
     body_.clear();
+    cookies_.clear();
 }
 
 /**
@@ -123,6 +141,9 @@ void Response::setStatus(HttpConstants::HttpError error) {
  * @brief Adds a header value to reponse's header string and updates raw
  */
 void Response::setHeader(const std::string& key, const std::string& value) {
+    std::string low_key = key;
+    if (setToLower(low_key) == "set-cookie")
+        cookies_.push_back(value);
     headers_ += key + ": " + value + "\r\n";
     updateRaw();
 }
