@@ -41,7 +41,7 @@ Each folder contains both `.hpp` and `.cpp` files for its domain. This keeps rel
 
 ### handlers/ — HTTP method handlers
 
-One handler class per HTTP method (GET, POST, DELETE) plus a `Router` that resolves the URI to the best matching location block using longest-prefix match. **CGI handler: WIP.**
+One handler class per HTTP method (GET, POST, DELETE) plus a `Router` that resolves the URI to the best matching location block using longest-prefix match. File upload via curl (raw POST body) works. Browser form upload (multipart/form-data) and CGI handler: WIP.
 
 ### utils/ — shared utilities
 
@@ -53,8 +53,8 @@ MIME type detection, path resolution helpers, string utilities shared across dom
 
 ### Bonus (WIP)
 
-- **Cookies and session management** — not started
-- **Multiple CGI interpreters** — `.php` and `.py` already configured in `default.conf`, pending CGI handler completion
+- Cookies and session management - not started
+- Multiple CGI interpreters - `.php` and `.py` already configured in `default.conf`, pending CGI handler completion
 
 ---
 

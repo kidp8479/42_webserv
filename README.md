@@ -53,7 +53,7 @@ The server is configured via a `.conf` file. Each `server` block defines a virtu
 | directive | scope | description |
 |---|---|---|
 | `listen host:port` | server | address and port to bind |
-| `client_max_body_size` | server | max request body (e.g. `1M`, `512k`) |
+| `client_max_body_size` | server | max request body (ex: `1M`, `512k`) |
 | `error_page code path` | server | custom HTML page for a given HTTP error code |
 | `methods` | location | allowed HTTP methods (GET, POST, DELETE) |
 | `root path` | location | filesystem root for URI resolution |
@@ -89,6 +89,6 @@ Each demo conf is self-contained and focuses on one feature. Run the server and 
 
 Claude (claude.ai / Claude Code CLI) was used throughout the project as a socratic tutor and technical assistant:
 
-- **Debugging**: identifying root causes of keep-alive, fd leak, and request parsing bugs
-- **Documentation**: doxygen comments, log message conventions, README
-- **Testing**: designing curl test sequences, analyzing siege stress test results
+- Debugging: identifying root causes of keep-alive, fd leak, and request parsing bugs
+- Documentation: doxygen comments, log message conventions, README
+- Testing: designing curl test sequences, analyzing siege stress test results
