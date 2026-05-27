@@ -54,14 +54,8 @@ void Handler::run(const Request& request, const LocationConfig& location,
     dispatch(handler_context);
 
     // HEAD: same response as GET but no body, Content-Length stays untouched.
-    // String manipulation on raw response is temporary, replace with
-    // response.setBody("") once Charlie's API lands.
     if (handler_context.request.getMethod() == "HEAD") {
-        const std::string& raw = handler_context.response.getRaw();
-        size_t header_end = raw.find("\r\n\r\n");
-        if (header_end != std::string::npos) {
-            handler_context.response.setRaw(raw.substr(0, header_end + 4));
-        }
+        handler_context.response.setBody("");
     }
 }
 
@@ -214,12 +208,9 @@ void Handler::handleReturn(HandlerContext& handler_context) {
         reason = "Redirect";
     }
 
-    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
-    // available
-    std::string response = "HTTP/1.1 " + toString(return_code) + " " + reason +
-                           "\r\n" + "Location: " + return_url + "\r\n" +
-                           "Content-Length: 0\r\n" + "\r\n";
-    handler_context.response.setRaw(response);
+    handler_context.response.setStatus(return_code, reason);
+    handler_context.response.setHeader("Location", return_url);
+    handler_context.response.setHeader("Content-Length", "0");
     LOG_INFO() << BR_CYN "[Handler] redirect " << return_code << " -> "
                << return_url << RESET;
 }
@@ -286,11 +277,8 @@ void Handler::handleUpload(HandlerContext& handler_context) {
         return;
     }
     close(open_fd);
-    std::string response = "HTTP/1.1 " +
-                           toString(HttpConstants::kCreated.code) + " " +
-                           HttpConstants::kCreated.reason + "\r\n" +
-                           "Content-Length: 0\r\n" + "\r\n";
-    handler_context.response.setRaw(response);
+    handler_context.response.setStatus(HttpConstants::kCreated);
+    handler_context.response.setHeader("Content-Length", "0");
     LOG_INFO() << BR_CYN "[Handler] uploaded " << file_name << " to "
                << full_upload_path << RESET;
 }
@@ -354,13 +342,10 @@ void Handler::handleStatic(HandlerContext& handler_context) {
             LOG_INFO() << BR_CYN
                 "[Handler] 301 - directory trailing slash redirect: "
                        << path << " -> " << path << "/" << RESET;
-            std::string response =
-                "HTTP/1.1 301 Moved Permanently\r\n"
-                "Location: " +
-                path +
-                "/\r\n"
-                "Content-Length: 0\r\n\r\n";
-            handler_context.response.setRaw(response);
+            handler_context.response.setStatus(
+                HttpConstants::kMovedPermanently);
+            handler_context.response.setHeader("Location", path + "/");
+            handler_context.response.setHeader("Content-Length", "0");
             return;
         }
         resolveDirectory(full_path, handler_context);
@@ -433,13 +418,8 @@ void Handler::deleteFile(const std::string& full_path,
         sendError(HttpConstants::kInternalServerError, handler_context);
         return;
     }
-    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
-    // available
-    std::string response = "HTTP/1.1 " +
-                           toString(HttpConstants::kNoContent.code) + " " +
-                           HttpConstants::kNoContent.reason + "\r\n" +
-                           "Content-Length: 0\r\n" + "\r\n";
-    handler_context.response.setRaw(response);
+    handler_context.response.setStatus(HttpConstants::kNoContent);
+    handler_context.response.setHeader("Content-Length", "0");
     LOG_INFO() << BR_CYN "[Handler] deleted resource : " << full_path << RESET;
 }
 
@@ -484,15 +464,12 @@ void Handler::sendError(int code, const std::string& reason,
                     << it->second << RESET << " - serving fallback error page";
     }
     // no custom page found: build minimal hardcoded HTML response
-    // replace setRaw() calls with Charlie's setStatus/setHeader/setBody when
-    // available
     std::string body = "<html><body><h1>" + toString(code) + " " + reason +
                        "</h1></body></html>";
-    std::string response = "HTTP/1.1 " + toString(code) + " " + reason +
-                           "\r\n" + "Content-Type: text/html\r\n" +
-                           "Content-Length: " + toString(body.size()) + "\r\n" +
-                           "\r\n" + body;
-    handler_context.response.setRaw(response);
+    handler_context.response.setStatus(code, reason);
+    handler_context.response.setHeader("Content-Type", "text/html");
+    handler_context.response.setHeader("Content-Length", toString(body.size()));
+    handler_context.response.setBody(body);
 }
 
 std::string Handler::toString(int code) {
@@ -551,11 +528,11 @@ void Handler::serveFile(const std::string& path,
         // open fails, calling sendError() would call serveFile() again => loop
         std::string err_body =
             "<html><body><h1>500 Internal Server Error</h1></body></html>";
-        handler_context.response.setRaw(
-            "HTTP/1.1 500 Internal Server Error\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: " +
-            toString(err_body.size()) + "\r\n\r\n" + err_body);
+        handler_context.response.setStatus(HttpConstants::kInternalServerError);
+        handler_context.response.setHeader("Content-Type", "text/html");
+        handler_context.response.setHeader("Content-Length",
+                                           toString(err_body.size()));
+        handler_context.response.setBody(err_body);
         return;
     }
 
@@ -573,23 +550,20 @@ void Handler::serveFile(const std::string& path,
         // same recursion guard as above
         std::string err_body =
             "<html><body><h1>500 Internal Server Error</h1></body></html>";
-        handler_context.response.setRaw(
-            "HTTP/1.1 500 Internal Server Error\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: " +
-            toString(err_body.size()) + "\r\n\r\n" + err_body);
+        handler_context.response.setStatus(HttpConstants::kInternalServerError);
+        handler_context.response.setHeader("Content-Type", "text/html");
+        handler_context.response.setHeader("Content-Length",
+                                           toString(err_body.size()));
+        handler_context.response.setBody(err_body);
         return;
     }
     close(fd);
 
     const std::string& mime_type = getFileMimeType(path);
-    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
-    // available
-    std::string response = "HTTP/1.1 " + toString(code) + " " + reason +
-                           "\r\n" + "Content-Type: " + mime_type + "\r\n" +
-                           "Content-Length: " + toString(body.size()) + "\r\n" +
-                           "\r\n" + body;
-    handler_context.response.setRaw(response);
+    handler_context.response.setStatus(code, reason);
+    handler_context.response.setHeader("Content-Type", mime_type);
+    handler_context.response.setHeader("Content-Length", toString(body.size()));
+    handler_context.response.setBody(body);
     LOG_INFO() << BR_CYN "[Handler] " << path << " served successfully"
                << RESET;
 }
@@ -629,14 +603,10 @@ void Handler::generateDirectoryListing(const std::string& path,
 
     std::string body =
         "<html><body><ul>" + directory_list + "</ul></body></html>";
-    // replace setRaw() with Charlie's setStatus/setHeader/setBody when
-    // available
-    std::string response =
-        "HTTP/1.1 " + toString(static_cast<int>(HttpConstants::kOK.code)) +
-        " " + HttpConstants::kOK.reason + "\r\n" +
-        "Content-Type: text/html\r\n" +
-        "Content-Length: " + toString(body.size()) + "\r\n" + "\r\n" + body;
-    handler_context.response.setRaw(response);
+    handler_context.response.setStatus(HttpConstants::kOK);
+    handler_context.response.setHeader("Content-Type", "text/html");
+    handler_context.response.setHeader("Content-Length", toString(body.size()));
+    handler_context.response.setBody(body);
     LOG_INFO() << BR_CYN "[Handler] directory listing of " << path
                << " served successfully" << RESET;
 }
