@@ -34,7 +34,6 @@ protected:
     const char* error_response =
         "HTTP/1.1 404 Not Found\r\n"
         "Content-Length: 48\r\n"
-        "Connection: close\r\n"
         "\r\n"
         "<html><body><h1>404 Not Found</h1></body></html>";
 };
@@ -106,4 +105,19 @@ TEST_F(ResponseTestFixture, Build_Error) {
 TEST_F(ResponseTestFixture, Build_ErrorFromError) {
     resp.buildError(HttpConstants::kNotFound);
     EXPECT_EQ(resp.getRaw(), error_response);
+}
+
+TEST_F(ResponseTestFixture, Set_Reset) {
+    resp.setRaw(full_response);
+    EXPECT_EQ(resp.getRaw(), full_response);
+    resp.reset();
+    EXPECT_TRUE(resp.getRaw().empty());
+}
+
+TEST_F(ResponseTestFixture, Copy_FullResponse) {
+    resp.setRaw(full_response);
+    Response respCopy = resp;
+    resp.reset();
+    EXPECT_TRUE(resp.getRaw().empty());
+    EXPECT_EQ(respCopy.getRaw(), full_response);
 }

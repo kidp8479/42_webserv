@@ -53,8 +53,7 @@ void Response::buildError(int code, const std::string& reason) {
     body_stream << "<html><body><h1>" << code << " " << reason
                 << "</h1></body></html>";
     body_ = body_stream.str();
-    header_stream << "Content-Length: " << body_.size() << "\r\n"
-                  << "Connection: close\r\n";
+    header_stream << "Content-Length: " << body_.size() << "\r\n";
     headers_ = header_stream.str();
 
     updateRaw();
