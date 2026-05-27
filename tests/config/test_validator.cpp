@@ -125,12 +125,28 @@ TEST(ConfigValidator_checkServerErrorCodes, NoThrowsIfErrorCodeValid) {
 
 /* tests for checkDuplicateHostPort()
 [FAIL] => two server blocks with identical host:port
+[FAIL] => one block with localhost, one with 127.0.0.1, same port
+[FAIL] => one block with 0.0.0.0, one with specific IP, same port
 [PASS] => two server blocks with same host, different ports
 [PASS] => two server blocks with different hosts, same port
 */
 TEST(ConfigValidator_checkDuplicateHostPort, ThrowsIfDuplicateHostPort) {
     EXPECT_THROW(buildFromFile("../config/validator_test_files/server/"
                                "invalid_duplicate_host_port.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkDuplicateHostPort,
+     ThrowsIfLocalhostAndLoopbackSamePort) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/server/"
+                               "invalid_wildcard_localhost.conf"),
+                 std::runtime_error);
+}
+
+TEST(ConfigValidator_checkDuplicateHostPort,
+     ThrowsIfWildcardAndSpecificIpSamePort) {
+    EXPECT_THROW(buildFromFile("../config/validator_test_files/server/"
+                               "invalid_wildcard_duplicate_host.conf"),
                  std::runtime_error);
 }
 
