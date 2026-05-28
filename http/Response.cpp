@@ -193,6 +193,9 @@ void Response::updateRaw() {
     raw_ = status_ + headers_ + "\r\n" + body_;
 }
 
+/**
+ * @brief Parses a set-cookie string for a valid "name=value"
+ */
 void Response::addToCookie(std::string cookie_str) {
     std::vector<std::string> cookie_list = listCookie(cookie_str);
     if (cookie_list.empty() || cookie_list[0].empty())
