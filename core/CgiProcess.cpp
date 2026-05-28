@@ -1,6 +1,10 @@
 #include "CgiProcess.hpp"
+#include "Client.hpp"
+#include <signal.h>
+#include <cerrno>
+#include <sys/wait.h>
 
-CgiProcess::CgiProcess(pid_t pid, int ready_fd, Client& client, EventLoop& loop) :
+CgiProcess::CgiProcess(pid_t pid, int read_fd, Client& client, EventLoop& loop) :
 	pid_(pid),
 	read_fd_(read_fd),
 	client_(client),
@@ -14,6 +18,9 @@ int CgiProcess::getFd() const {
 }
 
 void CgiProcess::handle(short revents) {
+	if (done_) {
+		return;
+	}
 	// event loop checks isTimedout() in cleanup(), but handle() may get
 	// called before clenaup() runs
 	if (timeout_.expired()) {
@@ -24,22 +31,19 @@ void CgiProcess::handle(short revents) {
 		done_ = true;
 		return;
 	}
-	char buffer[4096];
-	ssize_t n = read(read_fd_.getFd(), buffer, sizeof(buffer));
+	if (revents & POLLIN) {
+		char buffer[4096];
+		ssize_t n = read(read_fd_.getFd(), buffer, sizeof(buffer));
 
-	if (n > 0) {
-		output_.append(buffer, n);
-
-	} else if (n == 0) {
+		if (n > 0) {
+			output_.append(buffer, n);
+		} else if (n == 0) {
 		// EOF. cgi script finished, we have all output
+			finish();
+		}
+	}
+	if (revents & (POLLHUP | POLLHUP) {
 		finish();
-	} else if ( errno != EAGAIN && errno != EWOULDBLOCK) {
-		// real read error
-		kill(pid_, SIGKILL);
-		waitpid(pid_, NULL, 0);
-		read_fd_.reset();
-		client_.receiveError(HttpConstants::kInternalServerError);
-		done_ = true;
 	}
 }
 
@@ -56,33 +60,13 @@ const char* CgiProcess::name() const {
 }
 
 void CgiProcess::finish() {
+	if (done_) {
+		return;
+	}
+	done_ = true;
+
 	waitpid(pid_, NULL, 0);
 	read_fd_.reset();
 
-	// cgi output format
-	size_t separator = output_.find("\r\n\r\n");
-	if (separator == std::string::npos) {
-		separator = output_.find("\n\n");
-	}
-	if (separator == std::string::npos) {
-		client_.receiveError(HttpConstants::kInternalServerError);
-		done_ = true;
-		return;
-	}
-
-	std::string cgi_headers = output_.substr(0, separator);
-	std::string cgi_body = output_.substr(separator + 2);
-
-	std::ostringstream oss;
-	oss << cgi_body.size();
-
-	std::string response =
-		"HTTP/1.1 200 OK\r\n" +
-        cgi_headers + "\r\n" +
-        "Content-Length: " + oss.str() + "\r\n"
-        "\r\n" +
-        cgi_body;
-
-	client_.receiveResponse(response);
-	done_ = true;
+	client_.onCgiFinished(output_);
 }

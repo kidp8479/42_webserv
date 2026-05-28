@@ -4,10 +4,11 @@
 #include "Fd.hpp"
 #include "IEventHandler.hpp"
 #include "EventLoop.hpp"
-#include "Client.hpp"
 #include <string>
 #include <sys/types.h>
 #include "Timeout.hpp"
+
+class Client;
 
 class CgiProcess : public IEventHandler {
 public:
