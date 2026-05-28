@@ -8,6 +8,7 @@
 #include "IEventHandler.hpp"
 #include "ServerResources.hpp"
 #include "Timeout.hpp"
+#include "CgiProcess.hpp"
 
 class Client : public IEventHandler {
 public:
@@ -35,6 +36,7 @@ public:
 
 	// called by CgiProcess on timeout or error
 	void receiveError(HttpConstants::HttpError error);
+	void setPendingCgi(CgiProcess* cgi);
 
 private:
     Client(const Client&);
@@ -57,6 +59,7 @@ private:
     Response response_;
     bool keep_alive_;
 	Timeout timeout_;
+	CgiProcess* pending_cgi_; // non-owning ptr but Client controls lifetime
 };
 
 #endif

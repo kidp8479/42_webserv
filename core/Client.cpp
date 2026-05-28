@@ -9,6 +9,7 @@
 #include "../logger/Logger.hpp"
 #include "../utils/LogUtils.hpp"
 #include "Timeout.hpp"
+#include "CgiProcess.hpp"
 
 // helper for consistent logging
 static const char* stateToStr(Client::State s) {
@@ -33,7 +34,8 @@ Client::Client(int fd, EventLoop& loop, const ServerResources& resources)
       bytes_sent_(0),
       state_(kReading),
       keep_alive_(true),
-	  timeout_(TimeoutSeconds::kClient) {
+	  timeout_(TimeoutSeconds::kClient),
+	  pending_cgi_(NULL) {
     request_.setMaxBodySize(resources_.serverConfig().getMaxBodySize());
 }
 
@@ -42,6 +44,10 @@ Client::Client(int fd, EventLoop& loop, const ServerResources& resources)
  * Releases owned resources (socket managed by Fd).
  */
 Client::~Client() {
+	if (pending_cgi_) {
+		loop_.removeHandler(pending_cgi_); // eventloop deletes it
+		pending_cgi_ = NULL;
+	}
 }
 
 /**
@@ -242,6 +248,7 @@ const Router&Client::getRouter() const {
 }
 
 void Client::receiveResponse(const std::string& raw) {
+	pending_cgi_ = NULL; // CgiProcess still alive, EventLoop deletes via isDone()
 	response_.setRaw(raw);
 	bytes_sent_ = 0;
 	state_ = kWriting;
@@ -255,4 +262,8 @@ void Client::receiveError(HttpConstants::HttpError error) {
 	bytes_sent_ = 0;
 	state_ = kWriting;
 	loop_.modifyHandler(this, POLLOUT);
+}
+
+void Client::setPendingCgi(CgiProcess* cgi) {
+	pending_cgi_ = cgi;
 }
