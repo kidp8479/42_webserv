@@ -22,9 +22,10 @@ private:
 	bool createPipes(int stdin_pipe[2], int stdout_pipe[2]);
 	std::string resolveInterpreter(const Request& request,
 			const LocationConfig& location);
-	std::string buildScriptPath	(const Request& request, LocationConfig& config);
-	std::vector<std::string> buildEnvpStrings(const Request& request);
-	std::vector<char*> buildEnvp(const::vector<std::string>& env_strings);
+	std::string buildScriptPath	(const Request& request,
+			const LocationConfig& config);
+	std::vector<std::string> buildEnvStrings(const Request& request);
+	std::vector<char*> buildEnvp(const std::vector<std::string>& env_strings);
 
 	EventLoop& loop_;
 };

@@ -1,5 +1,6 @@
 #include "CgiSpawner.hpp"
-
+#include "../core/CgiProcess.hpp"
+#include "../core/Client.hpp"
 #include <unistd.h>
 
 CgiSpawner::CgiSpawner(EventLoop& loop) : loop_(loop) {}
@@ -9,8 +10,7 @@ CgiSpawner::~CgiSpawner() {}
 /**
  */
 bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
-		Client& client);
-{
+		Client& client) {
 	int stdin_pipe[2];
 	int stdout_pipe[2];
 
@@ -21,7 +21,7 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     // build script path
 	std::string script_path = buildScriptPath(request, location);
     // resolve interpreter
-	std::string interpreter = resolveInterpreter(request, script_path);
+	std::string interpreter = resolveInterpreter(request, location);
 	if (interpreter.empty()) {
 		return false;
 	}
@@ -62,15 +62,15 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
 						   //
 
 	// write post body
-	cosnt std::string& body = context.request.getBody();
+	const std::string& body = request.getBody();
 	if (!body.empty()) {
 		write(stdin_pipe[1], body.data(), body.size());
 	}
 	close(stdin_pipe[1]);
 
     // create Cgi Handler
-	CgiProcess* cgi = new CgiProcess(pid, stdout_pipe[0], context.client,
-		context.client.getLoop());
+	CgiProcess* cgi = new CgiProcess(pid, stdout_pipe[0], client,
+		client.getLoop());
 
 	// register with Client
 	client.setPendingCgi(cgi);
@@ -83,7 +83,7 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
 // during parsing/validation cgi paths should already be correct -
 // not empty and starting with '/'
 // ex: goal input: /cgi-bin/upload.py: output /usr/bin/python3
-std::string CgiSpawner::resolveInterpreter(const Request& request
+std::string CgiSpawner::resolveInterpreter(const Request& request,
 		const LocationConfig& location) {
 	const std::string& uri = request.getPath();
 
@@ -137,7 +137,7 @@ bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2]) {
  * turn root + uri into a valid filesystem path
  */
 std::string CgiSpawner::buildScriptPath(const Request& request,
-		LocationConfig& location) {
+		const LocationConfig& location) {
 	const std::string& root = location.getRoot();
 	const std::string& uri = request.getPath();
 
@@ -182,7 +182,7 @@ std::vector<std::string> CgiSpawner::buildEnvStrings(
  * Build environment that will be passed to execve() so CGI script can
  * learn about the HTTP request
  */
-std::vector<char*> CgiSpawner::buildEnvp(const::vector<std::string>& env_strings) {
+std::vector<char*> CgiSpawner::buildEnvp(const std::vector<std::string>& env_strings) {
 	std::vector<char*> envp;
 
 	for (size_t i = 0; i < env_strings.size(); ++i) {
