@@ -1,9 +1,5 @@
 #include "Handler.hpp"
 
-// yes you are allowed to do that :D this namespace is used to have access to a
-// map of mime types needed to fill Content-Type info for Response, used as
-// constants in the handler. In cpp98 you can't init a map with {"data:data"}
-// hence the function
 namespace {
 const size_t kReadBufferSize = 4096;
 // default fallback when mime type is unknown
