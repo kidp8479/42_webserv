@@ -20,11 +20,14 @@
 #include "../logger/Logger.hpp"
 #include "../utils/HttpConstants.hpp"
 
+class Client;
+class EventLoop;
+
 class Handler {
 public:
     static bool run(const Request& request, const LocationConfig& location,
                     Client& client);
-	void applyCgiResponse(const std::string& raw, Response& response);
+	static void applyCgiResponse(const std::string& raw, Response& response);
 
 private:
     Handler();

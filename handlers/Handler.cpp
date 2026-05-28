@@ -1,4 +1,7 @@
 #include "Handler.hpp"
+#include "../core/EventLoop.hpp"
+#include "../core/Client.hpp"
+#include "CgiSpawner.hpp"
 
 // yes you are allowed to do that :D this namespace is used to have access to a
 // map of mime types needed to fill Content-Type info for Response, used as
@@ -241,9 +244,10 @@ void Handler::handleReturn(HandlerContext& handler_context) {
 bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
     // TODO: implement fork/execve/pipe
 	try {
-		CgiSpawner Spawner(handler_context.loop);
+		CgiSpawner spawner(handler_context.loop);
 
-		if (!spawner.spawn(handler_context)) {
+		if (!spawner.spawn(handler_context.request, handler_context.location,
+				handler_context.client)) {
 			LOG_WARNING() << "[Handler] CGI spawn failed";
 			sendError(HttpConstants::kInternalServerError, handler_context);
 			return true; // error response is ready
@@ -261,7 +265,7 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 	size_t body_offset = 4;
 
 	if (separator == std::string::npos) {
-		separator == raw.find("\n\n");
+		separator = raw.find("\n\n");
 		body_offset = 2;
 	}
 	std::string header_block;
@@ -296,7 +300,7 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 		}
 		if (key == "Status") {
 			std::istringstream status_stream(value);
-			status_stream >> status;
+			status_stream >> status_code;
 			std::getline(status_stream, reason);
 			if (!reason.empty() && reason[0] == ' ') {
 				reason.erase(0, 1);
@@ -305,7 +309,7 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 			response.setHeader(key, value);
 		}
 	}
-	response.setStatus(status, reason);
+	response.setStatus(status_code, reason);
 	if (body.size() > 0) {
 		response.setHeader("Content-Length", Handler::toString(body.size()));
 	} else {
