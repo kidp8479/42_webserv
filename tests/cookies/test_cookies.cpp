@@ -115,3 +115,10 @@ TEST_F(ResponseCookieTestFixture, ResponseCookie_EmptyValue) {
     EXPECT_EQ(cookieList[0], "name=");
     EXPECT_EQ(cookieList[1], "theme=");
 }
+
+TEST_F(ResponseCookieTestFixture, ResponseCookie_ResetCookie) {
+    resp.setHeader("Set-Cookie", "name=bob");
+    resp.reset();
+    std::vector<std::string> cookieList = resp.getCookieList();
+    EXPECT_TRUE(cookieList.empty());
+}
