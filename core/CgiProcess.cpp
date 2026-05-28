@@ -13,6 +13,8 @@ CgiProcess::CgiProcess(pid_t pid, int read_fd, Client& client, EventLoop& loop) 
 	done_(false)
 {}
 
+CgiProcess::~CgiProcess() {}
+
 int CgiProcess::getFd() const {
 	return read_fd_.getFd();
 }
@@ -42,7 +44,7 @@ void CgiProcess::handle(short revents) {
 			finish();
 		}
 	}
-	if (revents & (POLLHUP | POLLHUP) {
+	if (revents & (POLLHUP | POLLHUP)) {
 		finish();
 	}
 }
