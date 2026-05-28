@@ -48,6 +48,7 @@ private:
     std::vector<std::string> cookies_;
 
     void updateRaw();
+    void addToCookie(std::string cookie_str);
 };
 
 #endif

@@ -218,6 +218,7 @@ std::string Request::getHeaderValue(const std::string key) const {
 /**
  * @brief Get Vector of Header Values corresponding to key.
  * @param key Header name to look for (case-insensitive).
+ * @return Vector of values in header. Is empty if header doesn't exist
  */
 std::vector<std::string> Request::getHeaderList(const std::string key) const {
     std::string key_lower(key);

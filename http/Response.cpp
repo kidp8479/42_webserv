@@ -49,6 +49,36 @@ static std::string setToLower(std::string& s) {
     return (s);
 }
 
+static std::string trimL(std::string& s, const char* t = " \t\n\r\f\v") {
+    s.erase(0, s.find_first_not_of(t));
+    return (s);
+}
+
+static std::string trimR(std::string& s, const char* t = " \t\n\r\f\v") {
+    s.erase(s.find_last_not_of(t) + 1);
+    return (s);
+}
+
+static std::string trim(std::string& s, const char* t = " \t\n\r\f\v") {
+    trimL(s, t);
+    return (trimR(s, t));
+}
+
+static std::vector<std::string> listCookie(const std::string s) {
+    std::string val(s), element;
+    std::vector<std::string> val_vect;
+
+    while (!val.empty()) {
+        size_t comma_pos = val.find(";");
+        element = val.substr(0, comma_pos);
+        val_vect.push_back(trim(element));
+        val.erase(0, comma_pos);
+        if (comma_pos != std::string::npos)
+            val.erase(0, 1);
+    }
+    return (val_vect);
+}
+
 /********************************* Builders *********************************/
 
 /**
@@ -143,7 +173,7 @@ void Response::setStatus(HttpConstants::HttpError error) {
 void Response::setHeader(const std::string& key, const std::string& value) {
     std::string low_key = key;
     if (setToLower(low_key) == "set-cookie")
-        cookies_.push_back(value);
+        addToCookie(value);
     headers_ += key + ": " + value + "\r\n";
     updateRaw();
 }
@@ -161,4 +191,21 @@ void Response::setBody(const std::string& body) {
  */
 void Response::updateRaw() {
     raw_ = status_ + headers_ + "\r\n" + body_;
+}
+
+void Response::addToCookie(std::string cookie_str) {
+    std::vector<std::string> cookie_list = listCookie(cookie_str);
+    if (cookie_list.empty() || cookie_list[0].empty())
+        return ;
+    size_t  equals_pos = cookie_list[0].find("=");
+    if (equals_pos == std::string::npos)
+        return ;
+    std::string name = cookie_list[0].substr(0, equals_pos);
+    std::string value = cookie_list[0].substr(equals_pos + 1);
+    trim(name);
+    trim (value);
+    if (name.empty())
+        return ;
+    
+    cookies_.push_back(name + "=" + value);
 }
