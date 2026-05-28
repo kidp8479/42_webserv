@@ -8,7 +8,8 @@ CgiSpawner::~CgiSpawner() {}
 
 /**
  */
-bool CgiSpawner::spawn(HandlerContext& context)
+bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
+		Client& client);
 {
 	int stdin_pipe[2];
 	int stdout_pipe[2];
@@ -18,14 +19,14 @@ bool CgiSpawner::spawn(HandlerContext& context)
 		return false;
 	}
     // build script path
-	std::string script_path = buildScriptPath(context);
+	std::string script_path = buildScriptPath(request, location);
     // resolve interpreter
-	std::string interpreter = resolveInterpreter(context, script_path);
+	std::string interpreter = resolveInterpreter(request, script_path);
 	if (interpreter.empty()) {
 		return false;
 	}
     // build env
-	std::vector<std::string> env_strings = buildEnvStrings(context);
+	std::vector<std::string> env_strings = buildEnvStrings(request);
 	std::vector<char*> envp = buildEnvp(env_strings);
 
     // fork
@@ -65,20 +66,26 @@ bool CgiSpawner::spawn(HandlerContext& context)
 	if (!body.empty()) {
 		write(stdin_pipe[1], body.data(), body.size());
 	}
+	close(stdin_pipe[1]);
 
-    // create CgiProcess
+    // create Cgi Handler
 	CgiProcess* cgi = new CgiProcess(pid, stdout_pipe[0], context.client,
 		context.client.getLoop());
+
+	// register with Client
+	client.setPendingCgi(cgi);
+
     // register in EventLoop
-	context.client.getLoop().addHandler(cgi, POLLIN);
+	loop_.addHandler(cgi, POLLIN);
     return true;
 }
 
 // during parsing/validation cgi paths should already be correct -
 // not empty and starting with '/'
 // ex: goal input: /cgi-bin/upload.py: output /usr/bin/python3
-std::string CgiSpawner::resolveInterpreter(HandlerContext& handler_context) {
-	const std::string& uri = handler_context.request.getPath();
+std::string CgiSpawner::resolveInterpreter(const Request& request
+		const LocationConfig& location) {
+	const std::string& uri = request.getPath();
 
 	//find extension from requested script
 	size_t dot_pos = uri.rfind('.');
@@ -90,7 +97,7 @@ std::string CgiSpawner::resolveInterpreter(HandlerContext& handler_context) {
 
 	// determine interpreter from extension
 	const std::map<std::string, std::string>& cgi_map =
-		handler_context.location.getCgiInterpreters();
+		location.getCgiInterpreters();
 
 	std::map<std::string, std::string>::const_iterator it =
 		cgi_map.find(extension);
@@ -129,10 +136,10 @@ bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2]) {
 /**
  * turn root + uri into a valid filesystem path
  */
-std::string CgiSpawner::buildScriptPath(const HandlerContext& context) {
-	std::string uri = context.request.getPath();
-	const std::string& root = context.location.getRoot();
-	const std::string& uri = context.request.getPath();
+std::string CgiSpawner::buildScriptPath(const Request& request,
+		LocationConfig& location) {
+	const std::string& root = location.getRoot();
+	const std::string& uri = request.getPath();
 
 	if (root.empty()) {
 		LOG_ERROR() << "[CgiSpawner] missing root";
