@@ -23,7 +23,7 @@ webserv/
 
 Each folder contains both `.hpp` and `.cpp` files for its domain. This keeps related code together and reduces merge conflicts when teammates work in parallel.
 
-### config/ — config file parsing
+### config/ - config file parsing
 
 3 passes orchestrated by `ConfigParser`:
 
@@ -31,29 +31,29 @@ Each folder contains both `.hpp` and `.cpp` files for its domain. This keeps rel
 2. `ConfigBuilder` - token sequence validation + fills `Config` object (normalizes `localhost` -> `127.0.0.1`)
 3. `ConfigValidator` - semantic validation (duplicate host:port, port range, required directives)
 
-### http/ — HTTP request and response
+### http/ - HTTP request and response
 
 `Request` parses raw HTTP/1.1 request bytes: method, URI, headers, body. `Response` builds the raw HTTP response: status line, headers, body. Both classes are owned by the `Client` state machine in `core/`.
 
-### core/ — event loop and connection management
+### core/ - event loop and connection management
 
 `Server` creates and binds listen sockets. `EventLoop` runs the poll() loop and dispatches events. `Client` is the per-connection state machine: reads request bytes, hands off to handlers, writes the response back.
 
-### handlers/ — HTTP method handlers
+### handlers/ - HTTP method handlers
 
 One handler class per HTTP method (GET, POST, DELETE) plus a `Router` that resolves the URI to the best matching location block using longest-prefix match. File upload via curl (raw POST body) works. Browser form upload (multipart/form-data) and CGI handler: WIP.
 
-### utils/ — shared utilities
+### utils/ - shared utilities
 
 MIME type detection, path resolution helpers, string utilities shared across domains.
 
-### logger/ — logging
+### logger/ - logging
 
 `Logger` singleton with log levels (INFO, DEBUG, WARNING). Color macros defined in `logger/colors.hpp`.
 
 ### Bonus (WIP)
 
-- Cookies and session management - not started
+- Cookies and session management
 - Multiple CGI interpreters - `.php` and `.py` already configured in `default.conf`, pending CGI handler completion
 
 ---
@@ -160,6 +160,7 @@ cd tests && make test
 cd tests && make test_builder
 cd tests && make test_tokenizer
 cd tests && make test_validator
+etc
 
 # clean
 make fclean && make
