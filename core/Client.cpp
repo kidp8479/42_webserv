@@ -36,7 +36,7 @@ Client::Client(int fd, EventLoop& loop, const ServerResources& resources)
       keep_alive_(true),
 	  timeout_(TimeoutSeconds::kClient),
 	  pending_cgi_(NULL) {
-    request_.setMaxBodySize(resources_.serverConfig().getMaxBodySize());
+    request_.setMaxBodySize(resources_.getServerConfig().getMaxBodySize());
 }
 
 /**
@@ -121,9 +121,10 @@ void Client::handle(short revents) {
     } catch (...) {  // universal fall back
 		LOG_ERROR() << "[Client] Internal Server Error";
 		if (state_ == kReading) {
-		receiveError(HttpConstants::kInternalServerError);
-    } else {
-		cleanup();
+			receiveError(HttpConstants::kInternalServerError);
+		} else {
+			cleanup();
+		}
 	}
 }
 
@@ -235,7 +236,7 @@ Response& Client::getResponse() {
 	return response_;
 }
 
-const ServerResources& Client::getResources() {
+const ServerResources& Client::getResources() const {
 	return resources_;
 }
 
@@ -262,6 +263,7 @@ void Client::setPendingCgi(CgiProcess* cgi) {
 
 void Client::onCgiFinished(const std::string& raw_cgi_output) {
 	pending_cgi_ = NULL;
+	timeout_.reset();
 	
 	try {
 		response_.reset();
