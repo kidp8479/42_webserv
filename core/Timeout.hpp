@@ -4,8 +4,8 @@
 #include <ctime>
 
 namespace TimeoutSeconds {
-	static const int kClient = 5; // set at 60, reduce value for testing
-	static const int kCGI = 30; // for later
+	static const int kClient = 60; // set at 60, reduce value for testing
+	static const int kCGI = 30;
 }
 
 // poll expect time in milliseconds
