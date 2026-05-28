@@ -34,6 +34,9 @@ private:
     struct HandlerContext {
         const Request& request;
         const LocationConfig& location;
+		const ServerConfig& server;
+		Response& response;
+		EventLoop& loop;
         Client& client;
     };
 
