@@ -256,6 +256,65 @@ bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
 	}
 }
 
+void Handler::applyCgiResponse(const std::string& raw, Response& response) {
+	size_t separator = raw.find("\r\n\r\n");
+	size_t body_offset = 4;
+
+	if (separator == std::string::npos) {
+		separator == raw.find("\n\n");
+		body_offset = 2;
+	}
+	std::string header_block;
+	std::string body;
+
+	if (separator != std::string::npos) {
+		header_block == raw.substr(0, separator);
+		body = raw.substr(separator, body_offset);
+	} else {
+		body = raw;
+	}
+	int status_code = 200;
+	std::string reason = "OK";
+
+	response.reset();
+
+	std::istringstream stream(header_block);
+	std::string line;
+
+	while (std::getline(stream, line)) {
+		if (!line.empty() && line[line.size() - 1] == '\r') {
+			line.erase(line.size() - 1);
+		}
+		size_t colon = line.find(':');
+		if (colon == std::string::npos) {
+			continue;
+		}
+		std::string key = line.substr(0, colon);
+		std::string value = line.substr(colon + 1);
+		while (!value.empty() && value[0] == ' ') {
+			value.erase(0, 1);
+		}
+		if (key == "Status") {
+			std::istringstream status_stream(value);
+			status_stream >> status;
+			std::getline(status_stream, reason);
+			if (!reason.empty() && reason[0] == ' ') {
+				reason.erase(0, 1);
+			}
+		} else {
+			response.setHeader(key, value);
+		}
+	}
+	response.setStatus(status, reason);
+	if (body.size() > 0) {
+		response.setHeader("Content-Length", Handler::toString(body.size()));
+	} else {
+		response.setHeader("Content-Length", "0");
+	}
+	response.setBody(body);
+}
+
+
 /**
  * @brief Handles upload location blocks. Writes the request body to disk.
  * @note Filename extracted from URI if present, falls back to

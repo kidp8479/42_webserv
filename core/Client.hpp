@@ -32,11 +32,12 @@ public:
 	const Router& getRouter() const;
 
 	// called by CgiProcess when it has a result
-	void receiveResponse(const std::string& raw);
+	void onCgiFinished(const std::string& raw_cgi_output);
 
 	// called by CgiProcess on timeout or error
 	void receiveError(HttpConstants::HttpError error);
 	void setPendingCgi(CgiProcess* cgi);
+
 
 private:
     Client(const Client&);

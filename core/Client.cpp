@@ -113,14 +113,14 @@ void Client::handle(short revents) {
     } catch (const std::exception& e) {
 
         LOG_ERROR() << "[Client] exception: " << e.what();
-		if (state == kReading) {
+		if (state_ == kReading) {
 			receiveError(HttpConstants::kInternalServerError);
 		} else {
 			cleanup();
 		}
     } catch (...) {  // universal fall back
 		LOG_ERROR() << "[Client] Internal Server Error";
-		if (state == kReading) {
+		if (state_ == kReading) {
 		receiveError(HttpConstants::kInternalServerError);
     } else {
 		cleanup();
@@ -247,14 +247,6 @@ const Router&Client::getRouter() const {
 	return resources_.getRouter();
 }
 
-void Client::receiveResponse(const std::string& raw) {
-	pending_cgi_ = NULL; // CgiProcess still alive, EventLoop deletes via isDone()
-	response_.setRaw(raw);
-	bytes_sent_ = 0;
-	state_ = kWriting;
-	loop_.modifyHandler(this, POLLOUT);
-}
-
 void Client::receiveError(HttpConstants::HttpError error) {
 	keep_alive_ = false; // dont reuse connection after cgi failure
 	response_.buildError(error);
@@ -267,3 +259,24 @@ void Client::receiveError(HttpConstants::HttpError error) {
 void Client::setPendingCgi(CgiProcess* cgi) {
 	pending_cgi_ = cgi;
 }
+
+void Client::onCgiFinished(const std::string& raw_cgi_output) {
+	pending_cgi_ = NULL;
+	
+	try {
+		response_.reset();
+		Handler::applyCgiResponse(raw_cgi_output, response_);
+
+		if (!keep_alive_) {
+			response_.setHeader("Connection", "close");
+		}
+		bytes_sent_ = 0;
+		state_ = kWriting;
+
+		loop_.modifyHandler(this, POLLOUT);
+	} catch (const std::exception& e) {
+		LOG_ERROR() << "[Client] failed to apply CGI response: " << e.what();
+		receiveError(HttpConstants::kInternalServerError);
+	}
+}
+

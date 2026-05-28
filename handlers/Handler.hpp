@@ -24,6 +24,7 @@ class Handler {
 public:
     static bool run(const Request& request, const LocationConfig& location,
                     Client& client);
+	void applyCgiResponse(const std::string& raw, Response& response);
 
 private:
     Handler();
