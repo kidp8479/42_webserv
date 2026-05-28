@@ -156,9 +156,8 @@ std::string CgiSpawner::buildScriptPath(const Request& request,
 }
 
 std::vector<std::string> CgiSpawner::buildEnvStrings(
-		const HandlerContext& context) {
+		const Request& request) {
 	std::vector<std::string> env;
-	const Request& request = context.request;
 
 	env.push_back("REQUEST_METHOD=" + request.getMethod());
 	env.push_back("SCRIPT_NAME=" + request.getPath());
