@@ -87,8 +87,7 @@ Each demo conf is self-contained and focuses on one feature. Run the server and 
 
 ### AI usage
 
-Claude (claude.ai / Claude Code CLI) was used throughout the project as a socratic tutor and technical assistant:
-
-- Debugging: identifying root causes of keep-alive, fd leak, and request parsing bugs
-- Documentation: doxygen comments, log message conventions, README
+Claude was used throughout the project as a socratic tutor and technical assistant:
+- used as a personal teacher to understand concepts before implementing them, not to generate code directly 
+- Documentation: help format doxygen comments, drafting README/DEV doc
 - Testing: designing curl test sequences, analyzing siege stress test results
