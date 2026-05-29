@@ -4,19 +4,23 @@
 
 <!DOCTYPE html>
 <html>
-<head><title>webserv - delete</title></head>
+<head>
+    <title>webserv - delete</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
 <body>
-    <h1>webserv - delete</h1>
-    <p>42 school project - HTTP/1.1 server in C++98</p>
-    <p>curl test: <code>curl -X DELETE http://127.0.0.1:8080/delete/files/file1.txt</code></p>
-    <p>click a filename below to delete it from the server. the server returns <code>204 No Content</code> on success.</p>
-    <p><a href="/delete/files/">browse files available for deletion</a></p>
-    <hr>
-    <h2>delete a file</h2>
-    <input type="text" id="filename" placeholder="filename to delete" />
-    <button onclick="deleteFile()">DELETE</button>
-    <!-- result paragraph is empty on load, filled by JS after the server responds -->
-    <p id="result"></p>
+    <div class="framed danger">
+        <h2>webserv - delete</h2>
+        <p class="message"><span>webserv:</span> Delete a file from the server. Returns 204 No Content on success.</p>
+        <p class="message">curl: <code>curl -X DELETE http://127.0.0.1:8080/delete/files/file1.txt</code></p>
+        <div><a href="/delete/files/" class="button">Browse files</a></div>
+        <div><a href="/" class="button">Back to home</a></div>
+        <hr>
+        <input type="text" id="filename" placeholder="filename to delete" />
+        <button onclick="deleteFile()">DELETE</button>
+        <!-- result paragraph is empty on load, filled by JS after the server responds -->
+        <p id="result"></p>
     <script>
         function deleteFile() {
             // read whatever the user typed in the input field
@@ -39,5 +43,6 @@
                 });
         }
     </script>
+    </div>
 </body>
 </html>

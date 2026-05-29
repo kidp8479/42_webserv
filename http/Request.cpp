@@ -355,16 +355,16 @@ void Request::setMaxBodySize(size_t max_body_size) {
 }
 
 /**
- * @brief Sets error to true along with error message.
- * @param int Error code to set error_code_ to.
- * @param message Error message to set error_message_ to.
+ * @brief Sets error state from an HttpError struct, marks request complete.
+ * @param http_error Error containing the code and reason to record.
  */
 void Request::setError(HttpConstants::HttpError http_error) {
     error_ = true;
     error_code_ = http_error.code;
     error_message_ = http_error.reason;
     complete_ = true;
-    LOG_WARNING() << "[Request] error " << error_code_ << " " << error_message_;
+    LOG_WARNING() << "[Request] error: " << RED << error_code_ << " "
+                  << error_message_ << RESET;
 }
 
 /**
@@ -476,7 +476,8 @@ void Request::parseBody() {
     } else if (headers_.count("content-length") > 0)
         parseBodyContentLen(headers_["content-length"]);
     else {
-        LOG_INFO() << "[Request] fully parsed without message body";
+        LOG_INFO() << BR_CYN
+            "[Request] fully parsed without message body" RESET;
         return (setComplete());
     }
 }
@@ -508,8 +509,9 @@ void Request::parseBodyContentLen(std::string len) {
     }
     if (body_.size() != len_value)
         return;  // Reached end of stream - incomplete body
-    LOG_INFO() << "[Request] fully parsed "
-                  "using Content-Length for message body";
+    LOG_INFO() << BR_CYN
+        "[Request] fully parsed "
+        "using Content-Length for message body" RESET;
     return (setComplete());
 }
 
@@ -554,8 +556,9 @@ void Request::parseBodyChunked() {
 
         if (len_value == 0) {
             /*Reached null chunk - body parsing finished*/
-            LOG_INFO() << "[Request] fully parsed "
-                          "with chunked encoding for message body";
+            LOG_INFO() << BR_CYN
+                "[Request] fully parsed "
+                "with chunked encoding for message body" RESET;
             return (setComplete());
         }
     }
