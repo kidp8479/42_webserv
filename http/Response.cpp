@@ -37,6 +37,7 @@ Response& Response::operator=(const Response& other) {
         headers_ = other.headers_;
         body_ = other.body_;
         has_cookies_ = other.has_cookies_;
+        cookies_ = other.cookies_;
     }
     return (*this);
 }
@@ -129,10 +130,10 @@ bool Response::hasCookies() const {
 }
 
 /**
- * @brief Creates a copy of the string vector of cookies.
- * @return Copy of cookie vector
+ * @brief Creates a copy of the cookie map.
+ * @return Copy of cookie map
  */
-std::vector<std::string> Response::getCookieList() const {
+const std::map<std::string, std::string>& Response::getCookieList() const {
     return (cookies_);
 }
 
@@ -146,8 +147,8 @@ void Response::reset() {
     status_.clear();
     headers_.clear();
     body_.clear();
-    cookies_.clear();
     has_cookies_ = false;
+    cookies_.clear();
 }
 
 /**
@@ -220,6 +221,6 @@ void Response::addToCookie(std::string cookie_str) {
     if (name.empty())
         return ;
     
-    cookies_.push_back(name + "=" + value);
+    cookies_[name] = value;
     has_cookies_ = true;
 }

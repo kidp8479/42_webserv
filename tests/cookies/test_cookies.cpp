@@ -64,25 +64,25 @@ protected:
 TEST_F(ResponseCookieTestFixture, ResponseCookie_GetCookieList) {
     resp.setHeader("Set-Cookie", "name=bob");
     EXPECT_TRUE(resp.hasCookies());
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_EQ(cookieList.size(), (size_t) 1);
-    EXPECT_EQ(cookieList[0], "name=bob");
+    EXPECT_EQ(cookieList["name"], "bob");
 }
 
 TEST_F(ResponseCookieTestFixture, ResponseCookie_TrimCookie) {
     resp.setHeader("Set-Cookie", " name = bob ");
     EXPECT_TRUE(resp.hasCookies());
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_EQ(cookieList.size(), (size_t) 1);
-    EXPECT_EQ(cookieList[0], "name=bob");
+    EXPECT_EQ(cookieList["name"], "bob");
 }
 
 TEST_F(ResponseCookieTestFixture, ResponseCookie_IgnoreExtra) {
     resp.setHeader("Set-Cookie", "name=bob; Max-Age=200; HttpOnly");
     EXPECT_TRUE(resp.hasCookies());
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_EQ(cookieList.size(), (size_t) 1);
-    EXPECT_EQ(cookieList[0], "name=bob");
+    EXPECT_EQ(cookieList["name"], "bob");
 }
 
 TEST_F(ResponseCookieTestFixture, ResponseCookie_SetCookiesPlural) {
@@ -90,15 +90,15 @@ TEST_F(ResponseCookieTestFixture, ResponseCookie_SetCookiesPlural) {
     resp.setHeader("Set-Cookie", "theme=light");
     resp.setHeader("Set-Cookie", "word=abc123");
     EXPECT_TRUE(resp.hasCookies());
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_EQ(cookieList.size(), (size_t) 3);
-    EXPECT_EQ(cookieList[0], "name=bob");
-    EXPECT_EQ(cookieList[1], "theme=light");
-    EXPECT_EQ(cookieList[2], "word=abc123");
+    EXPECT_EQ(cookieList["name"], "bob");
+    EXPECT_EQ(cookieList["theme"], "light");
+    EXPECT_EQ(cookieList["word"], "abc123");
 }
 
 TEST_F(ResponseCookieTestFixture, ResponseCookie_NoCookie) {
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_FALSE(resp.hasCookies());
     EXPECT_TRUE(cookieList.empty());
 }
@@ -109,7 +109,7 @@ TEST_F(ResponseCookieTestFixture, ResponseCookie_InvalidCookieString) {
     resp.setHeader("Set-Cookie", "=bob");
     resp.setHeader("Set-Cookie", "       =bob");
     EXPECT_FALSE(resp.hasCookies());
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_TRUE(cookieList.empty());
 }
 
@@ -117,10 +117,10 @@ TEST_F(ResponseCookieTestFixture, ResponseCookie_EmptyValue) {
     resp.setHeader("Set-Cookie", "name=");
     resp.setHeader("Set-Cookie", "theme=    ");
     EXPECT_TRUE(resp.hasCookies());
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_EQ(cookieList.size(), (size_t) 2);
-    EXPECT_EQ(cookieList[0], "name=");
-    EXPECT_EQ(cookieList[1], "theme=");
+    EXPECT_EQ(cookieList["name"], "");
+    EXPECT_EQ(cookieList["theme"], "");
 }
 
 TEST_F(ResponseCookieTestFixture, ResponseCookie_ResetCookie) {
@@ -128,6 +128,6 @@ TEST_F(ResponseCookieTestFixture, ResponseCookie_ResetCookie) {
     EXPECT_TRUE(resp.hasCookies());
     resp.reset();
     EXPECT_FALSE(resp.hasCookies());
-    std::vector<std::string> cookieList = resp.getCookieList();
+    std::map<std::string, std::string> cookieList = resp.getCookieList();
     EXPECT_TRUE(cookieList.empty());
 }

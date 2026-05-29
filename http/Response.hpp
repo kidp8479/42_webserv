@@ -1,6 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
+#include <map>
 #include <sstream>
 #include <string>
 
@@ -27,7 +28,7 @@ public:
 
     const std::string& getRaw() const;
     bool hasCookies() const;
-    std::vector<std::string> getCookieList() const;
+    const std::map<std::string, std::string>& getCookieList() const;
 
     void reset();
 
@@ -45,7 +46,7 @@ private:
     std::string body_;
 
     bool has_cookies_;
-    std::vector<std::string> cookies_;
+    std::map<std::string, std::string> cookies_;
 
     void updateRaw();
     void addToCookie(std::string cookie_str);
