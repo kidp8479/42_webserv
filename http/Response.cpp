@@ -36,6 +36,7 @@ Response& Response::operator=(const Response& other) {
         status_ = other.status_;
         headers_ = other.headers_;
         body_ = other.body_;
+        has_cookies_ = other.has_cookies_;
     }
     return (*this);
 }
