@@ -44,7 +44,7 @@ void CgiProcess::handle(short revents) {
 			finish();
 		}
 	}
-	if (revents & (POLLHUP | POLLHUP)) {
+	if (revents & (POLLHUP | POLLERR)) {
 		finish();
 	}
 }
