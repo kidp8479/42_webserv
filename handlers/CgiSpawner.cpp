@@ -45,11 +45,13 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
 		close(stdout_pipe[0]);
 
 		std::string dir = script_path.substr(0, script_path.rfind('/'));
+		std::string filename = script_path.substr(script_path.rfind('/') + 1);
+
 		chdir(dir.c_str());
 
 		char* argv[] = {
 			const_cast<char*>(interpreter.c_str()),
-			const_cast<char*>(script_path.c_str()),
+			const_cast<char*>(filename.c_str()),
 			NULL
 		};
 		//  execve()
@@ -135,24 +137,42 @@ bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2]) {
 
 /**
  * turn root + uri into a valid filesystem path
+ * example of a cgi request
+ * GET /cgi-bin/hello.py HTTP/1.1
+ * Host: location:8086
+ * after GET it's followed by SPACE and then TARGET beginning with /
  */
 std::string CgiSpawner::buildScriptPath(const Request& request,
 		const LocationConfig& location) {
 	const std::string& root = location.getRoot();
 	const std::string& uri = request.getPath();
+	const std::string& prefix = location.getPath();
 
 	if (root.empty()) {
 		LOG_ERROR() << "[CgiSpawner] missing root";
+		// is root empty checked at validation?
 		throw std::runtime_error("[CGI] missing root");
 	}
+	//TARGET must begin with '/'
 	if (uri.empty() || uri[0] != '/') {
 		LOG_ERROR() << "[CgiSpawner] invalid request uri";
 		throw std::runtime_error("[CGI] invalid request uri");
 	}
-	if (!root.empty() && root[root.size() - 1] == '/') {
-		return root + uri.substr(1);
+	std::string relative_uri = uri;
+	//strip location prefix
+	if (uri.compare(0, prefix.size(), prefix) == 0) {
+		relative_uri = uri.substr(prefix.size());
 	}
-	return root + uri;
+	// ensure leading '/'
+	if (relative_uri.empty() || relative_uri[0] != '/') {
+		relative_uri = "/" + relative_uri;
+	}
+	// avoid double '/'
+	if (!root.empty() && root[root.size() - 1] == '/') {
+		return root.substr(0, root.size() - 1) + relative_uri;
+	}
+
+	return root + relative_uri;
 }
 
 std::vector<std::string> CgiSpawner::buildEnvStrings(
