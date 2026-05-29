@@ -261,6 +261,10 @@ bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
 }
 
 void Handler::applyCgiResponse(const std::string& raw, Response& response) {
+	LOG_DEBUG() << "[CGI] raw size=" << raw.size();
+	LOG_DEBUG() << "[CGI] raw preview:\n"
+	            << raw.substr(0, 200);
+
 	size_t separator = raw.find("\r\n\r\n");
 	size_t body_offset = 4;
 
@@ -272,8 +276,8 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 	std::string body;
 
 	if (separator != std::string::npos) {
-		header_block == raw.substr(0, separator);
-		body = raw.substr(separator, body_offset);
+		header_block = raw.substr(0, separator);
+		body = raw.substr(separator + body_offset);
 	} else {
 		body = raw;
 	}
@@ -281,6 +285,7 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 	std::string reason = "OK";
 
 	response.reset();
+	LOG_DEBUG() << "[CGI] parsing headers...";
 
 	std::istringstream stream(header_block);
 	std::string line;
@@ -289,6 +294,8 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 		if (!line.empty() && line[line.size() - 1] == '\r') {
 			line.erase(line.size() - 1);
 		}
+		LOG_DEBUG() << "[CGI] header line: " << line;
+
 		size_t colon = line.find(':');
 		if (colon == std::string::npos) {
 			continue;
@@ -298,6 +305,7 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 		while (!value.empty() && value[0] == ' ') {
 			value.erase(0, 1);
 		}
+		LOG_DEBUG() << "[CGI] header key=" << key << " value=" << value;
 		if (key == "Status") {
 			std::istringstream status_stream(value);
 			status_stream >> status_code;
@@ -305,6 +313,8 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 			if (!reason.empty() && reason[0] == ' ') {
 				reason.erase(0, 1);
 			}
+			LOG_DEBUG() << "[CGI] parsed Status="
+			            << status_code << " reason=" << reason;
 		} else {
 			response.setHeader(key, value);
 		}
@@ -316,6 +326,8 @@ void Handler::applyCgiResponse(const std::string& raw, Response& response) {
 		response.setHeader("Content-Length", "0");
 	}
 	response.setBody(body);
+	LOG_DEBUG() << "[CGI] FINAL RAW RESPONSE:\n"
+	            << response.getRaw().substr(0, 300);
 }
 
 
