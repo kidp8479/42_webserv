@@ -16,8 +16,6 @@
 
 #include "../logger/Logger.hpp"
 
-// note: std::pair was considered but rejected - struct gives named fields
-// (.value, .line) over .first/.second, and leaves room to add fields later
 struct Token {
     std::string value;
     size_t line;
@@ -27,7 +25,7 @@ struct Token {
  * @brief Phase 1 of config parsing: tokenizes a .conf file into a flat token
  * list.
  *
- * Validates the file (existence, permissions, extension, emptiness) then splits
+ * Validates the file (existence, readability, extension, emptiness) then splits
  * its content into tokens on whitespace, '{', '}', and ';'.
  * Comments starting with '#' are ignored.
  *

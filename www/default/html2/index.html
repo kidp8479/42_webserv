@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html>
-<head><title>webserv - port 8081</title></head>
+<head>
+    <title>webserv - port 8081</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
 <body>
-    <h1>webserv - port 8081</h1>
-    <p>42 school project - HTTP server in C++98</p>
-    <p>You are viewing content served on another port 8081.</p>
-    <p>This demonstrates that our server is able to listen on multiple ports, as required by the subject.</p>
+    <div class="framed secondary">
+        <h2>webserv - port 8081</h2>
+        <p class="message"><span>webserv:</span> You are viewing content served on port 8081.</p>
+        <p class="message">This demonstrates that the server can listen on multiple ports.</p>
+        <a href="http://127.0.0.1:8080/" class="button">Back to port 8080</a>
+    </div>
 </body>
 </html>

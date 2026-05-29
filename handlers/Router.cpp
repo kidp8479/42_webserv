@@ -46,15 +46,10 @@ const LocationConfig& Router::resolve(const std::string& uri) const {
     size_t best_path_len = 0;
 
     for (it = location_blocks.begin(); it != location_blocks.end(); it++) {
-        // uri = "/api/users/123"
-        // path = "/api"
-        // uri.compare(0, path.size(), path)
-        // - compares 4 first chars of uri to path
-        // - "/api" == "/api" => returns 0 => is prefix
-
-        // normalize: strip trailing slash from location path for comparison
-        // (except solo "/") ex: location "/api/users/" must match URI
-        // "/api/users"
+        // uri.compare(0, path.size(), path) checks if path is a prefix of uri.
+        // strip trailing slash from location path before comparison (except
+        // "/"), so "/api/users/" and "/api/users" both match URI
+        // "/api/users/123"
         std::string path = it->getPath();
         if (path.size() > 1 && path[path.size() - 1] == '/') {
             path = path.substr(0, path.size() - 1);

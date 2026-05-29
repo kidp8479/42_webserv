@@ -14,11 +14,12 @@ EventLoop::EventLoop() {
 }
 
 EventLoop::~EventLoop() {
-    LOG_INFO() << "[EventLoop] shutting down, cleaning up " << handlers_.size()
-               << " handlers";
+    LOG_INFO() << BR_CYN "[EventLoop] shutting down, cleaning up "
+               << handlers_.size() << " handlers" << RESET;
     for (size_t i = 0; i < handlers_.size(); i++) {
-        LOG_DEBUG() << "[EventLoop] destroying handler=" << handlers_[i]->name()
-                    << " fd=" << poll_fds_[i].fd;
+        LOG_DEBUG() << BR_YEL "[EventLoop] destroying handler="
+                    << handlers_[i]->name() << " fd=" << poll_fds_[i].fd
+                    << RESET;
         delete handlers_[i];
     }
     handlers_.clear();
@@ -40,9 +41,9 @@ void EventLoop::addHandler(IEventHandler* handler, short events) {
     poll_fds_.push_back(p);
     handlers_.push_back(handler);
 
-    LOG_DEBUG() << "[EventLoop] add fd=" << p.fd
+    LOG_DEBUG() << BR_YEL "[EventLoop] add fd=" << p.fd
                 << " events=" << LogUtils::pollToStr(events)
-                << " handler=" << handler->name();
+                << " handler=" << handler->name() << RESET;
 }
 
 /**
@@ -52,8 +53,8 @@ void EventLoop::addHandler(IEventHandler* handler, short events) {
 void EventLoop::modifyHandler(IEventHandler* handler, short events) {
     for (size_t i = 0; i < handlers_.size(); i++) {
         if (handlers_[i] == handler) {
-            LOG_DEBUG() << "[EventLoop] modify fd=" << poll_fds_[i].fd
-                        << " events=" << LogUtils::pollToStr(events);
+            LOG_DEBUG() << BR_YEL "[EventLoop] modify fd=" << poll_fds_[i].fd
+                        << " events=" << LogUtils::pollToStr(events) << RESET;
 
             poll_fds_[i].events = events;
             return;
@@ -65,8 +66,8 @@ void EventLoop::removeHandler(IEventHandler* handler) {
     // Loop through all registered handlers to find the target
     for (size_t i = 0; i < handlers_.size(); i++) {
         if (handlers_[i] == handler) {
-            LOG_INFO() << "[EventLoop] remove fd=" << poll_fds_[i].fd
-                       << " handler=" << handler->name();
+            LOG_INFO() << BR_CYN "[EventLoop] remove fd=" << poll_fds_[i].fd
+                       << " handler=" << handler->name() << RESET;
             // Index of last element in vectors
             size_t last = handlers_.size() - 1;
             // If the element to remove is not the last one,
@@ -107,13 +108,14 @@ int EventLoop::wait(int timeout) {
     //  the number returned is how many revents filled out
     if (ret == -1) {
         if (errno == EINTR) {
-            LOG_WARNING() << "System call interrupted";
+            LOG_WARNING() << "[EventLoop] system call interrupted";
             return 0;  // normal interrupt
         }
         LOG_ERROR() << "[EventLoop] poll() failed: " << strerror(errno);
         return -1;  // real error
     }
-    LOG_DEBUG() << "[EventLoop] poll returned ready_fds=" << ret;
+    LOG_DEBUG() << BR_YEL "[EventLoop] poll returned ready_fds=" << ret
+                << RESET;
     return ret;
 }
 
@@ -146,8 +148,8 @@ void EventLoop::dispatch() {
 void EventLoop::cleanup() {
     for (size_t i = 0; i < handlers_.size();) {
         if (handlers_[i]->isDone()) {
-            LOG_DEBUG() << "[EventLoop] removing fd=" << poll_fds_[i].fd
-                        << " handler=" << handlers_[i]->name();
+            LOG_DEBUG() << BR_YEL "[EventLoop] removing fd=" << poll_fds_[i].fd
+                        << " handler=" << handlers_[i]->name() << RESET;
             delete handlers_[i];
 
             size_t last = handlers_.size() - 1;

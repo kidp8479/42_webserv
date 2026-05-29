@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html>
-<head><title>webserv</title></head>
+<head>
+    <title>webserv</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
 <body>
-    <h1>webserv</h1>
-    <p>42 school project - HTTP/1.1 server in C++98</p>
-    <ul>
-        <li><a href="http://127.0.0.1:8081/">second server block (port 8081)</a></li>
-        <li><a href="/redirect">redirect demo (301 to /destination)</a></li>
-        <li><a href="/delete/">delete demo page</a></li>
-    </ul>
+    <div class="framed primary">
+        <h2>webserv</h2>
+        <p class="message"><span>webserv:</span> 42 school project - HTTP/1.1 server in C++98</p>
+        <div><a href="http://127.0.0.1:8081/" class="button">Port 8081</a><br></div>
+        <div><a href="/redirect" class="button">Redirect demo</a><br></div>
+        <div><a href="/delete/" class="button">Delete demo</a><br></div>
+        <div><a href="http://127.0.0.1:8080/coffee" class="button">Coffee please!</a><br></div>
+    </div>
 </body>
 </html>

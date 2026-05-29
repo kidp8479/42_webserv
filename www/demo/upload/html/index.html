@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html>
-<head><title>webserv - upload demo</title></head>
+<head>
+    <title>webserv - upload demo</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
 <body>
-    <h1>webserv - upload demo</h1>
-    <p>42 school project - HTTP/1.1 server in C++98</p>
-    <p>the server accepts raw file uploads via POST. use curl to test:</p>
-    <pre>curl -X POST http://127.0.0.1:8084/upload --data-binary @yourfile.txt</pre>
-    <p>if the upload succeeded, the server returns <code>201 Created</code> and the file is saved in <code>www/demo/upload/received/</code>.</p>
-    <p>browse uploaded files: <a href="/received/">http://127.0.0.1:8084/received/</a> (note the trailing slash)</p>
-    <p>curl: <code>curl -L http://127.0.0.1:8084/received</code> (-L follows the trailing slash redirect)</p>
-    <p>browser form upload (multipart/form-data) is handled by CGI - not yet implemented.</p>
+    <div class="framed primary">
+        <h2>webserv - upload demo</h2>
+        <p class="message"><span>webserv:</span> 42 school project - HTTP/1.1 server in C++98</p>
+        <p class="message">The server accepts raw file uploads via POST. Use curl to test:</p>
+        <p class="message"><code>curl -X POST http://127.0.0.1:8084/upload/filename.txt --data-binary @yourfile</code></p>
+        <p class="message">On success, the server returns <code>201 Created</code> and saves the file in <code>www/demo/upload/received/</code>.</p>
+        <div><a href="/received/" class="button">Browse uploaded files</a></div>
+        <p class="message">curl: <code>curl -L http://127.0.0.1:8084/received</code> (-L follows the trailing slash redirect)</p>
+    </div>
 </body>
 </html>

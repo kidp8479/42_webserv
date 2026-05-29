@@ -8,9 +8,8 @@
 
 /**
  * @class Request
- * @brief Manages request parsing and request data storage
- *
- * WIP Description
+ * @brief Parses and stores an HTTP/1.1 request incrementally. Feed raw bytes
+ *        via append(), poll isComplete() to know when parsing is done.
  */
 class Request {
 public:

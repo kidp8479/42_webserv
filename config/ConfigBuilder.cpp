@@ -22,14 +22,14 @@ ConfigBuilder::~ConfigBuilder() {
 }
 
 /**
- * @brief Logs an error and throws a std::runtime_error with a "Config: "
- * prefix.
+ * @brief Logs an error and throws a std::runtime_error with a "[ConfigBuilder]
+ * " prefix.
  *
- * @param msg The error message (without the "Config: " prefix)
+ * @param msg The error message (without the "[ConfigBuilder] " prefix)
  * @throws std::runtime_error always
  */
 void ConfigBuilder::configError(const std::string& msg) const {
-    std::string full = "Config: " + msg;
+    std::string full = "[ConfigBuilder] " + msg;
     LOG_ERROR() << full;
     throw std::runtime_error(full);
 }
