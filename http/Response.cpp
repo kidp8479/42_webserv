@@ -9,7 +9,7 @@
 /**
  * @brief Default Constructor.
  */
-Response::Response() {
+Response::Response() : has_cookies_(false) {
 }
 
 /**
@@ -120,6 +120,14 @@ const std::string& Response::getRaw() const {
 }
 
 /**
+ * @brief Check if response contains valid Set-Cookie values.
+ * @return True if cookies exist, false otherwise
+ */
+bool Response::hasCookies() const {
+    return (has_cookies_);
+}
+
+/**
  * @brief Creates a copy of the string vector of cookies.
  * @return Copy of cookie vector
  */
@@ -138,6 +146,7 @@ void Response::reset() {
     headers_.clear();
     body_.clear();
     cookies_.clear();
+    has_cookies_ = false;
 }
 
 /**
@@ -211,4 +220,5 @@ void Response::addToCookie(std::string cookie_str) {
         return ;
     
     cookies_.push_back(name + "=" + value);
+    has_cookies_ = true;
 }
