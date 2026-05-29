@@ -21,7 +21,7 @@ protected:
     
 };
 
-TEST_F(RequestCookieTestFixture, RequestCookie_GetCookieList) {
+TEST_F(RequestCookieTestFixture, RequestCookie_GetCookieHeader) {
     req.append(request_start, strlen(request_start));
     req.append(request_cookie, strlen(request_cookie));
     req.append(request_end, strlen(request_end));
@@ -48,12 +48,26 @@ TEST_F(RequestCookieTestFixture, RequestCookie_MoreCookies) {
     EXPECT_EQ(cookieList[4], "shape=circle");
 }
 
+TEST_F(RequestCookieTestFixture, RequestCookie_GetCookieList) {
+    req.append(request_start, strlen(request_start));
+    req.append(request_cookie, strlen(request_cookie));
+    req.append(request_end, strlen(request_end));
+    
+    std::map<std::string, std::string> cookieList = req.getCookieList();
+    EXPECT_EQ(cookieList.size(), (size_t) 3);
+    EXPECT_EQ(cookieList["theme"], "dark");
+    EXPECT_EQ(cookieList["login"], "name");
+    EXPECT_EQ(cookieList["test"], "42");
+}
+
 TEST_F(RequestCookieTestFixture, RequestCookie_NoCookieList) {
     req.append(request_start, strlen(request_start));
     req.append(request_end, strlen(request_end));
     
     std::vector<std::string> cookieList = req.getHeaderList("Cookie");
     EXPECT_TRUE(cookieList.empty());
+    std::map<std::string, std::string> cookieList2 = req.getCookieList();
+    EXPECT_TRUE(cookieList2.empty());
 }
 
 class ResponseCookieTestFixture : public ::testing::Test {

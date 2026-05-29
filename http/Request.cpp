@@ -233,6 +233,32 @@ std::vector<std::string> Request::getHeaderList(const std::string key) const {
 }
 
 /**
+ * @brief Get a map of cookie values if a Cookie header exists
+ * @return Map of cookie values suce that map[name] = value
+ */
+std::map<std::string, std::string> Request::getCookieList() const {
+    std::map<std::string, std::string> cookie_list;
+    std::vector<std::string> cookie_vals = getHeaderList("Cookie");
+    if (!cookie_vals.empty()) {
+        std::vector<std::string>::iterator c_it = cookie_vals.begin();
+        std::vector<std::string>::iterator c_ite = cookie_vals.end();
+        while (c_it != c_ite) {
+            size_t  equals_pos = c_it[0].find("=");
+            if (equals_pos != std::string::npos) {
+                std::string name = c_it[0].substr(0, equals_pos);
+                std::string value = c_it[0].substr(equals_pos + 1);
+                trim(name);
+                trim (value);
+                if (!name.empty())
+                    cookie_list[name] = value;
+            }
+            c_it++;
+        }
+    }
+    return (cookie_list);
+}
+
+/**
  * @brief Get constant reference to Request Headers.
  */
 const std::map<std::string, std::string>& Request::getHeaders() const {

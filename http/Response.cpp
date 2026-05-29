@@ -37,7 +37,7 @@ Response& Response::operator=(const Response& other) {
         headers_ = other.headers_;
         body_ = other.body_;
         has_cookies_ = other.has_cookies_;
-        cookies_ = other.cookies_;
+        cookie_jar_ = other.cookie_jar_;
     }
     return (*this);
 }
@@ -134,7 +134,7 @@ bool Response::hasCookies() const {
  * @return Copy of cookie map
  */
 const std::map<std::string, std::string>& Response::getCookieList() const {
-    return (cookies_);
+    return (cookie_jar_);
 }
 
 /********************************* Setters **********************************/
@@ -148,7 +148,7 @@ void Response::reset() {
     headers_.clear();
     body_.clear();
     has_cookies_ = false;
-    cookies_.clear();
+    cookie_jar_.clear();
 }
 
 /**
@@ -221,6 +221,6 @@ void Response::addToCookie(std::string cookie_str) {
     if (name.empty())
         return ;
     
-    cookies_[name] = value;
+    cookie_jar_[name] = value;
     has_cookies_ = true;
 }

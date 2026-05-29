@@ -74,6 +74,9 @@ private:
     static std::string toString(int code);
     static std::string toString(size_t n);
     static std::string getFileMimeType(const std::string& path);
+
+    // cookie utils
+    static std::string newSessionID();
 };
 
 #endif

@@ -46,7 +46,7 @@ private:
     std::string body_;
 
     bool has_cookies_;
-    std::map<std::string, std::string> cookies_;
+    std::map<std::string, std::string> cookie_jar_;
 
     void updateRaw();
     void addToCookie(std::string cookie_str);
