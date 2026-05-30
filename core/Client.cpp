@@ -190,10 +190,12 @@ void Client::write() {
 				if (!keep_alive_) {
 					response_.setHeader("Connection", "close");
 				}
+				state_ = kWriting;
+				loop_.modifyHandler(this, POLLOUT);
+			} else {
+				state_ = kWaitingCgi;
+				loop_.modifyHandler(this, 0);
 			}
-            state_ = kWriting;
-            loop_.modifyHandler(this, POLLOUT);
-            return;
         }
         // switch back to read mode
         loop_.modifyHandler(this, POLLIN);
