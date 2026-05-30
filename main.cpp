@@ -1,5 +1,6 @@
 #include <csignal>
 #include <cstdlib>
+#include <ctime>
 #include <stdexcept>
 
 #include "config/Config.hpp"
@@ -16,6 +17,8 @@
 int main(int argc, char** argv) {
     signal(SIGINT, handleSigInt);
     signal(SIGPIPE, SIG_IGN);
+    srand(static_cast<unsigned int>(
+        time(NULL)));  // seed for session ID generation
 
     if (argc > 3) {
         std::cerr << "usage: ./webserv [config file] [log level] (default "
