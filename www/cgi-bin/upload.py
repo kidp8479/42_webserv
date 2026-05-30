@@ -14,7 +14,7 @@ UPLOAD_DIR = os.path.join(
 
 def send_response(status, message):
     body = "<html><body><p>{}</p></body></html>".format(message)
-    sys.stdout.write("HTTP/1.1 {}\r\n".format(status))
+    sys.stdout.write("Status: 201 Create\r\n".format(status))
     sys.stdout.write("Content-Type: text/html\r\n")
     sys.stdout.write("Content-Length: {}\r\n".format(len(body)))
     sys.stdout.write("\r\n")
