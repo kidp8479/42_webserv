@@ -147,9 +147,16 @@ void EventLoop::dispatch() {
  */
 void EventLoop::cleanup() {
     for (size_t i = 0; i < handlers_.size();) {
-        if (handlers_[i]->isDone()) {
-            LOG_DEBUG() << BR_YEL "[EventLoop] removing fd=" << poll_fds_[i].fd
-                        << " handler=" << handlers_[i]->name() << RESET;
+        bool dead = handlers_[i]->isDone();
+        bool timeout = handlers_[i]->isTimedOut();
+
+        if (dead || timeout) {
+            if (timeout && !dead) {
+                LOG_WARNING() << "[EventLoop] timeout fd=" << poll_fds_[i].fd
+                              << " handler=" << handlers_[i]->name();
+            }
+            LOG_DEBUG() << "[EventLoop] removing fd=" << poll_fds_[i].fd
+                        << " handler=" << handlers_[i]->name();
             delete handlers_[i];
 
             size_t last = handlers_.size() - 1;

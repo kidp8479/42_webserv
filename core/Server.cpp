@@ -5,6 +5,7 @@
 #include "EventLoop.hpp"
 #include "ServerResources.hpp"
 #include "Signal.hpp"
+#include "Timeout.hpp"
 
 Server::Server(const Config& config) : config_(config), loop_() {
     setupListeners();
@@ -20,7 +21,7 @@ bool Server::start() {
     LOG_INFO() << BR_CYN "[Server] starting..." RESET;
     while (g_running) {
         // sleeps until something happens
-        int ready = loop_.wait(-1);
+        int ready = loop_.wait(TimeoutMs::kPollHeartbeat);
         if (!g_running) {
             break;
         }
@@ -28,10 +29,7 @@ bool Server::start() {
             LOG_ERROR() << "[Server] Event loop wait failed";
             return false;
         }
-        if (ready == 0)
-            continue;
         loop_.dispatch();
-        // remove dead handlers
         loop_.cleanup();
     }
     return true;

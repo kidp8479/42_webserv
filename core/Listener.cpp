@@ -149,3 +149,9 @@ bool Listener::isDone() const {
 const char* Listener::name() const {
     return "Listener";
 }
+
+// listeners never time out but it's part of the IEventHandler interface
+// so we just set to false
+bool Listener::isTimedOut() const {
+    return false;
+}

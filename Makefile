@@ -19,6 +19,7 @@ SRCS = main.cpp \
 	   config/ConfigValidator.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
+	   core/CgiProcess.cpp \
 	   core/Client.cpp \
 	   core/EventLoop.cpp \
 	   core/Fd.cpp \
@@ -26,6 +27,8 @@ SRCS = main.cpp \
 	   core/Server.cpp \
 	   core/ServerResources.cpp \
 	   core/Signal.cpp \
+	   core/Timeout.cpp \
+	   handlers/CgiSpawner.cpp \
 	   handlers/Handler.cpp \
 	   handlers/Router.cpp \
 	   http/Request.cpp \

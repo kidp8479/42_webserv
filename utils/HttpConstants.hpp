@@ -36,6 +36,7 @@ const HttpError kHeaderTooLarge = {431, "Request Header Fields Too Large"};
 // 5xx status code - server's side error response
 const HttpError kInternalServerError = {500, "Internal Server Error"};
 const HttpError kNotImplemented = {501, "Not Implemented"};
+const HttpError kGatewayTimeout = {504, "Gateway Timeout"};
 const HttpError kVersionNotSupported = {505, "HTTP Version Not Supported"};
 }  // namespace HttpConstants
 
