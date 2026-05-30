@@ -710,3 +710,14 @@ void Handler::generateDirectoryListing(const std::string& path,
     LOG_INFO() << BR_CYN "[Handler] directory listing of " << path
                << " served successfully" << RESET;
 }
+
+/**
+ * @brief Generates a unique cookie session ID from the current Unix timestamp.
+ * @return Hex string session ID.
+ * @note Uses time(NULL) cast to hex, simple and good enough for a demo.
+ */
+std::string Handler::newSessionID() {
+    std::ostringstream ss;
+    ss << std::hex << time(NULL);
+    return ss.str();
+}
