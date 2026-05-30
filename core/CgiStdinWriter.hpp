@@ -1,10 +1,11 @@
 #ifndef CGISTDINWRITER_HPP
-#define CGISTDINWRITE_HPP
+#define CGISTDINWRITER_HPP
 
 #include "IEventHandler.hpp"
 #include <string>
-#include "EventLoop.hpp"
 #include "Fd.hpp"
+
+class EventLoop;
 
 class CgiStdinWriter : public IEventHandler {
 public:
@@ -19,7 +20,7 @@ public:
 
 private:
 	CgiStdinWriter(const CgiStdinWriter&);
-	CgiStdinWriter operator=(const CgiStdinWriter&);
+	CgiStdinWriter& operator=(const CgiStdinWriter&);
 
 	Fd write_fd_;
 	std::string body_;
