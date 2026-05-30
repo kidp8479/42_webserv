@@ -244,6 +244,10 @@ const ServerResources& Client::getResources() const {
     return resources_;
 }
 
+ServerResources& Client::getResources() {
+    return resources_;
+}
+
 const ServerConfig& Client::getServerConfig() const {
     return resources_.getServerConfig();
 }

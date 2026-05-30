@@ -28,6 +28,8 @@ public:
     EventLoop& getLoop();
     Response& getResponse();
     const ServerResources& getResources() const;
+    ServerResources&
+    getResources();  // non-const overload for session management
     const ServerConfig& getServerConfig() const;
     const Router& getRouter() const;
 
