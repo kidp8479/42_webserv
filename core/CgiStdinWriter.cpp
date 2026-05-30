@@ -1,7 +1,7 @@
 #include "CgiStdinWriter.hpp"
 #include "../logger/Logger.hpp"
-//#include <cerrno>
 #include <string.h>
+#include <poll.h>
 
 CgiStdinWriter::CgiStdinWriter(int write_fd,
 		const std::string& body, EventLoop& loop) :
@@ -29,9 +29,7 @@ void CgiStdinWriter::handle(short revents) {
 			body_.size() - bytes_written_);
 	LOG_DEBUG() << "[CGI] wrote " << n << " bytes";
 	if (n < 0) {
-	    LOG_ERROR() << "[CGI] write failed errno="
-                << errno
-                << " (" << strerror(errno) << ")";
+		LOG_WARNING() << "[CgiStdinWriter] write failed, child likely died";
 		done_ = true; // child died pipe broken
 		return;
 	}
