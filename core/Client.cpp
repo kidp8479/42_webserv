@@ -62,7 +62,7 @@ void Client::handle(short revents) {
     try {
         LOG_DEBUG() << BR_YEL "[Client] ENTER handle fd=" << fd_.getFd()
                     << " state=" << stateToStr(state_)
-                    << " events=" << LogUtils::pollToStr(revents);
+                    << " events=" << LogUtils::pollToStr(revents) << RESET;
         if (revents & (POLLERR | POLLNVAL)) {
             return closeConnection("socket error/hangup", "WARNING");
         }
