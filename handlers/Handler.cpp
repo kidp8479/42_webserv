@@ -3,10 +3,6 @@
 #include "../core/Client.hpp"
 #include "CgiSpawner.hpp"
 
-// yes you are allowed to do that :D this namespace is used to have access to a
-// map of mime types needed to fill Content-Type info for Response, used as
-// constants in the handler. In cpp98 you can't init a map with {"data:data"}
-// hence the function
 namespace {
 const size_t kReadBufferSize = 4096;
 // default fallback when mime type is unknown
@@ -40,7 +36,7 @@ const std::map<std::string, std::string> kMimeTypes = initMimeTypes();
 bool Handler::run(const Request& request, const LocationConfig& location,
                   Client& client) {
     LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
-               << " -  target: " << request.getTarget() << RESET;
+               << " - target: " << request.getTarget() << RESET;
 
     HandlerContext handler_context = {
 		request,
@@ -440,7 +436,7 @@ void Handler::handleStatic(HandlerContext& handler_context) {
             sendError(HttpConstants::kForbidden, handler_context);
             return;
         }
-        deleteFile(full_path, handler_context);  // TODO
+        deleteFile(full_path, handler_context);
         return;
     }
 
@@ -571,8 +567,6 @@ void Handler::sendError(int code, const std::string& reason,
                     << it->second << RESET << " - serving fallback error page";
     }
     // no custom page found: build minimal hardcoded HTML response
-    // replace setRaw() calls with Charlie's setStatus/setHeader/setBody when
-    // available
     std::string body = "<html><body><h1>" + toString(code) + " " + reason +
                        "</h1></body></html>";
     handler_context.response.setStatus(code, reason);

@@ -60,49 +60,47 @@ int Client::getFd() const {
 
 void Client::handle(short revents) {
     try {
-        LOG_DEBUG() << "[Client] ENTER handle fd=" << fd_.getFd()
+        LOG_DEBUG() << BR_YEL "[Client] ENTER handle fd=" << fd_.getFd()
                     << " state=" << stateToStr(state_)
-                    << " events=" << LogUtils::pollToStr(revents);
+                    << " events=" << LogUtils::pollToStr(revents) << RESET;
+        // handle failures and disconnects (fatal socket states)
         if (revents & (POLLERR | POLLNVAL)) {
             return closeConnection("socket error/hangup", "WARNING");
         }
         bool peer_closed = false;
         if (revents & POLLHUP) {
-            LOG_INFO() << "[Client] POLLHUP fd=" << fd_.getFd();
+            LOG_INFO() << BR_CYN "[Client] POLLHUP fd=" << fd_.getFd() << RESET;
             peer_closed = true;
         }
         // read available data first
         if (revents & POLLIN && state_ == kReading) {
-            LOG_DEBUG() << "[Client] POLLIN detected";
+            LOG_DEBUG() << BR_YEL "[Client] POLLIN detected" RESET;
             read();
         }
         // request finished parsing
         if (state_ == kReading && request_.isComplete()) {
             keep_alive_ = request_.shouldKeepAlive();
-            LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
-                       << " switching " << stateToStr(state_) << " → kWriting";
-			
-			const LocationConfig fallback;
-            const LocationConfig& loc = request_.isError()
-				? fallback
-				: resources_.getRouter().resolve(request_.getPath());
+            LOG_INFO() << BR_CYN "[Client] request complete fd=" << fd_.getFd()
+                       << " switching " << stateToStr(state_) << " -> kWriting"
+                       << RESET;
 
-            bool response_ready = Handler::run(request_, loc, *this);
-            if (response_ready) {
-				if (!keep_alive_) {
-					response_.setHeader("Connection", "close");
-				}
-				state_ = kWriting;
-				LOG_DEBUG() << "[Client] enabling POLLOUT";
-				loop_.modifyHandler(this, POLLOUT);
-			} else {
-				state_ = kWaitingCgi;
-				loop_.modifyHandler(this, 0);
-			}
-		}
+            const LocationConfig fallback;
+            const LocationConfig& loc =
+                request_.isError()
+                    ? fallback
+                    : resources_.getRouter().resolve(request_.getPath());
+            Handler::run(request_, loc, resources_.getServerConfig(),
+                         response_);
+            if (!keep_alive_) {
+                response_.setHeader("Connection", "close");
+            }
+            state_ = kWriting;
+            LOG_DEBUG() << BR_YEL "[Client] enabling POLLOUT" RESET;
+            loop_.modifyHandler(this, POLLOUT);
+        }
         // write response
         if (revents & POLLOUT && state_ == kWriting) {
-            LOG_DEBUG() << "[Client] write triggered";
+            LOG_DEBUG() << BR_YEL "[Client] write triggered" RESET;
             write();
         }
         // if peer closed and we're still reading, we cant receive more bytes
@@ -131,7 +129,7 @@ void Client::handle(short revents) {
 void Client::read() {
     char buffer[kBufferSize];
 
-    LOG_DEBUG() << "[Client] read() fd=" << fd_.getFd();
+    LOG_DEBUG() << BR_YEL "[Client] read() fd=" << fd_.getFd() << RESET;
     ssize_t n = recv(fd_.getFd(), buffer, kBufferSize, 0);
     // client disconnected cleanly
     if (n == 0) {
@@ -148,8 +146,8 @@ void Client::read() {
 
 void Client::write() {
     const std::string& data = response_.getRaw();
-    LOG_DEBUG() << "[Client] write() fd=" << fd_.getFd()
-                << " sent=" << bytes_sent_ << "/" << data.size();
+    LOG_DEBUG() << BR_YEL "[Client] write() fd=" << fd_.getFd()
+                << " sent=" << bytes_sent_ << "/" << data.size() << RESET;
 
     ssize_t n = send(fd_.getFd(), data.c_str() + bytes_sent_,
                      data.size() - bytes_sent_, 0);
@@ -162,11 +160,13 @@ void Client::write() {
     LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
 
     if (bytes_sent_ >= data.size()) {
-        LOG_INFO() << "[Client] response complete fd=" << fd_.getFd();
+        LOG_INFO() << BR_CYN "[Client] response complete fd=" << fd_.getFd()
+                   << RESET;
         if (!keep_alive_) {
             return closeConnection("closing connection");
         }
-        LOG_INFO() << "[Client] keeping connection alive fd=" << fd_.getFd();
+        LOG_INFO() << BR_CYN "[Client] keeping connection alive fd="
+                   << fd_.getFd() << RESET;
         // reset for next request
         state_ = kReading;
         bytes_sent_ = 0;
@@ -197,8 +197,8 @@ void Client::write() {
 }
 
 void Client::cleanup() {
-    LOG_INFO() << "[Client] fd=" << fd_.getFd() << " switching "
-               << stateToStr(state_) << " → kDone";
+    LOG_INFO() << BR_CYN "[Client] fd=" << fd_.getFd() << " switching "
+               << stateToStr(state_) << " -> kDone" << RESET;
     state_ = kDone;
 }
 
@@ -216,7 +216,8 @@ void Client::closeConnection(const std::string& reason, const char* level) {
     } else if (std::string(level) == "ERROR") {
         LOG_ERROR() << "[Client] " << reason << " fd=" << fd_.getFd();
     } else {
-        LOG_INFO() << "[Client] " << reason << " fd=" << fd_.getFd();
+        LOG_INFO() << BR_CYN "[Client] " << reason << " fd=" << fd_.getFd()
+                   << RESET;
     }
     cleanup();
 }

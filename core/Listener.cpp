@@ -76,7 +76,7 @@ void Listener::setupSocket() {
     freeaddrinfo(res);
 
     if (listen(fd_.getFd(), SOMAXCONN) < 0) {
-        LOG_ERROR() << "Listener] listen() failed";
+        LOG_ERROR() << "[Listener] listen() failed";
         throw std::runtime_error("[Listener] listen() failed");
     }
 }

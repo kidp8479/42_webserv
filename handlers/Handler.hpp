@@ -62,9 +62,6 @@ private:
                                  HandlerContext& handler_context);
     static void deleteFile(const std::string& full_path,
                            HandlerContext& handler_context);
-    // default arguments: regular file serving uses 200 OK, sendError() passes
-    // the actual error code/reason so the custom error page is served with the
-    // correct status line instead of a misleading 200
     static void serveFile(
         const std::string& path, HandlerContext& handler_context,
         int code = HttpConstants::kOK.code,
