@@ -83,6 +83,7 @@ private:
 
     // cookie utils
     static std::string newSessionID();
+    static void handleCookieSession(HandlerContext& handler_context);
 };
 
 #endif

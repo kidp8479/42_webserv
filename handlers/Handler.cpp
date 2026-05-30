@@ -721,3 +721,38 @@ std::string Handler::newSessionID() {
     ss << std::hex << time(NULL);
     return ss.str();
 }
+
+void Handler::handleCookieSession(HandlerContext& handler_context) {
+    // read all cookies from the incoming request (returns empty map if no
+    // Cookie header)
+    const std::map<std::string, std::string> cookies =
+        handler_context.request.getCookieList();
+
+    // look for our session cookie - operator[] don't work on const map, needed
+    // to use find() instead
+    std::string session_id;
+    std::map<std::string, std::string>::const_iterator it =
+        cookies.find("session_id");
+    if (it != cookies.end())
+        session_id = it->second;  // found: session_id holds the client's
+                                  // existing session ID
+
+    // if no session_id cookie or session doesn't exist in the store, create a
+    // new one and send it back to the browser via Set-Cookie so it is stored
+    // and returned on future requests
+    if (session_id.empty() ||
+        !handler_context.client.getResources().hasSession(session_id)) {
+        session_id = newSessionID();
+        handler_context.client.getResources().createSession(session_id);
+        // Set-Cookie tells the browser to store this ID and send it back on
+        // every subsequent request
+        handler_context.response.setHeader("Set-Cookie",
+                                           "session_id=" + session_id);
+        LOG_INFO() << "[Handler] cookie session created and sent to browser: "
+                   << session_id;
+    } else {
+        // session already exists, browser sent us a valid session_id, nothing
+        // to create
+        LOG_DEBUG() << "[Handler] cookie session resumed: " << session_id;
+    }
+}
