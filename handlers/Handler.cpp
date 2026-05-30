@@ -177,6 +177,11 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
  * @return true if response handling completed or is in progress.
  */
 bool Handler::dispatch(HandlerContext& handler_context) {
+    // only handle cookie session for routes that need it
+    const std::string& path = handler_context.request.getPath();
+    if (path.find("/session") == 0)
+        handleCookieSession(handler_context);
+
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
         LOG_DEBUG() << BR_YEL "[Handler] return location block detected"
@@ -746,8 +751,9 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
         handler_context.client.getResources().createSession(session_id);
         // Set-Cookie tells the browser to store this ID and send it back on
         // every subsequent request
-        handler_context.response.setHeader("Set-Cookie",
-                                           "session_id=" + session_id);
+        // Path=/ ensures the browser replaces any existing session_id cookie
+        handler_context.response.setHeader(
+            "Set-Cookie", "session_id=" + session_id + "; Path=/");
         LOG_INFO() << "[Handler] cookie session created and sent to browser: "
                    << session_id;
     } else {
