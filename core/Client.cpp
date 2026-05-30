@@ -85,19 +85,23 @@ void Client::handle(short revents) {
                        << RESET;
 
             const LocationConfig fallback;
-            const LocationConfig& loc =
-                request_.isError()
+            const LocationConfig& loc = request_.isError()
                     ? fallback
                     : resources_.getRouter().resolve(request_.getPath());
-            Handler::run(request_, loc, resources_.getServerConfig(),
-                         response_);
-            if (!keep_alive_) {
-                response_.setHeader("Connection", "close");
-            }
-            state_ = kWriting;
-            LOG_DEBUG() << BR_YEL "[Client] enabling POLLOUT" RESET;
-            loop_.modifyHandler(this, POLLOUT);
-        }
+
+            bool response_ready = Handler::run(request_, loc, *this);
+            if (response_ready) {
+				if (!keep_alive_) {
+					response_.setHeader("Connection", "close");
+				}
+				state_ = kWriting;
+				LOG_DEBUG() << BR_YEL "[Client] enabling POLLOUT" RESET;
+				loop_.modifyHandler(this, POLLOUT);
+			} else {
+				state_ = kWaitingCgi;
+				loop_.modifyHandler(this, 0);
+			}
+		}
         // write response
         if (revents & POLLOUT && state_ == kWriting) {
             LOG_DEBUG() << BR_YEL "[Client] write triggered" RESET;
@@ -108,8 +112,8 @@ void Client::handle(short revents) {
         if (peer_closed && state_ == kReading) {
             return closeConnection("peer disconnected during read");
         }
-    } catch (const std::exception& e) {
 
+    } catch (const std::exception& e) {
         LOG_ERROR() << "[Client] exception: " << e.what();
 		if (state_ == kReading) {
 			receiveError(HttpConstants::kInternalServerError);
