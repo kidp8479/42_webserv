@@ -34,7 +34,7 @@ private:
     ServerConfig server_config_;
     Router router_;
     // Maps a session_id to its session data, ex:
-    //[id_a3f9] -> {"username":"bob", "logged_in":"true", ...}
+    // [id_a3f9] => {"username":"bob", "logged_in":"true", ...}
     std::map<std::string, std::map<std::string, std::string> > sessions_;
 };
 
