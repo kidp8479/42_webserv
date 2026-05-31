@@ -15,7 +15,7 @@ public:
     enum State { kReading, kWaitingCgi, kWriting, kDone };
     static const size_t kBufferSize = 4096;
 
-    explicit Client(int fd, EventLoop& loop, const ServerResources& resources);
+    explicit Client(int fd, EventLoop& loop, ServerResources& resources);
     ~Client();
 
     int getFd() const;
@@ -52,7 +52,11 @@ private:
     Fd fd_;
     // reference to the server's loop_
     EventLoop& loop_;
-    ServerResources resources_;
+    // reference to Listener's resources_ — all Clients on the same server share
+    // the same ServerResources instance, which is required for cookie session
+    // data (sessions_) to be visible across connections. Listener outlives all
+    // its Clients so the reference is always valid.
+    ServerResources& resources_;
 
     size_t bytes_sent_;
     State state_;

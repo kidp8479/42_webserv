@@ -27,7 +27,7 @@ static const char* stateToStr(Client::State s) {
     }
 }
 
-Client::Client(int fd, EventLoop& loop, const ServerResources& resources)
+Client::Client(int fd, EventLoop& loop, ServerResources& resources)
     : fd_(fd),
       loop_(loop),
       resources_(resources),

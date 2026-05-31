@@ -28,7 +28,9 @@ private:
     Fd fd_;
     // reference to server's loop_
     EventLoop& loop_;
-    const ServerResources resources_;
+    // non-const: Clients hold a reference to this instance, so cookie session
+    // writes (createSession, getSession) must be allowed on it
+    ServerResources resources_;
 };
 
 #endif
