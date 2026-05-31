@@ -20,6 +20,7 @@ SRCS = main.cpp \
        config/ServerConfig.cpp \
        config/LocationConfig.cpp \
 	   core/CgiProcess.cpp \
+	   core/CgiStdinWriter.cpp \
 	   core/Client.cpp \
 	   core/EventLoop.cpp \
 	   core/Fd.cpp \

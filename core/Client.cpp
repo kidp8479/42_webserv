@@ -63,6 +63,7 @@ void Client::handle(short revents) {
         LOG_DEBUG() << BR_YEL "[Client] ENTER handle fd=" << fd_.getFd()
                     << " state=" << stateToStr(state_)
                     << " events=" << LogUtils::pollToStr(revents) << RESET;
+        // handle failures and disconnects (fatal socket states)
         if (revents & (POLLERR | POLLNVAL)) {
             return closeConnection("socket error/hangup", "WARNING");
         }
@@ -79,8 +80,9 @@ void Client::handle(short revents) {
         // request finished parsing
         if (state_ == kReading && request_.isComplete()) {
             keep_alive_ = request_.shouldKeepAlive();
-            LOG_INFO() << "[Client] request complete fd=" << fd_.getFd()
-                       << " switching " << stateToStr(state_) << " → kWriting";
+            LOG_INFO() << BR_CYN "[Client] request complete fd=" << fd_.getFd()
+                       << " switching " << stateToStr(state_) << " -> kWriting"
+                       << RESET;
 
             const LocationConfig fallback;
             const LocationConfig& loc =
@@ -94,7 +96,7 @@ void Client::handle(short revents) {
                     response_.setHeader("Connection", "close");
                 }
                 state_ = kWriting;
-                LOG_DEBUG() << "[Client] enabling POLLOUT";
+                LOG_DEBUG() << BR_YEL "[Client] enabling POLLOUT" RESET;
                 loop_.modifyHandler(this, POLLOUT);
             } else {
                 state_ = kWaitingCgi;
@@ -111,6 +113,7 @@ void Client::handle(short revents) {
         if (peer_closed && state_ == kReading) {
             return closeConnection("peer disconnected during read");
         }
+
     } catch (const std::exception& e) {
         LOG_ERROR() << "[Client] exception: " << e.what();
         if (state_ == kReading) {
@@ -189,10 +192,12 @@ void Client::write() {
                 if (!keep_alive_) {
                     response_.setHeader("Connection", "close");
                 }
+                state_ = kWriting;
+                loop_.modifyHandler(this, POLLOUT);
+            } else {
+                state_ = kWaitingCgi;
+                loop_.modifyHandler(this, 0);
             }
-            state_ = kWriting;
-            loop_.modifyHandler(this, POLLOUT);
-            return;
         }
         // switch back to read mode
         loop_.modifyHandler(this, POLLIN);

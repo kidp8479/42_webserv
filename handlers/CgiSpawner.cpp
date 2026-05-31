@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "../core/CgiProcess.hpp"
+#include "../core/CgiStdinWriter.hpp"
 #include "../core/Client.hpp"
 
 CgiSpawner::CgiSpawner(EventLoop& loop) : loop_(loop) {
@@ -44,8 +45,10 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
         dup2(stdout_pipe[1], STDOUT_FILENO);  // write
 
         // close unused fds
+        close(stdin_pipe[0]);
         close(stdin_pipe[1]);
         close(stdout_pipe[0]);
+        close(stdout_pipe[1]);
 
         std::string dir = script_path.substr(0, script_path.rfind('/'));
         std::string filename = script_path.substr(script_path.rfind('/') + 1);
@@ -55,28 +58,24 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
         char* argv[] = {const_cast<char*>(interpreter.c_str()),
                         const_cast<char*>(filename.c_str()), NULL};
         //  execve()
-        execve(interpreter.c_str(), argv, envp.data());
+        execve(interpreter.c_str(), argv, &envp[0]);
         _exit(1);
     }
     // parent:
     close(stdin_pipe[0]);   // parent doesn read stdin pipe
     close(stdout_pipe[1]);  // parent doesnt write stdout pipe
-                            //
-
-    // write post body
     const std::string& body = request.getBody();
+    // write post body
     if (!body.empty()) {
-        write(stdin_pipe[1], body.data(), body.size());
+        CgiStdinWriter* writer = new CgiStdinWriter(stdin_pipe[1], body, loop_);
+        loop_.addHandler(writer, POLLOUT);
+    } else {
+        close(stdin_pipe[1]);
     }
-    close(stdin_pipe[1]);
-
     // create Cgi Handler
-    CgiProcess* cgi =
-        new CgiProcess(pid, stdout_pipe[0], client, client.getLoop());
-
+    CgiProcess* cgi = new CgiProcess(pid, stdout_pipe[0], client, loop_);
     // register with Client
     client.setPendingCgi(cgi);
-
     // register in EventLoop
     loop_.addHandler(cgi, POLLIN);
     return true;

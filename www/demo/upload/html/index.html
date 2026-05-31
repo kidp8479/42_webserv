@@ -2,8 +2,6 @@
 <html>
 <head>
     <title>webserv - upload demo</title>
-    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
-    <link rel="stylesheet" href="/css/webserv.css">
 </head>
 <body>
     <h1>webserv - upload demo</h1>
@@ -19,12 +17,11 @@
     <h2>Browse uploaded files</h2>
     <p>
         <a href="/received/" class="button">Browse uploaded files</a>
-        <p class="message">curl: <code>curl -L http://127.0.0.1:8084/received</code> (-L follows the trailing slash redirect)</p>
     </p>
-    <p>
-        curl:
-        <code>curl -L http://127.0.0.1:8084/received</code>
-    </p>
+    <p class="message">
+		curl:
+		<code>curl -L http://127.0.0.1:8084/received</code>
+	</p>
 
     <hr>
     <h2>Browser upload (CGI - Python)</h2>

@@ -1,12 +1,15 @@
-<body>
-
-<h1>webserv CGI demo</h1>
-
-<p>
+<!DOCTYPE html>
+<html>
+<head>
+	<title>webserv CGI demo</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
+</body>
+    <div class="framed primary">
     <a href="/cgi-bin/cgi_working.py">
         Run CGI test script
     </a>
-</p>
 
 <form action="/cgi-bin/upload.py"
       method="POST"
@@ -15,7 +18,6 @@
     <input type="file" name="file">
     <button type="submit">Upload via CGI</button>
 
-</form>
-
+</form></div>
 </body>
 </html>

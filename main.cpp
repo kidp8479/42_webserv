@@ -15,10 +15,9 @@
 // yes its not perfect, but we did not have the hindsight when we first
 // decided this.  just go with it for now.
 int main(int argc, char** argv) {
-    signal(SIGINT, handleSigInt);
-    signal(SIGPIPE, SIG_IGN);
+    setupSignals();
     srand(static_cast<unsigned int>(
-        time(NULL)));  // seed for session ID generation
+        time(NULL)));  // seed for cookie session ID generation
 
     if (argc > 3) {
         std::cerr << "usage: ./webserv [config file] [log level] (default "
