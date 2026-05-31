@@ -188,6 +188,8 @@ std::vector<std::string> CgiSpawner::buildEnvStrings(const Request& request) {
 
     env.push_back("CONTENT_LENGTH=" + oss.str());
     env.push_back("CONTENT_TYPE=" + request.getHeaderValue("Content-Type"));
+    // pass cookies to CGI via HTTP_COOKIE — required for session-aware scripts
+    env.push_back("HTTP_COOKIE=" + request.getHeaderValue("Cookie"));
 
     return env;
 }
