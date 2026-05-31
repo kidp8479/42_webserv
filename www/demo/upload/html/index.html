@@ -2,35 +2,28 @@
 <html>
 <head>
     <title>webserv - upload demo</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
 </head>
 <body>
-    <h1>webserv - upload demo</h1>
-    <p>42 school project - HTTP/1.1 server in C++98</p>
-    <h2>Static upload (C++ handler)</h2>
-    <p>This uses the server's internal upload system.</p>
-    <p>Test with curl:</p>
-    <pre>curl -X POST http://127.0.0.1:8084/upload --data-binary @yourfile.txt</pre>
-    <p>If successful, the server returns <code>201 Created</code> and stores the file in:</p>
-    <code>www/demo/upload/received/</code>
-
-    <hr>
-    <h2>Browse uploaded files</h2>
-    <p>
-        <a href="/received/" class="button">Browse uploaded files</a>
-    </p>
-    <p class="message">
-		curl:
-		<code>curl -L http://127.0.0.1:8084/received</code>
-	</p>
-
-    <hr>
-    <h2>Browser upload (CGI - Python)</h2>
-    <p>This uses the CGI script <code>/cgi-bin/upload.py</code>.</p>
-
-    <form action="/cgi-bin/upload.py" method="POST" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <button type="submit">Upload via CGI</button>
-    </form>
-    <hr>
+    <div class="framed primary">
+        <h2>webserv - upload demo</h2>
+        <p class="message"><span>webserv:</span> 42 school project - HTTP/1.1 server in C++98</p>
+        <h3>Static upload (C++ handler)</h3>
+        <p class="message">This uses the server's internal upload system.</p>
+        <p class="message">curl: <code>curl -X POST http://127.0.0.1:8084/upload --data-binary @yourfile.txt</code></p>
+        <p class="message">If successful, the server returns <code>201 Created</code> and stores the file in <code>www/demo/upload/received/</code></p>
+        <hr>
+        <h3>Browse uploaded files</h3>
+        <div><a href="/received/" class="button">Browse uploaded files</a></div>
+        <p class="message">curl: <code>curl -L http://127.0.0.1:8084/received</code></p>
+        <hr>
+        <h3>Browser upload (CGI - Python)</h3>
+        <p class="message">This uses the CGI script <code>/cgi-bin/upload.py</code>.</p>
+        <form action="/cgi-bin/upload.py" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Upload via CGI</button>
+        </form>
+    </div>
 </body>
 </html>

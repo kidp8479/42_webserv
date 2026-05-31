@@ -13,10 +13,23 @@ UPLOAD_DIR = os.path.join(
 )
 
 def send_response(status, message):
-    body = "<html><body><p>{}</p></body></html>".format(message)
+    body = """<!DOCTYPE html>
+<html>
+<head>
+    <title>webserv - upload result</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
+<body>
+    <div class="framed primary">
+        <h2>webserv - upload result</h2>
+        <p class="message">{}</p>
+        <div><a href="/" class="button">Back to upload</a></div>
+    </div>
+</body>
+</html>""".format(message)
     sys.stdout.write("Status: {}\r\n".format(status))
     sys.stdout.write("Content-Type: text/html\r\n")
-    sys.stdout.write("Content-Length: {}\r\n".format(len(body)))
     sys.stdout.write("\r\n")
     sys.stdout.write(body)
 
