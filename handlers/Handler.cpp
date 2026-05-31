@@ -177,9 +177,13 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
  * @return true if response handling completed or is in progress.
  */
 bool Handler::dispatch(HandlerContext& handler_context) {
-    // only handle cookie session for routes that need it
+    // only handle cookie session for the /cookie-session/ route and its
+    // sub-paths deliberately excludes /cookie-session (no trailing slash) which
+    // triggers a 301 redirect — creating a session there would cause the
+    // browser to send the cookie on the redirect follow, skipping the "hello
+    // stranger" first visit
     const std::string& path = handler_context.request.getPath();
-    if (path.find("/session") == 0)
+    if (path.find("/cookie-session/") == 0)
         handleCookieSession(handler_context);
 
     if (handler_context.location.getReturnCode() !=
@@ -727,6 +731,19 @@ std::string Handler::newSessionID() {
     return ss.str();
 }
 
+/**
+ * @brief Manages cookie session lifecycle for the /cookie-session route.
+ *
+ * On each request: looks for a session_id cookie in the incoming request.
+ * If absent or unknown, generates a new session ID, registers it in
+ * ServerResources::sessions_, and sends Set-Cookie: session_id to the browser.
+ * Always increments the visit_count for this session and sends it back via
+ * Set-Cookie: visit_count so the page JS can read and display it.
+ *
+ * @note Only called for paths matching /cookie-session/ — see dispatch().
+ * @note visit_count is stored server-side in sessions_ and mirrored as a
+ *       cookie so static HTML can read it via document.cookie without CGI.
+ */
 void Handler::handleCookieSession(HandlerContext& handler_context) {
     // read all cookies from the incoming request (returns empty map if no
     // Cookie header)
@@ -761,4 +778,17 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
         // to create
         LOG_DEBUG() << "[Handler] cookie session resumed: " << session_id;
     }
+
+    // increment visit counter in server-side session data
+    std::map<std::string, std::string>& session =
+        handler_context.client.getResources().getSession(session_id);
+    int count = 0;
+    if (!session["visit_count"].empty())
+        count = std::atoi(session["visit_count"].c_str());
+    count++;
+    session["visit_count"] = toString(count);
+    // send visit_count as a cookie so the browser JS can read and display it
+    handler_context.response.setHeader(
+        "Set-Cookie", "visit_count=" + toString(count) + "; Path=/");
+    LOG_DEBUG() << "[Handler] cookie session visit count: " << count;
 }

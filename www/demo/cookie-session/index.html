@@ -23,14 +23,14 @@
 
     <script>
         var cookieStr = document.cookie;
-        var sessionId = null;
+        var visitCount = null;
 
-        // parse cookies to find session_id
+        // parse cookies to find visit_count — set server-side on each request
         var pairs = cookieStr.split(';');
         for (var i = 0; i < pairs.length; i++) {
             var pair = pairs[i].trim().split('=');
-            if (pair[0] === 'session_id') {
-                sessionId = pair[1];
+            if (pair[0] === 'visit_count') {
+                visitCount = parseInt(pair[1], 10);
                 break;
             }
         }
@@ -38,10 +38,14 @@
         var infoDiv = document.getElementById('session-info');
         var cookieDiv = document.getElementById('cookie-display');
 
-        if (sessionId) {
-            infoDiv.innerHTML = '<p class="message"><span>session:</span> welcome back! your session ID is <code>' + sessionId + '</code></p>';
+        if (visitCount === 1) {
+            // first visit: count was just set to 1 by the server
+            infoDiv.innerHTML = '<p class="message"><span>session:</span> hello stranger! this is your first visit.</p>';
+        } else if (visitCount > 1) {
+            // returning visitor: server incremented the count
+            infoDiv.innerHTML = '<p class="message"><span>session:</span> welcome back! visit #' + visitCount + '</p>';
         } else {
-            infoDiv.innerHTML = '<p class="message"><span>session:</span> hello stranger! a session cookie will be set on your next request.</p>';
+            infoDiv.innerHTML = '<p class="message"><span>session:</span> checking your session...</p>';
         }
 
         cookieDiv.textContent = cookieStr || '(no cookies yet)';
