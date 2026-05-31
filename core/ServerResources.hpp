@@ -24,9 +24,10 @@ public:
     bool hasSession(
         const std::string& id) const;  // returns true if a session with this ID
                                        // already exists in sessions_
-    std::map<std::string, std::string>& getSession(
-        const std::string& id);  // returns a reference to the session data map
-                                 // for the given ID (read/write)
+    std::map<std::string, std::string>& getOrCreateSession(
+        const std::string&
+            id);  // returns a reference to the session data map
+                  // for the given ID, inserting an empty entry if absent
 
 private:
     ServerResources& operator=(const ServerResources&);

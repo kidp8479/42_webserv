@@ -782,7 +782,7 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
 
     // increment visit counter in server-side session data
     std::map<std::string, std::string>& session =
-        handler_context.client.getResources().getSession(session_id);
+        handler_context.client.getResources().getOrCreateSession(session_id);
     int count = 0;
     if (!session["visit_count"].empty())
         count = std::atoi(session["visit_count"].c_str());
