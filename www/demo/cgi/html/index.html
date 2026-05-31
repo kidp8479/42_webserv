@@ -26,7 +26,7 @@
         <hr>
 
         <h3>File upload via CGI (browser form)</h3>
-        <p class="message">Browser forms send files as <code>multipart/form-data</code> — a format with boundaries and per-field headers that the C++ server does not parse natively.</p>
+        <p class="message">Browser forms send files as <code>multipart/form-data</code> - a format with boundaries and per-field headers that the C++ server does not parse natively.</p>
         <p class="message">The Python upload script handles this using the <code>cgi</code> module (Python 3.11 stdlib, bundled here since it was removed in 3.13). The script parses the multipart body, extracts the file, and writes it to disk.</p>
         <p class="message">This is why browser upload lives here on port 8086 (CGI) and not on port 8084 (raw C++ upload handler, curl only).</p>
         <form action="/cgi-bin/upload.py" method="POST" enctype="multipart/form-data">

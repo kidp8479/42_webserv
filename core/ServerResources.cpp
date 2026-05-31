@@ -59,7 +59,7 @@ bool ServerResources::hasSession(const std::string& id) const {
  * @brief Returns a reference to the cookie session data map for the given ID.
  * @param id Session ID to retrieve.
  * @return Reference to the session data map (read/write).
- * @note operator[] inserts an empty entry if id is absent — hence the name
+ * @note operator[] inserts an empty entry if id is absent - hence the name
  *       getOrCreateSession. Always call hasSession() first if you only want
  *       to read an existing session without creating a phantom one.
  */

@@ -179,7 +179,7 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
 bool Handler::dispatch(HandlerContext& handler_context) {
     // only handle cookie session for the /cookie-session/ route and its
     // sub-paths deliberately excludes /cookie-session (no trailing slash) which
-    // triggers a 301 redirect — creating a session there would cause the
+    // triggers a 301 redirect - creating a session there would cause the
     // browser to send the cookie on the redirect follow, skipping the "hello
     // stranger" first visit
     const std::string& path = handler_context.request.getPath();
@@ -243,7 +243,7 @@ void Handler::handleReturn(HandlerContext& handler_context) {
 /**
  * @brief Handles CGI location blocks.
  * handleCgiInterpreters: forks, registers CgiProcess, returns false
- * Handler's job ends here — CgiProcess takes over
+ * Handler's job ends here - CgiProcess takes over
  */
 bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
     // TODO: implement fork/execve/pipe
@@ -741,7 +741,7 @@ std::string Handler::newSessionID() {
  * Always increments the visit_count for this session and sends it back via
  * Set-Cookie: visit_count so the page JS can read and display it.
  *
- * @note Only called for paths matching /cookie-session/ — see dispatch().
+ * @note Only called for paths matching /cookie-session/ - see dispatch().
  * @note visit_count is stored server-side in sessions_ and mirrored as a
  *       cookie so static HTML can read it via document.cookie without CGI.
  */

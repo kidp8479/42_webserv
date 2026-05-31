@@ -25,7 +25,7 @@
         var cookieStr = document.cookie;
         var visitCount = null;
 
-        // parse cookies to find visit_count — set server-side on each request
+        // parse cookies to find visit_count - set server-side on each request
         var pairs = cookieStr.split(';');
         for (var i = 0; i < pairs.length; i++) {
             var pair = pairs[i].trim().split('=');
