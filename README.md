@@ -12,7 +12,7 @@ Beyond building a functional web server, we focus on clean code, best practices 
 
 ## Description
 
-webserv is an HTTP/1.1 server written from scratch in C++98. It handles multiple clients simultaneously using a non-blocking I/O event loop (poll), parses HTTP requests, serves static files, handles file uploads and deletions, and supports CGI execution for dynamic content.
+webserv is an HTTP/1.1 server written from scratch in C++98. It handles multiple clients simultaneously using a non-blocking I/O event loop (poll), parses HTTP requests, serves static files, handles file uploads and deletions, supports CGI execution for dynamic content, and implements cookie-based session management.
 
 The server is configured via a configuration file inspired by NGINX syntax. Multiple server blocks and location blocks are supported, allowing fine-grained routing and per-route access control.
 
@@ -74,6 +74,8 @@ Each demo conf is self-contained and focuses on one feature. Run the server and 
 | `conf/demo_redirect.conf` | 8083 | HTTP 301 redirect |
 | `conf/demo_upload.conf` | 8084 | file upload via POST |
 | `conf/demo_delete.conf` | 8085 | file deletion via DELETE |
+| `conf/demo_cgi.conf` | 8086 | CGI execution (Python) |
+| `conf/demo_cookies.conf` | 8087 | cookie session management (bonus) |
 
 ---
 
@@ -82,6 +84,7 @@ Each demo conf is self-contained and focuses on one feature. Run the server and 
 - [RFC 7230 - HTTP/1.1 Message Syntax](https://datatracker.ietf.org/doc/html/rfc7230)
 - [RFC 7231 - HTTP/1.1 Semantics](https://datatracker.ietf.org/doc/html/rfc7231)
 - [RFC 3875 - CGI specification](https://datatracker.ietf.org/doc/html/rfc3875)
+- [RFC 6265 - HTTP State Management (Cookies)](https://www.rfc-editor.org/info/rfc6265)
 - [NGINX documentation](https://nginx.org/en/docs/)
 - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
 

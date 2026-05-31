@@ -37,11 +37,11 @@ Each folder contains both `.hpp` and `.cpp` files for its domain. This keeps rel
 
 ### core/ - event loop and connection management
 
-`Server` creates and binds listen sockets. `EventLoop` runs the poll() loop and dispatches events. `Client` is the per-connection state machine: reads request bytes, hands off to handlers, writes the response back.
+`Server` creates and binds listen sockets. `EventLoop` runs the poll() loop and dispatches events. `Client` is the per-connection state machine: reads request bytes, hands off to handlers, writes the response back. `ServerResources` holds the per-server configuration and the cookie session store (`sessions_`), shared across all clients via a reference (not a copy) to ensure session data persists across connections.
 
 ### handlers/ - HTTP method handlers
 
-One handler class per HTTP method (GET, POST, DELETE) plus a `Router` that resolves the URI to the best matching location block using longest-prefix match. File upload via curl (raw POST body) works. Browser form upload (multipart/form-data) and CGI handler: WIP.
+`Handler` dispatches requests to the correct handler based on location config: static file serving, file upload, HTTP redirect, and CGI. `Router` resolves the URI to the best matching location block using longest-prefix match. `CgiSpawner` forks a child process, sets up pipes, and executes the CGI interpreter. `CgiProcess` manages the child process lifecycle and reads its output asynchronously. `handleCookieSession()` manages cookie session lifecycle for the `/cookie-session/` route: session ID generation, server-side visit counter, and `Set-Cookie` header injection.
 
 ### utils/ - shared utilities
 
@@ -51,10 +51,10 @@ MIME type detection, path resolution helpers, string utilities shared across dom
 
 `Logger` singleton with log levels (INFO, DEBUG, WARNING). Color macros defined in `logger/colors.hpp`.
 
-### Bonus (WIP)
+### Bonus
 
-- Cookies and session management
-- Multiple CGI interpreters - `.php` and `.py` already configured in `default.conf`, pending CGI handler completion
+- **Cookies and session management** — implemented. `ServerResources::sessions_` stores server-side session data keyed by session ID. `Handler::handleCookieSession()` manages the full lifecycle: ID generation (`time(NULL)` + `rand()` in hex), session creation, visit counter, and `Set-Cookie` headers. Demo at `conf/demo_cookies.conf` port 8087.
+- **Multiple CGI interpreters** — implemented. Python (`.py`) and bash (`.sh`) both configured. Python via existing CGI scripts, bash via `www/cgi-bin/cookie_info.sh` which reads `HTTP_COOKIE` and demonstrates the server-to-CGI cookie bridge.
 
 ---
 
