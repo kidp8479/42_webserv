@@ -145,7 +145,7 @@ void Client::read() {
         return closeConnection("recv error fd=", "ERROR");
     }
     timeout_.reset();
-    LOG_DEBUG() << "[Client] read bytes=" << n;
+    LOG_DEBUG() << BR_YEL "[Client] read bytes=" << n << RESET;
     request_.append(buffer, n);
 }
 
@@ -162,7 +162,8 @@ void Client::write() {
     // reset on successful write
     timeout_.reset();
     bytes_sent_ += n;
-    LOG_DEBUG() << "[Client] wrote bytes=" << n << " total=" << bytes_sent_;
+    LOG_DEBUG() << BR_YEL "[Client] wrote bytes=" << n
+                << " total=" << bytes_sent_ << RESET;
 
     if (bytes_sent_ >= data.size()) {
         LOG_INFO() << BR_CYN "[Client] response complete fd=" << fd_.getFd()

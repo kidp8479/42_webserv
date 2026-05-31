@@ -772,12 +772,14 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
         // Path=/ ensures the browser replaces any existing session_id cookie
         handler_context.response.setHeader(
             "Set-Cookie", "session_id=" + session_id + "; Path=/");
-        LOG_INFO() << "[Handler] cookie session created and sent to browser: "
-                   << session_id;
+        LOG_INFO() << BR_CYN
+            "[Handler] cookie session created and sent to browser: "
+                   << session_id << RESET;
     } else {
         // session already exists, browser sent us a valid session_id, nothing
         // to create
-        LOG_DEBUG() << "[Handler] cookie session resumed: " << session_id;
+        LOG_DEBUG() << BR_YEL "[Handler] cookie session resumed: " << session_id
+                    << RESET;
     }
 
     // increment visit counter in server-side session data
@@ -791,5 +793,6 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
     // send visit_count as a cookie so the browser JS can read and display it
     handler_context.response.setHeader(
         "Set-Cookie", "visit_count=" + toString(count) + "; Path=/");
-    LOG_DEBUG() << "[Handler] cookie session visit count: " << count;
+    LOG_DEBUG() << BR_YEL "[Handler] cookie session visit count: " << count
+                << RESET;
 }

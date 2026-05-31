@@ -36,7 +36,8 @@ void ServerResources::createSession(const std::string& id) {
     sessions_[id] =
         std::map<std::string, std::string>();  // explicitly initializes the
                                                // session data map to empty
-    LOG_INFO() << "[ServerResources] cookie session created: " << id;
+    LOG_INFO() << BR_CYN "[ServerResources] cookie session created: " << id
+               << RESET;
     return;
 }
 
@@ -48,10 +49,12 @@ void ServerResources::createSession(const std::string& id) {
 bool ServerResources::hasSession(const std::string& id) const {
     // count() returns 1 if the key exists, 0 otherwise
     if (sessions_.count(id) > 0) {
-        LOG_DEBUG() << "[ServerResources] cookie session found: " << id;
+        LOG_DEBUG() << BR_YEL "[ServerResources] cookie session found: " << id
+                    << RESET;
         return true;
     }
-    LOG_DEBUG() << "[ServerResources] cookie session not found: " << id;
+    LOG_DEBUG() << BR_YEL "[ServerResources] cookie session not found: " << id
+                << RESET;
     return false;
 }
 
