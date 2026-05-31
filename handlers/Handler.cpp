@@ -721,13 +721,14 @@ void Handler::generateDirectoryListing(const std::string& path,
 }
 
 /**
- * @brief Generates a unique cookie session ID from the current Unix timestamp.
- * @return Hex string session ID.
- * @note Uses time(NULL) cast to hex, simple and good enough for a demo.
+ * @brief Generates a unique cookie session ID.
+ * @return Hex string combining current timestamp and a random value.
  */
 std::string Handler::newSessionID() {
     std::ostringstream ss;
-    ss << std::hex << time(NULL);
+    // combine timestamp + rand() for basic uniqueness within the same second
+    // rand() is seeded at startup via srand(time(NULL)) in main.cpp
+    ss << std::hex << time(NULL) << rand();
     return ss.str();
 }
 

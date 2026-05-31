@@ -5,7 +5,9 @@ ServerResources::ServerResources(const ServerConfig& server_config)
 }
 
 ServerResources::ServerResources(const ServerResources& other)
-    : server_config_(other.server_config_), router_(server_config_) {
+    : server_config_(other.server_config_),
+      router_(server_config_),
+      sessions_(other.sessions_) {
 }
 
 ServerResources::~ServerResources() {
