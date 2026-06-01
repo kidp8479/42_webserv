@@ -176,11 +176,6 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
  * @return true if response handling completed or is in progress.
  */
 bool Handler::dispatch(HandlerContext& handler_context) {
-    // only handle cookie session for the /cookie-session/ route and its
-    // sub-paths deliberately excludes /cookie-session (no trailing slash) which
-    // triggers a 301 redirect - creating a session there would cause the
-    // browser to send the cookie on the redirect follow, skipping the "hello
-    // stranger" first visit
     const std::string& path = handler_context.request.getPath();
     if (path.find("/cookie-session/") == 0)
         handleCookieSession(handler_context);
@@ -724,8 +719,6 @@ void Handler::generateDirectoryListing(const std::string& path,
  */
 std::string Handler::newSessionID() {
     std::ostringstream ss;
-    // combine timestamp + rand() for basic uniqueness within the same second
-    // rand() is seeded at startup via srand(time(NULL)) in main.cpp
     ss << std::hex << time(NULL) << rand();
     return ss.str();
 }
@@ -750,8 +743,6 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
     const std::map<std::string, std::string> cookies =
         handler_context.request.getCookieList();
 
-    // look for our session cookie - operator[] don't work on const map, needed
-    // to use find() instead
     std::string session_id;
     std::map<std::string, std::string>::const_iterator it =
         cookies.find("session_id");
@@ -781,7 +772,6 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
                     << RESET;
     }
 
-    // increment visit counter in server-side session data
     std::map<std::string, std::string>& session =
         handler_context.client.getResources().getOrCreateSession(session_id);
     int count = 0;

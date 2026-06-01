@@ -9,15 +9,9 @@
 #include "core/Signal.hpp"
 #include "logger/Logger.hpp"
 
-// 2 catch blocks are intentional here because
-// runtime errors must be logged at the source to prevent double prints
-// all other std::exceptions must NOT be logged as well
-// yes its not perfect, but we did not have the hindsight when we first
-// decided this.  just go with it for now.
 int main(int argc, char** argv) {
     setupSignals();
-    srand(static_cast<unsigned int>(
-        time(NULL)));  // seed for cookie session ID generation
+    srand(static_cast<unsigned int>(time(NULL)));
 
     if (argc > 3) {
         std::cerr << "usage: ./webserv [config file] [log level] (default "
