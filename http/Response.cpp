@@ -1,6 +1,8 @@
 #include "Response.hpp"
 
+#include <cctype>
 #include <sstream>
+#include <vector>
 
 /*****************************************************************************
  *                                  RESPONSE                                 *
@@ -210,17 +212,17 @@ void Response::updateRaw() {
 void Response::addToCookie(std::string cookie_str) {
     std::vector<std::string> cookie_list = listCookie(cookie_str);
     if (cookie_list.empty() || cookie_list[0].empty())
-        return ;
-    size_t  equals_pos = cookie_list[0].find("=");
+        return;
+    size_t equals_pos = cookie_list[0].find("=");
     if (equals_pos == std::string::npos)
-        return ;
+        return;
     std::string name = cookie_list[0].substr(0, equals_pos);
     std::string value = cookie_list[0].substr(equals_pos + 1);
     trim(name);
-    trim (value);
+    trim(value);
     if (name.empty())
-        return ;
-    
+        return;
+
     cookie_jar_[name] = value;
     has_cookies_ = true;
 }
