@@ -733,7 +733,8 @@ std::string Handler::newSessionID() {
 }
 
 /**
- * @brief Manages cookie session lifecycle for the /cookie-session route.
+ * @brief Manages cookie session lifecycle for the /cookie-session route
+ * (demo_cookies.conf).
  *
  * On each request: looks for a session_id cookie in the incoming request.
  * If absent or unknown, generates a new session ID, registers it in
@@ -760,7 +761,7 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
         session_id = it->second;  // found: session_id holds the client's
                                   // existing session ID
 
-    // if no session_id cookie or session doesn't exist in the store, create a
+    // if no session_id cookie or session doesn't exist in the storage, create a
     // new one and send it back to the browser via Set-Cookie so it is stored
     // and returned on future requests
     if (session_id.empty() ||
