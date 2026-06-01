@@ -31,7 +31,6 @@ void CgiProcess::handle(short revents) {
     // called before clenaup() runs
     if (timeout_.expired()) {
         kill(pid_, SIGKILL);
-        waitpid(pid_, NULL, 0);
         read_fd_.reset();
         client_.receiveError(HttpConstants::kGatewayTimeout);
         done_ = true;
