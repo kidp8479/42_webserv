@@ -246,7 +246,6 @@ void Handler::handleReturn(HandlerContext& handler_context) {
  * Handler's job ends here - CgiProcess takes over
  */
 bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
-    // TODO: implement fork/execve/pipe
     try {
         CgiSpawner spawner(handler_context.loop);
 
