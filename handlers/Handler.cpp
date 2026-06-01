@@ -36,9 +36,6 @@ const std::map<std::string, std::string> kMimeTypes = initMimeTypes();
  */
 bool Handler::run(const Request& request, const LocationConfig& location,
                   Client& client) {
-    LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
-               << " - target: " << request.getTarget() << RESET;
-
     HandlerContext handler_context = {request,
                                       location,
                                       client.getServerConfig(),
@@ -49,6 +46,8 @@ bool Handler::run(const Request& request, const LocationConfig& location,
     if (requestIsError(handler_context)) {
         return true;
     }
+    LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
+               << " - target: " << request.getTarget() << RESET;
     if (methodNotImplementedCheck(handler_context)) {
         return true;
     }
