@@ -1,5 +1,7 @@
 #include "Handler.hpp"
 
+#include <cstdlib>
+
 #include "../core/Client.hpp"
 #include "../core/EventLoop.hpp"
 #include "CgiSpawner.hpp"
