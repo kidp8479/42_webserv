@@ -24,6 +24,7 @@ SRCS = main.cpp \
 	   core/Client.cpp \
 	   core/EventLoop.cpp \
 	   core/Fd.cpp \
+	   core/FdUtils.cpp \
 	   core/Listener.cpp \
 	   core/Server.cpp \
 	   core/ServerResources.cpp \
