@@ -48,7 +48,8 @@ Response& Response::operator=(const Response& other) {
 
 static std::string setToLower(std::string& s) {
     for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
-        s_it[0] = std::tolower(s_it[0]);
+        s_it[0] = static_cast<char>(
+            std::tolower(static_cast<unsigned char>(s_it[0])));
     }
     return (s);
 }
