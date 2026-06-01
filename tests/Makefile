@@ -18,27 +18,31 @@ TEST_BINS := $(addprefix $(BIN_DIR)/,$(TEST_NAMES))
 VPATH := $(sort $(dir $(TEST_SRCS)))
 
 # shared sources (no test files here)
-SRCS = 	\
-    ../config/Config.cpp \
-	../config/ConfigBuilder.cpp \
-	../config/ConfigParser.cpp \
-	../config/ConfigTokenizer.cpp \
-	../config/ConfigValidator.cpp \
-	../config/LocationConfig.cpp \
-	../config/ServerConfig.cpp \
-	../core/Client.cpp \
-	../core/EventLoop.cpp \
-	../core/Fd.cpp \
-	../core/Listener.cpp \
-	../core/Server.cpp \
-	../core/ServerResources.cpp \
-	../core/Signal.cpp \
-	../handlers/Handler.cpp \
-	../handlers/Router.cpp \
-	../http/Request.cpp \
-	../http/Response.cpp \
-	../logger/Logger.cpp \
-	../utils/LogUtils.cpp \
+SRCS = main.cpp \
+       ../config/Config.cpp \
+	   ../config/ConfigBuilder.cpp \
+	   ../config/ConfigParser.cpp \
+	   ../config/ConfigTokenizer.cpp \
+	   ../config/ConfigValidator.cpp \
+       ../config/ServerConfig.cpp \
+       ../config/LocationConfig.cpp \
+	   ../core/CgiProcess.cpp \
+	   ../core/CgiStdinWriter.cpp \
+	   ../core/Client.cpp \
+	   ../core/EventLoop.cpp \
+	   ../core/Fd.cpp \
+	   ../core/Listener.cpp \
+	   ../core/Server.cpp \
+	   ../core/ServerResources.cpp \
+	   ../core/Signal.cpp \
+	   ../core/Timeout.cpp \
+	   ../handlers/CgiSpawner.cpp \
+	   ../handlers/Handler.cpp \
+	   ../handlers/Router.cpp \
+	   ../http/Request.cpp \
+	   ../http/Response.cpp \
+	   ../logger/Logger.cpp \
+	   ../utils/LogUtils.cpp \
 		
 
 all: $(BIN_DIR) $(OBJ_DIR) $(GTEST_OBJ) $(GTEST_MAIN_OBJ) $(TEST_BINS)
