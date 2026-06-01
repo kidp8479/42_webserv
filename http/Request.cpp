@@ -233,8 +233,10 @@ std::vector<std::string> Request::getHeaderList(const std::string key) const {
 }
 
 /**
- * @brief Get a map of cookie values if a Cookie header exists
- * @return Map of cookie values suce that map[name] = value
+ * @brief Parses the Cookie header into a name-value map.
+ * @return Map of cookie name-value pairs. Empty if no Cookie header is present.
+ * @note Relies on getHeaderList() to split the Cookie header on ';' first.
+ *       Entries without '=' or with an empty name are silently skipped.
  */
 std::map<std::string, std::string> Request::getCookieList() const {
     std::map<std::string, std::string> cookie_list;
@@ -243,12 +245,12 @@ std::map<std::string, std::string> Request::getCookieList() const {
         std::vector<std::string>::iterator c_it = cookie_vals.begin();
         std::vector<std::string>::iterator c_ite = cookie_vals.end();
         while (c_it != c_ite) {
-            size_t  equals_pos = c_it[0].find("=");
+            size_t equals_pos = c_it[0].find("=");
             if (equals_pos != std::string::npos) {
                 std::string name = c_it[0].substr(0, equals_pos);
                 std::string value = c_it[0].substr(equals_pos + 1);
                 trim(name);
-                trim (value);
+                trim(value);
                 if (!name.empty())
                     cookie_list[name] = value;
             }
