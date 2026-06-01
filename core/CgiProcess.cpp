@@ -17,6 +17,9 @@ CgiProcess::CgiProcess(pid_t pid, int read_fd, Client& client, EventLoop& loop)
 }
 
 CgiProcess::~CgiProcess() {
+	if (!done_) {
+        kill(pid_, SIGKILL);
+    }
 }
 
 int CgiProcess::getFd() const {
@@ -69,9 +72,6 @@ void CgiProcess::finish() {
         return;
     }
     done_ = true;
-
-    waitpid(pid_, NULL, 0);
     read_fd_.reset();
-
     client_.onCgiFinished(output_);
 }
