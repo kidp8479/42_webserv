@@ -199,10 +199,11 @@ void Client::write() {
                 state_ = kWaitingCgi;
                 loop_.modifyHandler(this, 0);
             }
-        }
-        // switch back to read mode
-        loop_.modifyHandler(this, POLLIN);
-    }
+        } else {
+			// switch back to read mode
+			loop_.modifyHandler(this, POLLIN);
+		}
+	}
 }
 
 void Client::cleanup() {

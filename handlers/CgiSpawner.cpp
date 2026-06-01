@@ -5,6 +5,7 @@
 #include "../core/CgiProcess.hpp"
 #include "../core/CgiStdinWriter.hpp"
 #include "../core/Client.hpp"
+#include "../core/FdUtils.hpp"
 
 CgiSpawner::CgiSpawner(EventLoop& loop) : loop_(loop) {
 }
@@ -64,6 +65,10 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     // parent:
     close(stdin_pipe[0]);   // parent doesn read stdin pipe
     close(stdout_pipe[1]);  // parent doesnt write stdout pipe
+
+	// set non blocking flag on read end before we hand to CgiProcess
+	FdUtils::setNonBlocking(stdout_pipe[0]);
+
     const std::string& body = request.getBody();
     // write post body
     if (!body.empty()) {

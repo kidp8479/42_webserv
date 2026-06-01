@@ -13,6 +13,7 @@
 #include "../logger/Logger.hpp"
 #include "Client.hpp"
 #include "Fd.hpp"
+#include "FdUtils.hpp"
 
 /**
  * we make a listen object that owns the Fd object
@@ -32,7 +33,7 @@ Listener::Listener(EventLoop& loop, const ServerResources& resources)
         throw std::runtime_error("[listener] setsockopt() failed");
     }
     setupSocket();
-    setNonBlocking(fd_.getFd());
+	FdUtils::setNonBlocking(fd_.getFd());
     loop_.addHandler(this, POLLIN);
 }
 
@@ -110,7 +111,7 @@ void Listener::acceptClients() {
         }
         // accept succeed, we set up client
         try {
-            setNonBlocking(client_fd);
+			FdUtils::setNonBlocking(client_fd);
             Client* client = new Client(client_fd, loop_, resources_);
 
             loop_.addHandler(client, POLLIN);
@@ -118,27 +119,6 @@ void Listener::acceptClients() {
             close(client_fd);
             LOG_ERROR() << "[Listener] client setup failed: " << e.what();
         }
-    }
-}
-
-void Listener::setNonBlocking(int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-
-    if (flags == -1) {
-        std::ostringstream oss;
-        oss << "[listener] fcntl(F_GETFL) failed for fd " << fd;
-        throw std::runtime_error(oss.str());
-    }
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        std::ostringstream oss;
-        oss << "[listener] fcntl(F_SETFL) failed for fd " << fd;
-        throw std::runtime_error(oss.str());
-    }
-    // prevent fd leaking into child process
-    if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
-        std::ostringstream oss;
-        oss << "[listener] fcntl(F_SETFD) failed for fd " << fd;
-        throw std::runtime_error(oss.str());
     }
 }
 

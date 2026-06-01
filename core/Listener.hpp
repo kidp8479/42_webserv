@@ -21,7 +21,6 @@ private:
 
     bool isDone() const;
     void setupSocket();
-    void setNonBlocking(int fd);
     void acceptClients();
     bool isTimedOut() const;
 
