@@ -179,8 +179,9 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
  */
 bool Handler::dispatch(HandlerContext& handler_context) {
     const std::string& path = handler_context.request.getPath();
-    if (path.find("/cookie-session/") == 0)
+    if (path.find("/cookie-session/") == 0) {
         handleCookieSession(handler_context);
+    }
 
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
@@ -259,6 +260,12 @@ bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
     }
 }
 
+/**
+ * @brief Parses raw CGI output and populates the HTTP response.
+ * Splits the CGI output on the first blank line (CRLFCRLF or LFLF),
+ * parses headers from the block before it, and treats the rest as the body.
+ * Status code defaults to 200 unless the CGI emits a Status header.
+ */
 void Handler::applyCgiResponse(const std::string& raw, Response& response) {
     LOG_DEBUG() << "[CGI] raw size=" << raw.size();
     LOG_DEBUG() << "[CGI] raw preview:\n" << raw.substr(0, 200);
@@ -748,9 +755,9 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
     std::string session_id;
     std::map<std::string, std::string>::const_iterator it =
         cookies.find("session_id");
-    if (it != cookies.end())
-        session_id = it->second;  // found: session_id holds the client's
-                                  // existing session ID
+    if (it != cookies.end()) {
+        session_id = it->second;
+    }
 
     // if no session_id cookie or session doesn't exist in the storage, create a
     // new one and send it back to the browser via Set-Cookie so it is stored
@@ -777,8 +784,9 @@ void Handler::handleCookieSession(HandlerContext& handler_context) {
     std::map<std::string, std::string>& session =
         handler_context.client.getResources().getOrCreateSession(session_id);
     int count = 0;
-    if (!session["visit_count"].empty())
+    if (!session["visit_count"].empty()) {
         count = std::atoi(session["visit_count"].c_str());
+    }
     count++;
     session["visit_count"] = toString(count);
     // send visit_count as a cookie so the browser JS can read and display it
