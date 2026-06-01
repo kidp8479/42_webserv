@@ -178,11 +178,6 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
  * @return true if response handling completed or is in progress.
  */
 bool Handler::dispatch(HandlerContext& handler_context) {
-    const std::string& path = handler_context.request.getPath();
-    if (path.find("/cookie-session/") == 0) {
-        handleCookieSession(handler_context);
-    }
-
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
         LOG_DEBUG() << BR_YEL "[Handler] return location block detected"
@@ -408,6 +403,10 @@ void Handler::handleUpload(HandlerContext& handler_context) {
  */
 void Handler::handleStatic(HandlerContext& handler_context) {
     const std::string& path = handler_context.request.getPath();
+
+    if (path.find("/cookie-session/") == 0) {
+        handleCookieSession(handler_context);
+    }
 
     // POST on a static block means upload_path was not set: .conf writer error
     if (handler_context.request.getMethod() == "POST") {
