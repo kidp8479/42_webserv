@@ -33,8 +33,9 @@ echo "<hr>"
 if [ -z "$HTTP_COOKIE" ]; then
     echo "<p class='message'>No cookies found - visit <a href='/cookie-session/' class='button'>/cookie-session/</a> first, then come back here.</p>"
 else
+    escaped_cookie=$(printf '%s' "$HTTP_COOKIE" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
     echo "<p class='message'><span>HTTP_COOKIE:</span></p>"
-    echo "<p><code>$HTTP_COOKIE</code></p>"
+    echo "<p><code>$escaped_cookie</code></p>"
 fi
 
 echo "<hr>"
