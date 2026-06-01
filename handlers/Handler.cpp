@@ -404,10 +404,6 @@ void Handler::handleUpload(HandlerContext& handler_context) {
 void Handler::handleStatic(HandlerContext& handler_context) {
     const std::string& path = handler_context.request.getPath();
 
-    if (path.find("/cookie-session/") == 0) {
-        handleCookieSession(handler_context);
-    }
-
     // POST on a static block means upload_path was not set: .conf writer error
     if (handler_context.request.getMethod() == "POST") {
         LOG_WARNING()
@@ -445,6 +441,10 @@ void Handler::handleStatic(HandlerContext& handler_context) {
         }
         deleteFile(full_path, handler_context);
         return;
+    }
+
+    if (path.find("/cookie-session/") == 0) {
+        handleCookieSession(handler_context);
     }
 
     if (S_ISDIR(get_info.st_mode)) {
