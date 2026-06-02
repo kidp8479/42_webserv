@@ -264,6 +264,7 @@ const Router& Client::getRouter() const {
 }
 
 void Client::receiveError(HttpConstants::HttpError error) {
+	pending_cgi_ = NULL;
     keep_alive_ = false;  // dont reuse connection after cgi failure
     response_.buildError(error);
     response_.setHeader("Connection", "close");
