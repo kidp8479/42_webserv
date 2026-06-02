@@ -35,6 +35,7 @@ public:
 
     // called by CgiProcess when it has a result
     void onCgiFinished(const std::string& raw_cgi_output);
+	void onTimeout();
 
     // called by CgiProcess on timeout or error
     void receiveError(HttpConstants::HttpError error);

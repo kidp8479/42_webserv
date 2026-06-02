@@ -154,7 +154,12 @@ void EventLoop::cleanup() {
             if (timeout && !dead) {
                 LOG_WARNING() << "[EventLoop] timeout fd=" << poll_fds_[i].fd
                               << " handler=" << handlers_[i]->name();
-            }
+				try {
+					handlers_[i]->onTimeout();
+				} catch (const std::exception& e) {
+					LOG_ERROR() << "[EventLoop] timeout handler exception: " << e.what();
+				}
+			}
             LOG_DEBUG() << "[EventLoop] removing fd=" << poll_fds_[i].fd
                         << " handler=" << handlers_[i]->name();
             delete handlers_[i];

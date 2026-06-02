@@ -296,3 +296,7 @@ void Client::onCgiFinished(const std::string& raw_cgi_output) {
         receiveError(HttpConstants::kInternalServerError);
     }
 }
+
+void Client::onTimeout() {
+	cleanup();
+}

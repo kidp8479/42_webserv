@@ -63,6 +63,13 @@ bool CgiProcess::isTimedOut() const {
     return timeout_.expired();
 }
 
+void CgiProcess:onTimeout() {
+	kill(pid, SIGKILL);
+	read_fd_.reset();
+	client_.receiveError(HttpConstants::kGatewayTimeout);
+	done_ = true;
+}
+
 const char* CgiProcess::name() const {
     return "CgiProcess";
 }

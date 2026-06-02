@@ -11,6 +11,8 @@ public:
     virtual bool isDone() const = 0;
     virtual bool isTimedOut() const = 0;
     virtual const char* name() const = 0;
+
+	virtual void on Timeout() {}
 };
 
 #endif

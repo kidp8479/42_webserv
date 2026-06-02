@@ -21,6 +21,7 @@ public:
     void handle(short revents);
     bool isDone() const;
     bool isTimedOut() const;
+	void onTimeout();
     const char* name() const;
 
 private:
