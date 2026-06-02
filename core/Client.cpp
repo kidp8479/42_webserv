@@ -281,6 +281,10 @@ void Client::onCgiFinished(const std::string& raw_cgi_output) {
     pending_cgi_ = NULL;
     timeout_.reset();
 
+    if (raw_cgi_output.empty()) {
+        receiveError(HttpConstants::kInternalServerError);
+        return;
+    }
     try {
         response_.reset();
         Handler::applyCgiResponse(raw_cgi_output, response_);

@@ -20,6 +20,8 @@ private:
     CgiSpawner& operator=(const CgiSpawner&);
 
     bool createPipes(int stdin_pipe[2], int stdout_pipe[2]);
+    bool validateScript(const Request& request, const LocationConfig& config,
+                        Client& client, std::string& out_script_path);
     std::string resolveInterpreter(const Request& request,
                                    const LocationConfig& location);
     std::string buildScriptPath(const Request& request,

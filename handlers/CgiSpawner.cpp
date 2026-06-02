@@ -13,18 +13,38 @@ CgiSpawner::CgiSpawner(EventLoop& loop) : loop_(loop) {
 CgiSpawner::~CgiSpawner() {
 }
 
-/**
- */
+bool CgiSpawner::validateScript(const Request& request,
+                                const LocationConfig& location, Client& client,
+                                std::string& out_script_path) {
+    try {
+        out_script_path = buildScriptPath(request, location);
+    } catch (const std::exception& e) {
+        LOG_ERROR() << "[CgiSpawner] " << e.what();
+        client.receiveError(HttpConstants::kInternalServerError);
+        return false;
+    }
+    if (access(out_script_path.c_str(), F_OK) != 0) {
+        client.receiveError(HttpConstants::kNotFound);
+        return false;
+    }
+    if (access(out_script_path.c_str(), X_OK) != 0) {
+        client.receiveError(HttpConstants::kForbidden);
+        return false;
+    }
+    return true;
+}
+
 bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
                        Client& client) {
     // build script path
-    std::string script_path = buildScriptPath(request, location);
-    if (script_path.empty()) {
+    std::string script_path;
+    if (!validateScript(request, location, client, script_path)) {
         return false;
     }
     // resolve interpreter
     std::string interpreter = resolveInterpreter(request, location);
     if (interpreter.empty()) {
+        client.receiveError(HttpConstants::kInternalServerError);
         return false;
     }
     // build env
@@ -37,19 +57,24 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
 
     // create pipes
     if (!createPipes(stdin_pipe, stdout_pipe)) {
+        client.receiveError(HttpConstants::kInternalServerError);
         return false;
     }
 
     // fork
     pid_t pid = fork();
     if (pid < 0) {
+        close(stdin_pipe[0]);
+        close(stdin_pipe[1]);
+        close(stdout_pipe[0]);
+        close(stdout_pipe[1]);
+        client.receiveError(HttpConstants::kInternalServerError);
         return false;
     }
     if (pid == 0) {
         // child
         dup2(stdin_pipe[0], STDIN_FILENO);    // read
         dup2(stdout_pipe[1], STDOUT_FILENO);  // write
-
         // close unused fds
         close(stdin_pipe[0]);
         close(stdin_pipe[1]);
