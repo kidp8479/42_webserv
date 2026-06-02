@@ -63,8 +63,8 @@ bool CgiProcess::isTimedOut() const {
     return timeout_.expired();
 }
 
-void CgiProcess:onTimeout() {
-	kill(pid, SIGKILL);
+void CgiProcess::onTimeout() {
+	kill(pid_, SIGKILL);
 	read_fd_.reset();
 	client_.receiveError(HttpConstants::kGatewayTimeout);
 	done_ = true;
