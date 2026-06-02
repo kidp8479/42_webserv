@@ -251,7 +251,6 @@ bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
         if (!spawner.spawn(handler_context.request, handler_context.location,
                            handler_context.client)) {
             LOG_WARNING() << "[Handler] CGI spawn failed";
-            sendError(HttpConstants::kInternalServerError, handler_context);
             return true;  // error response is ready
         }
         return false;
