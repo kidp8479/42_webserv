@@ -17,15 +17,11 @@ CgiSpawner::~CgiSpawner() {
  */
 bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
                        Client& client) {
-    int stdin_pipe[2];
-    int stdout_pipe[2];
-
-    // create pipes
-    if (!createPipes(stdin_pipe, stdout_pipe)) {
-        return false;
-    }
-    // build script path
+        // build script path
     std::string script_path = buildScriptPath(request, location);
+	if (script_path.empty()) {
+		return false;
+	}
     // resolve interpreter
     std::string interpreter = resolveInterpreter(request, location);
     if (interpreter.empty()) {
@@ -34,6 +30,15 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     // build env
     std::vector<std::string> env_strings = buildEnvStrings(request);
     std::vector<char*> envp = buildEnvp(env_strings);
+	// create pipes after validating everything so i dont have to close pipes
+	// if there is a failure
+	int stdin_pipe[2];
+    int stdout_pipe[2];
+
+    // create pipes
+    if (!createPipes(stdin_pipe, stdout_pipe)) {
+        return false;
+    }
 
     // fork
     pid_t pid = fork();
