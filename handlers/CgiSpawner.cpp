@@ -19,15 +19,17 @@ bool CgiSpawner::validateScript(const Request& request,
     try {
         out_script_path = buildScriptPath(request, location);
     } catch (const std::exception& e) {
-        LOG_ERROR() << "[CgiSpawner] " << e.what();
+        LOG_WARNING() << "[CgiSpawner] " << e.what();
         client.receiveError(HttpConstants::kInternalServerError);
         return false;
     }
     if (access(out_script_path.c_str(), F_OK) != 0) {
+        LOG_WARNING() << "[CgiSpawner] path not found";
         client.receiveError(HttpConstants::kNotFound);
         return false;
     }
     if (access(out_script_path.c_str(), X_OK) != 0) {
+        LOG_WARNING() << "[CgiSpawner] Permission Denied";
         client.receiveError(HttpConstants::kForbidden);
         return false;
     }
