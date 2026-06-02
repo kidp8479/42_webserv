@@ -40,7 +40,7 @@ void CgiProcess::handle(short revents) {
         return;
     }
     if (revents & POLLIN) {
-        char buffer[4096];
+        char buffer[kBufferSize];
         ssize_t n = read(read_fd_.getFd(), buffer, sizeof(buffer));
 
         if (n > 0) {
