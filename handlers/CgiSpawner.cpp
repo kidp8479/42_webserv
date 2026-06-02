@@ -196,6 +196,11 @@ std::vector<std::string> CgiSpawner::buildEnvStrings(const Request& request) {
     // pass cookies to CGI via HTTP_COOKIE — required for session-aware scripts
     env.push_back("HTTP_COOKIE=" + request.getHeaderValue("Cookie"));
 
+	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	env.push_back("SERVER_NAME=" + request.getHeaderValue("Host"));
+	env.push_back("HTTP_HOST=" + request.getHeaderValue("Host"));
+	env.push_back("HTTP_ACCEPT=" + request.getHeaderValue("Accept"));
+	env.push_back("HTTP_USER_AGENT=" + request.getHeaderValue("User-Agent"));
     return env;
 }
 
