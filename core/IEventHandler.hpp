@@ -12,7 +12,7 @@ public:
     virtual bool isTimedOut() const = 0;
     virtual const char* name() const = 0;
 
-	virtual void on Timeout() {}
+	virtual void onTimeout() {}
 };
 
 #endif
