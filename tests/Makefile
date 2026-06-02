@@ -18,7 +18,7 @@ TEST_BINS := $(addprefix $(BIN_DIR)/,$(TEST_NAMES))
 VPATH := $(sort $(dir $(TEST_SRCS)))
 
 # shared sources (no test files here)
-SRCS = main.cpp \
+SRCS = \
        ../config/Config.cpp \
 	   ../config/ConfigBuilder.cpp \
 	   ../config/ConfigParser.cpp \
@@ -31,6 +31,7 @@ SRCS = main.cpp \
 	   ../core/Client.cpp \
 	   ../core/EventLoop.cpp \
 	   ../core/Fd.cpp \
+	   ../core/FdUtils.cpp \
 	   ../core/Listener.cpp \
 	   ../core/Server.cpp \
 	   ../core/ServerResources.cpp \
