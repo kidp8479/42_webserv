@@ -257,7 +257,7 @@ bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
         return false;
     } catch (const std::exception& e) {
         LOG_ERROR() << "[Handler] CGI exception: " << e.what();
-        sendError(HttpConstants::kNotImplemented, handler_context);
+        sendError(HttpConstants::kInternalServerError, handler_context);
         return true;
     }
 }
