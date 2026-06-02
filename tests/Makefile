@@ -18,7 +18,8 @@ TEST_BINS := $(addprefix $(BIN_DIR)/,$(TEST_NAMES))
 VPATH := $(sort $(dir $(TEST_SRCS)))
 
 # shared sources (no test files here)
-SRCS = ../config/Config.cpp \
+SRCS = \
+       ../config/Config.cpp \
 	   ../config/ConfigBuilder.cpp \
 	   ../config/ConfigParser.cpp \
 	   ../config/ConfigTokenizer.cpp \

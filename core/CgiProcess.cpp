@@ -17,7 +17,7 @@ CgiProcess::CgiProcess(pid_t pid, int read_fd, Client& client, EventLoop& loop)
 }
 
 CgiProcess::~CgiProcess() {
-	if (!done_) {
+    if (!done_) {
         kill(pid_, SIGKILL);
     }
 }
@@ -61,6 +61,13 @@ bool CgiProcess::isDone() const {
 
 bool CgiProcess::isTimedOut() const {
     return timeout_.expired();
+}
+
+void CgiProcess::onTimeout() {
+    kill(pid_, SIGKILL);
+    read_fd_.reset();
+    client_.receiveError(HttpConstants::kGatewayTimeout);
+    done_ = true;
 }
 
 const char* CgiProcess::name() const {

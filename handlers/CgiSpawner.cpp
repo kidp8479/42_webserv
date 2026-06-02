@@ -17,15 +17,11 @@ CgiSpawner::~CgiSpawner() {
  */
 bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
                        Client& client) {
-    int stdin_pipe[2];
-    int stdout_pipe[2];
-
-    // create pipes
-    if (!createPipes(stdin_pipe, stdout_pipe)) {
-        return false;
-    }
     // build script path
     std::string script_path = buildScriptPath(request, location);
+    if (script_path.empty()) {
+        return false;
+    }
     // resolve interpreter
     std::string interpreter = resolveInterpreter(request, location);
     if (interpreter.empty()) {
@@ -34,6 +30,15 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     // build env
     std::vector<std::string> env_strings = buildEnvStrings(request);
     std::vector<char*> envp = buildEnvp(env_strings);
+    // create pipes after validating everything so i dont have to close pipes
+    // if there is a failure
+    int stdin_pipe[2];
+    int stdout_pipe[2];
+
+    // create pipes
+    if (!createPipes(stdin_pipe, stdout_pipe)) {
+        return false;
+    }
 
     // fork
     pid_t pid = fork();
@@ -66,8 +71,8 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     close(stdin_pipe[0]);   // parent doesn read stdin pipe
     close(stdout_pipe[1]);  // parent doesnt write stdout pipe
 
-	// set non blocking flag on read end before we hand to CgiProcess
-	FdUtils::setNonBlocking(stdout_pipe[0]);
+    // set non blocking flag on read end before we hand to CgiProcess
+    FdUtils::setNonBlocking(stdout_pipe[0]);
 
     const std::string& body = request.getBody();
     // write post body
@@ -196,6 +201,11 @@ std::vector<std::string> CgiSpawner::buildEnvStrings(const Request& request) {
     // pass cookies to CGI via HTTP_COOKIE — required for session-aware scripts
     env.push_back("HTTP_COOKIE=" + request.getHeaderValue("Cookie"));
 
+    env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+    env.push_back("SERVER_NAME=" + request.getHeaderValue("Host"));
+    env.push_back("HTTP_HOST=" + request.getHeaderValue("Host"));
+    env.push_back("HTTP_ACCEPT=" + request.getHeaderValue("Accept"));
+    env.push_back("HTTP_USER_AGENT=" + request.getHeaderValue("User-Agent"));
     return env;
 }
 

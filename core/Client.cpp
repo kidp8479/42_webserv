@@ -200,10 +200,10 @@ void Client::write() {
                 loop_.modifyHandler(this, 0);
             }
         } else {
-			// switch back to read mode
-			loop_.modifyHandler(this, POLLIN);
-		}
-	}
+            // switch back to read mode
+            loop_.modifyHandler(this, POLLIN);
+        }
+    }
 }
 
 void Client::cleanup() {
@@ -264,6 +264,7 @@ const Router& Client::getRouter() const {
 }
 
 void Client::receiveError(HttpConstants::HttpError error) {
+    pending_cgi_ = NULL;
     keep_alive_ = false;  // dont reuse connection after cgi failure
     response_.buildError(error);
     response_.setHeader("Connection", "close");
@@ -295,4 +296,8 @@ void Client::onCgiFinished(const std::string& raw_cgi_output) {
         LOG_ERROR() << "[Client] failed to apply CGI response: " << e.what();
         receiveError(HttpConstants::kInternalServerError);
     }
+}
+
+void Client::onTimeout() {
+    cleanup();
 }
