@@ -14,6 +14,8 @@ class Client;
 
 class CgiProcess : public IEventHandler {
 public:
+	static const size_t kBufferSize = 4096;
+
     CgiProcess(pid_t pid, int read_fd, Client& client, EventLoop& loop);
     ~CgiProcess();
 
