@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 
+# diagnostic CGI script - doesn't do anything, just displays what the server
+# passed to the CGI process: method, query string, environment variables.
+# proves the full CGI tunnel works (server -> fork -> execve -> stdout -> response)
+
 import os
 import datetime
 
+# CGI environment variables set by the server before execve()
 method = os.environ.get("REQUEST_METHOD", "unknown")
 query = os.environ.get("QUERY_STRING", "")
 proto = os.environ.get("SERVER_PROTOCOL", "unknown")
 now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# Parse query string into key=value pairs
+# parse query string into key=value pairs (ex: ?name=eval&foo=bar)
 params = {}
 if query:
     for pair in query.split("&"):
@@ -16,6 +21,7 @@ if query:
             k, v = pair.split("=", 1)
             params[k] = v
 
+# CGI output: headers first, blank line, then body - server reads this from stdout
 print("Content-Type: text/html")
 print()
 
@@ -47,6 +53,7 @@ print(f"""
     </div>
 """)
 
+# display query parameters if any were sent (ex: /cgi-bin/cgi_working.py?name=eval)
 if params:
     print("""
     <div class="panel">
@@ -62,6 +69,7 @@ if params:
     </div>
 """)
 
+# display key CGI environment variables - set by the server before execve()
 print("""
     <div class="panel">
         <h2>Environment Variables</h2>
@@ -95,5 +103,3 @@ print("""
 </body>
 </html>
 """)
-
-
