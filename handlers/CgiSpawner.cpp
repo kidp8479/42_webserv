@@ -50,15 +50,18 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
         return false;
     }
     // build env
-    std::vector<std::string> env_strings = buildEnvStrings(request);
+    std::vector<std::string> env_strings =
+        buildEnvStrings(request, script_path, client);
     std::vector<char*> envp = buildEnvp(env_strings);
     // create pipes after validating everything so i dont have to close pipes
     // if there is a failure
     int stdin_pipe[2];
     int stdout_pipe[2];
 
+    bool has_body = !request.getBody().empty();
+
     // create pipes
-    if (!createPipes(stdin_pipe, stdout_pipe)) {
+    if (!createPipes(stdin_pipe, stdout_pipe, has_body)) {
         client.receiveError(HttpConstants::kInternalServerError);
         return false;
     }
@@ -66,8 +69,10 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     // fork
     pid_t pid = fork();
     if (pid < 0) {
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
+        if (has_body) {
+            close(stdin_pipe[0]);
+            close(stdin_pipe[1]);
+        }
         close(stdout_pipe[0]);
         close(stdout_pipe[1]);
         client.receiveError(HttpConstants::kInternalServerError);
@@ -75,13 +80,17 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     }
     if (pid == 0) {
         // child
-        dup2(stdin_pipe[0], STDIN_FILENO);    // read
-        dup2(stdout_pipe[1], STDOUT_FILENO);  // write
-        // close unused fds
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
+        // stdout — always
+        dup2(stdout_pipe[1], STDOUT_FILENO);
         close(stdout_pipe[0]);
         close(stdout_pipe[1]);
+
+        if (has_body) {
+            dup2(stdin_pipe[0], STDIN_FILENO);  // read
+            // close unused fds
+            close(stdin_pipe[0]);
+            close(stdin_pipe[1]);
+        }
 
         std::string dir = script_path.substr(0, script_path.rfind('/'));
         std::string filename = script_path.substr(script_path.rfind('/') + 1);
@@ -95,20 +104,18 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
         _exit(1);
     }
     // parent:
-    close(stdin_pipe[0]);   // parent doesn read stdin pipe
     close(stdout_pipe[1]);  // parent doesnt write stdout pipe
+    if (has_body) {
+        close(stdin_pipe[0]);  // parent doesn read stdin pipe
+        const std::string& body = request.getBody();
+        // write post body
+        CgiStdinWriter* writer = new CgiStdinWriter(stdin_pipe[1], body, loop_);
+        loop_.addHandler(writer, POLLOUT);
+    }
 
     // set non blocking flag on read end before we hand to CgiProcess
     FdUtils::setNonBlocking(stdout_pipe[0]);
 
-    const std::string& body = request.getBody();
-    // write post body
-    if (!body.empty()) {
-        CgiStdinWriter* writer = new CgiStdinWriter(stdin_pipe[1], body, loop_);
-        loop_.addHandler(writer, POLLOUT);
-    } else {
-        close(stdin_pipe[1]);
-    }
     // create Cgi Handler
     CgiProcess* cgi = new CgiProcess(pid, stdout_pipe[0], client, loop_);
     // register with Client
@@ -152,11 +159,12 @@ std::string CgiSpawner::resolveInterpreter(const Request& request,
 // stdin pipe: send POST body to CGI
 // stdout pipe: receive CGI output
 //
-bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2]) {
+bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2],
+                             bool has_body) {
     // create the pipes
     // stdin_pipe[0] = read end of child
     // stdin_pipe[1] = write end parent
-    if (pipe(stdin_pipe) == -1) {
+    if (has_body && pipe(stdin_pipe) == -1) {
         LOG_ERROR() << "[CgiSpawner] failed to create stdin pipe";
         return false;
     }
@@ -211,28 +219,56 @@ std::string CgiSpawner::buildScriptPath(const Request& request,
     return root + relative_uri;
 }
 
-std::vector<std::string> CgiSpawner::buildEnvStrings(const Request& request) {
+std::vector<std::string> CgiSpawner::buildEnvStrings(
+    const Request& request, const std::string& script_path,
+    const Client& client) {
     std::vector<std::string> env;
 
+    // mandatory
+    env.push_back("AUTH_TYPE=");
+    env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+    env.push_back("PATH_INFO=");
+    env.push_back("PATH_TRANSLATED=");
+    env.push_back("QUERY_STRING=" + request.getQuery());
+    env.push_back("REMOTE_ADDR=" + client.getServerConfig().getHost());
+    env.push_back("REMOTE_HOST=" + client.getServerConfig().getHost());
+    // REMOTE_IDENT - OPTIONAL
+    env.push_back("REMOTE_USER=");
     env.push_back("REQUEST_METHOD=" + request.getMethod());
     env.push_back("SCRIPT_NAME=" + request.getPath());
-    env.push_back("QUERY_STRING=" + request.getQuery());
-    env.push_back("REQUEST_URI=" + request.getTarget());
-    env.push_back("SERVER_PROTOCOL=" + request.getProtocol());
-
-    std::ostringstream oss;
-    oss << request.getBody().size();
-
-    env.push_back("CONTENT_LENGTH=" + oss.str());
-    env.push_back("CONTENT_TYPE=" + request.getHeaderValue("Content-Type"));
-    // pass cookies to CGI via HTTP_COOKIE - required for session-aware scripts
-    env.push_back("HTTP_COOKIE=" + request.getHeaderValue("Cookie"));
-
-    env.push_back("GATEWAY_INTERFACE=CGI/1.1");
     env.push_back("SERVER_NAME=" + request.getHeaderValue("Host"));
-    env.push_back("HTTP_HOST=" + request.getHeaderValue("Host"));
-    env.push_back("HTTP_ACCEPT=" + request.getHeaderValue("Accept"));
-    env.push_back("HTTP_USER_AGENT=" + request.getHeaderValue("User-Agent"));
+    env.push_back("SERVER_PROTOCOL=" + request.getProtocol());
+    env.push_back("SERVER_SOFTWARE=webserv/1.0");
+
+    std::ostringstream len_oss;
+    len_oss << request.getBody().size();
+    env.push_back("CONTENT_LENGTH=" + len_oss.str());
+    env.push_back("CONTENT_TYPE=" + request.getHeaderValue("Content-Type"));
+
+    std::ostringstream port_oss;
+    port_oss << client.getServerConfig().getPort();
+    env.push_back("SERVER_PORT=" + port_oss.str());
+
+    // local redirect
+    env.push_back("REDIRECT_STATUS=200");
+    env.push_back("REQUEST_URI=" + request.getTarget());
+    env.push_back("SCRIPT_FILENAME=" + script_path);
+
+    // HTTP_* loop - fwd all headers except CL and Content-Type (cookies
+    // included here)
+    const std::map<std::string, std::string>& headers = request.getHeaders();
+    std::map<std::string, std::string>::const_iterator it;
+    for (it = headers.begin(); it != headers.end(); ++it) {
+        const std::string& name = it->first;
+        if (name == "content-type" || name == "content-length") {
+            continue;
+        }
+        std::string key = "HTTP_";
+        for (size_t i = 0; i < name.size(); ++i) {
+            key += (name[i] == '-') ? '_' : toupper(name[i]);
+        }
+        env.push_back(key + "=" + it->second);
+    }
     return env;
 }
 
