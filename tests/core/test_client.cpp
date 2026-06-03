@@ -3,14 +3,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "../../config/LocationConfig.hpp"
 #include "../../config/ServerConfig.hpp"
 #include "../../core/Client.hpp"
 #include "../../core/EventLoop.hpp"
-#include "../../core/Listener.hpp"
 #include "../../core/ServerResources.hpp"
 
 ServerConfig createDummyServerConfig(int port = 8083) {
     ServerConfig sconf;
+    sconf.setHost("127.0.0.1");
     sconf.setPort(port);
 
     LocationConfig loc;
@@ -45,18 +46,19 @@ protected:
 
     static void setNonBlocking(int fd) {
         int flags = fcntl(fd, F_GETFL, 0);
+
         ASSERT_NE(flags, -1);
         ASSERT_NE(fcntl(fd, F_SETFL, flags | O_NONBLOCK), -1);
     }
 
-    void SetUp() override {
+    void SetUp() {
         ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sockets), 0);
 
         setNonBlocking(sockets[0]);
         setNonBlocking(sockets[1]);
     }
 
-    void TearDown() override {
+    void TearDown() {
         if (sockets[0] >= 0) {
             close(sockets[0]);
         }
@@ -66,16 +68,17 @@ protected:
     }
 };
 
-TEST_F(ClientTest, Constructor_InitializesClient) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, ConstructorInitializesClient) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
     EXPECT_GT(client.getFd(), 0);
     EXPECT_STREQ(client.name(), "Client");
+    EXPECT_EQ(client.getPeerIp(), "127.0.0.1");
 }
 
-TEST_F(ClientTest, HandlePollIn_ParsesCompleteValidRequest) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, HandlePollInParsesCompleteValidRequest) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
     const char* request =
@@ -86,22 +89,22 @@ TEST_F(ClientTest, HandlePollIn_ParsesCompleteValidRequest) {
     ASSERT_GT(write(sockets[1], request, strlen(request)), 0);
 
     client.handle(POLLIN);
-
-    // forces response generation (non-CGI path)
     client.handle(POLLOUT);
 
     char buffer[4096];
     ssize_t n = recv(sockets[1], buffer, sizeof(buffer) - 1, 0);
 
     ASSERT_GT(n, 0);
+
     buffer[n] = '\0';
 
     std::string response(buffer);
+
     EXPECT_NE(response.find("HTTP/1.1"), std::string::npos);
 }
 
-TEST_F(ClientTest, HandlePollIn_HandlesPartialRequestSafely) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, HandlePollInHandlesPartialRequestSafely) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
     const char* partial =
@@ -119,22 +122,33 @@ TEST_F(ClientTest, HandlePollIn_HandlesPartialRequestSafely) {
     EXPECT_TRUE(errno == EAGAIN || errno == EWOULDBLOCK);
 }
 
-TEST_F(ClientTest, HandlePollErr_ClosesConnectionSafely) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, HandlePollErrClosesConnectionSafely) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
     EXPECT_NO_THROW(client.handle(POLLERR));
+    EXPECT_TRUE(client.isDone());
 }
 
-TEST_F(ClientTest, HandlePollNval_ClosesConnectionSafely) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, HandlePollNvalClosesConnectionSafely) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
     EXPECT_NO_THROW(client.handle(POLLNVAL));
+    EXPECT_TRUE(client.isDone());
 }
 
-TEST_F(ClientTest, KeepAlive_HandlesMultipleRequests) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, HandlePollHupClosesIncompleteConnection) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
+    sockets[0] = -1;
+
+    EXPECT_NO_THROW(client.handle(POLLHUP));
+
+    EXPECT_TRUE(client.isDone());
+}
+
+TEST_F(ClientTest, KeepAliveHandlesMultipleRequests) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
     const char* request =
@@ -148,7 +162,9 @@ TEST_F(ClientTest, KeepAlive_HandlesMultipleRequests) {
     client.handle(POLLOUT);
 
     char buffer[4096];
+
     ssize_t n1 = recv(sockets[1], buffer, sizeof(buffer), 0);
+
     ASSERT_GT(n1, 0);
 
     ASSERT_GT(write(sockets[1], request, strlen(request)), 0);
@@ -157,45 +173,76 @@ TEST_F(ClientTest, KeepAlive_HandlesMultipleRequests) {
     client.handle(POLLOUT);
 
     ssize_t n2 = recv(sockets[1], buffer, sizeof(buffer), 0);
+
     ASSERT_GT(n2, 0);
 }
 
-//
-// ========================
-// CGI UNIT-LEVEL TESTING
-// ========================
-// We DO NOT fork/exec here.
-// We only test Client-side integration points.
-// ========================
-//
-
-TEST_F(ClientTest, CGI_SetPendingStateTransitionsToWaiting) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, ReceiveErrorBuildsErrorResponse) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
-    // simulate CGI start
-    client.setPendingCgi(reinterpret_cast<CgiProcess*>(0x1));
+    client.receiveError(HttpConstants::kNotFound);
 
-    EXPECT_NO_THROW(client.handle(POLLIN));
-    EXPECT_NO_THROW(client.handle(POLLOUT));
+    client.handle(POLLOUT);
+
+    char buffer[4096];
+
+    ssize_t n = recv(sockets[1], buffer, sizeof(buffer) - 1, 0);
+
+    ASSERT_GT(n, 0);
+
+    buffer[n] = '\0';
+
+    std::string response(buffer);
+
+    EXPECT_NE(response.find("404"), std::string::npos);
 }
 
-TEST_F(ClientTest, CGI_OnFinishedBuildsResponse) {
-    Client client(sockets[0], loop, resources);
+TEST_F(ClientTest, CgiOnFinishedBuildsResponse) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
     sockets[0] = -1;
 
     const std::string fake_cgi_output =
         "Status: 200 OK\r\n"
-        "Content-Type: text/html\r\n"
+        "Content-Type: text/plain\r\n"
         "\r\n"
         "Hello CGI";
 
     EXPECT_NO_THROW(client.onCgiFinished(fake_cgi_output));
 
-    char buffer[4096];
-    ssize_t n = recv(sockets[1], buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
+    client.handle(POLLOUT);
 
-    // may be no real socket output yet depending on loop scheduling,
-    // but state transition must succeed without crash
-    EXPECT_GE(n, -1);
+    char buffer[4096];
+
+    ssize_t n = recv(sockets[1], buffer, sizeof(buffer) - 1, 0);
+
+    ASSERT_GT(n, 0);
+
+    buffer[n] = '\0';
+
+    std::string response(buffer);
+
+    EXPECT_NE(response.find("200 OK"), std::string::npos);
+    EXPECT_NE(response.find("Hello CGI"), std::string::npos);
+}
+
+TEST_F(ClientTest, EmptyCgiOutputProducesServerError) {
+    Client client(sockets[0], loop, resources, "127.0.0.1");
+    sockets[0] = -1;
+
+    client.onCgiFinished("");
+
+    client.handle(POLLOUT);
+
+    char buffer[4096];
+
+    ssize_t n = recv(sockets[1], buffer, sizeof(buffer) - 1, 0);
+
+    ASSERT_GT(n, 0);
+
+    buffer[n] = '\0';
+
+    std::string response(buffer);
+
+    EXPECT_NE(response.find("500"), std::string::npos);
 }

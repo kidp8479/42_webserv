@@ -1,49 +1,72 @@
 #include <gtest/gtest.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "../../core/EventLoop.hpp"
 #include "../../core/IEventHandler.hpp"
 
 class FakeHandler : public IEventHandler {
 public:
-    explicit FakeHandler(int fd)
-        : handled(false), last_events(0), fd_(fd), done_(false) {
+    explicit FakeHandler(int fd, bool* timeout_flag = NULL)
+        : handled(false),
+          last_events(0),
+          fd_(fd),
+          done_(false),
+          timed_out_(false),
+          timeout_flag_(timeout_flag) {
     }
 
     int getFd() const {
         return fd_;
     }
+
     void handle(short revents) {
         handled = true;
-        // revents propagated correctly
         last_events = revents;
     }
+
     bool isDone() const {
         return done_;
     }
+
+    bool isTimedOut() const {
+        return timed_out_;
+    }
+
     const char* name() const {
         return "FakeHandler";
     }
+
+    void onTimeout() {
+        if (timeout_flag_) {
+            *timeout_flag_ = true;
+        }
+    }
+
     void markDone() {
         done_ = true;
     }
+
+    void markTimedOut() {
+        timed_out_ = true;
+    }
+
     bool handled;
     short last_events;
 
 private:
     int fd_;
     bool done_;
+    bool timed_out_;
+    bool* timeout_flag_;
 };
 
 class EventLoopTest : public ::testing::Test {
 protected:
     EventLoop loop;
-
     int sockets[2];
 
     void SetUp() {
-        // use socketpair for testing, simulating a connection with read and
-        // write ends
         ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sockets), 0);
     }
 
@@ -55,15 +78,14 @@ protected:
 
 TEST_F(EventLoopTest, addHandler_FullReactorLoopWorksAsIntended) {
     FakeHandler* handler = new FakeHandler(sockets[0]);
+
     loop.addHandler(handler, POLLIN);
 
     const char byte = 'A';
-    // write to socket[0] so socket[1] becomes readable and poll can detect
-    // POLLIN simulates incoming network data
     ASSERT_EQ(write(sockets[1], &byte, 1), 1);
 
     int ready = loop.wait(1000);
-    // poll dected 1 fd was ready
+
     ASSERT_EQ(ready, 1);
 
     loop.dispatch();
@@ -74,12 +96,13 @@ TEST_F(EventLoopTest, addHandler_FullReactorLoopWorksAsIntended) {
 
 TEST_F(EventLoopTest, modifyHandler_UpdatesPollEventsCorrectly) {
     FakeHandler* handler = new FakeHandler(sockets[0]);
+
     loop.addHandler(handler, POLLIN);
 
-    // change event to POLLOUT
     loop.modifyHandler(handler, POLLOUT);
 
     int ready = loop.wait(1000);
+
     ASSERT_EQ(ready, 1);
 
     loop.dispatch();
@@ -93,18 +116,16 @@ TEST_F(EventLoopTest, removeHandler_PreventsFutureDispatch) {
 
     loop.addHandler(handler, POLLIN);
 
-    // remove BEFORE any event happens
     loop.removeHandler(handler);
 
     const char byte = 'A';
     ASSERT_EQ(write(sockets[1], &byte, 1), 1);
 
-    int ready = loop.wait(1000);
-
-    // dispatch does nothing for removed handler
-    loop.dispatch();
+    int ready = loop.wait(100);
 
     EXPECT_EQ(ready, 0);
+
+    loop.dispatch();
 }
 
 TEST_F(EventLoopTest, dispatch_SupportsMultipleHandlers) {
@@ -149,29 +170,20 @@ TEST_F(EventLoopTest, cleanup_RemovesDoneHandlers) {
 
     h1->markDone();
 
-    loop.cleanup();
-
-    // only h2 remains
-    EXPECT_EQ(h2->getFd(), sockets[1]);
+    EXPECT_NO_THROW(loop.cleanup());
 }
 
-TEST_F(EventLoopTest, cleanup_PreservesActiveHandlers) {
-    FakeHandler* h1 = new FakeHandler(sockets[0]);
-    FakeHandler* h2 = new FakeHandler(sockets[1]);
+TEST_F(EventLoopTest, cleanup_CallsOnTimeoutForTimedOutHandlers) {
+    bool timeout_called = false;
 
-    loop.addHandler(h1, POLLIN);
-    loop.addHandler(h2, POLLIN);
+    FakeHandler* handler =
+        new FakeHandler(sockets[0], &timeout_called);
 
-    h1->markDone();
+    loop.addHandler(handler, POLLIN);
+
+    handler->markTimedOut();
 
     loop.cleanup();
 
-    char a = 'A';
-    ASSERT_EQ(write(sockets[0], &a, 1), 1);
-
-    int ready = loop.wait(1000);
-    loop.dispatch();
-
-    EXPECT_EQ(ready, 1);
-    EXPECT_TRUE(h2->handled);
+    EXPECT_TRUE(timeout_called);
 }

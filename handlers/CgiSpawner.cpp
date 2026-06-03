@@ -80,27 +80,36 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
     }
     if (pid == 0) {
         // child
-        // stdout — always
-        dup2(stdout_pipe[1], STDOUT_FILENO);
-        close(stdout_pipe[0]);
-        close(stdout_pipe[1]);
-
-        if (has_body) {
-            dup2(stdin_pipe[0], STDIN_FILENO);  // read
-            // close unused fds
-            close(stdin_pipe[0]);
-            close(stdin_pipe[1]);
-        }
+		// stdout — always
+		dup2(stdout_pipe[1], STDOUT_FILENO);
+		close(stdout_pipe[0]);
+		close(stdout_pipe[1]);
+		
+		if (has_body) {
+	        dup2(stdin_pipe[0], STDIN_FILENO);
+			close(stdin_pipe[0]);
+			close(stdin_pipe[1]);
+		} else {
+			int devnull = open("/dev/null", O_RDONLY);
+			if (devnull != -1) {
+				dup2(devnull, STDIN_FILENO);
+				close(devnull);
+			}
+		}
 
         std::string dir = script_path.substr(0, script_path.rfind('/'));
         std::string filename = script_path.substr(script_path.rfind('/') + 1);
 
-        chdir(dir.c_str());
+        if (chdir(dir.c_str()) == -1) {
+		    write(STDERR_FILENO, "[CgiSpawner] chdir failed\n", 26);
+			_exit(1);
+		}
 
         char* argv[] = {const_cast<char*>(interpreter.c_str()),
                         const_cast<char*>(filename.c_str()), NULL};
         //  execve()
         execve(interpreter.c_str(), argv, &envp[0]);
+		write(STDERR_FILENO, "[CgiSpawner] execve failed\n", 27);
         _exit(1);
     }
     // parent:
@@ -111,11 +120,9 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
         // write post body
         CgiStdinWriter* writer = new CgiStdinWriter(stdin_pipe[1], body, loop_);
         loop_.addHandler(writer, POLLOUT);
-    }
-
+	}
     // set non blocking flag on read end before we hand to CgiProcess
     FdUtils::setNonBlocking(stdout_pipe[0]);
-
     // create Cgi Handler
     CgiProcess* cgi = new CgiProcess(pid, stdout_pipe[0], client, loop_);
     // register with Client
@@ -171,9 +178,11 @@ bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2],
     // stdout_pipe[0] = read end parent
     // stdout_pipe[1] = write end child
     if (pipe(stdout_pipe) == -1) {
-        LOG_ERROR() << "[CgiSpawner] failed to create stdout pipe";
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
+		LOG_ERROR() << "[CgiSpawner] failed to create stdout pipe";
+		if (has_body) {
+			close(stdin_pipe[0]);
+			close(stdin_pipe[1]);
+		}
         return false;
     }
     return true;
@@ -230,10 +239,11 @@ std::vector<std::string> CgiSpawner::buildEnvStrings(
     env.push_back("PATH_INFO=");
     env.push_back("PATH_TRANSLATED=");
     env.push_back("QUERY_STRING=" + request.getQuery());
-    env.push_back("REMOTE_ADDR=" + client.getServerConfig().getHost());
-    env.push_back("REMOTE_HOST=" + client.getServerConfig().getHost());
-    // REMOTE_IDENT - OPTIONAL
-    env.push_back("REMOTE_USER=");
+	env.push_back("REMOTE_ADDR=" + client.getPeerIp());
+	// fall back to REMOTE_ADDR
+	env.push_back("REMOTE_HOST=" + client.getPeerIp());
+	// REMOTE_IDENT - OPTIONAL
+	env.push_back("REMOTE_USER=");
     env.push_back("REQUEST_METHOD=" + request.getMethod());
     env.push_back("SCRIPT_NAME=" + request.getPath());
     env.push_back("SERVER_NAME=" + request.getHeaderValue("Host"));
