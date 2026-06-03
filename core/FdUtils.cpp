@@ -1,5 +1,7 @@
 #include "FdUtils.hpp"
+
 #include <fcntl.h>
+
 #include <sstream>
 #include <stdexcept>
 
@@ -24,4 +26,4 @@ void setNonBlocking(int fd) {
     }
 }
 
-}
+}  // namespace FdUtils

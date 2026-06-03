@@ -1,8 +1,8 @@
 #include "Listener.hpp"
 
 #include <fcntl.h>
-#include <netinet/in.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
@@ -33,7 +33,7 @@ Listener::Listener(EventLoop& loop, const ServerResources& resources)
         throw std::runtime_error("[listener] setsockopt() failed");
     }
     setupSocket();
-	FdUtils::setNonBlocking(fd_.getFd());
+    FdUtils::setNonBlocking(fd_.getFd());
     loop_.addHandler(this, POLLIN);
 }
 
@@ -94,10 +94,10 @@ void Listener::handle(short revents) {
 
 void Listener::acceptClients() {
     while (true) {
-		struct sockaddr_in peer_addr;
-		socklen_t peer_len = sizeof(peer_addr);
-        int client_fd = accept(fd_.getFd(), (struct sockaddr*)&peer_addr,
-				&peer_len);
+        struct sockaddr_in peer_addr;
+        socklen_t peer_len = sizeof(peer_addr);
+        int client_fd =
+            accept(fd_.getFd(), (struct sockaddr*)&peer_addr, &peer_len);
 
         // accept failed
         if (client_fd < 0) {
@@ -114,14 +114,13 @@ void Listener::acceptClients() {
         }
         // accept succeed, we set up client
         try {
-			FdUtils::setNonBlocking(client_fd);
-			unsigned int ip = ntohl(peer_addr.sin_addr.s_addr);
-			std::ostringstream oss;
-            oss << ((ip >> 24) & 0xFF) << "."
-                << ((ip >> 16) & 0xFF) << "."
-                << ((ip >>  8) & 0xFF) << "."
-                << ((ip >>  0) & 0xFF);
-            Client* client = new Client(client_fd, loop_, resources_, oss.str());
+            FdUtils::setNonBlocking(client_fd);
+            unsigned int ip = ntohl(peer_addr.sin_addr.s_addr);
+            std::ostringstream oss;
+            oss << ((ip >> 24) & 0xFF) << "." << ((ip >> 16) & 0xFF) << "."
+                << ((ip >> 8) & 0xFF) << "." << ((ip >> 0) & 0xFF);
+            Client* client =
+                new Client(client_fd, loop_, resources_, oss.str());
             loop_.addHandler(client, POLLIN);
         } catch (const std::exception& e) {
             close(client_fd);

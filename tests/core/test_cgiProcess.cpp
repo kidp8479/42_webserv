@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include <poll.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
+#include "../../config/ServerConfig.hpp"
 #include "../../core/CgiProcess.hpp"
 #include "../../core/Client.hpp"
 #include "../../core/EventLoop.hpp"
 #include "../../core/ServerResources.hpp"
-#include "../../config/ServerConfig.hpp"
-#include <sys/socket.h>
 
 // --------------------------------------------------
 // Helper: create minimal valid config
@@ -47,9 +47,8 @@ protected:
         return cfg;
     }
 
-    CgiProcessTest()
-        : config(createDummyConfig()),
-          resources(config) {}
+    CgiProcessTest() : config(createDummyConfig()), resources(config) {
+    }
 };
 
 // --------------------------------------------------
@@ -97,7 +96,7 @@ TEST_F(CgiProcessTest, HandleEOFTriggersFinish) {
 
     CgiProcess cgi(1234, fds[0], client, loop);
 
-    close(fds[1]); // IMPORTANT: triggers EOF
+    close(fds[1]);  // IMPORTANT: triggers EOF
 
     cgi.handle(POLLIN);
 

@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
+
 #include <fstream>
 
 #include "../../config/LocationConfig.hpp"
@@ -81,22 +82,19 @@ TEST_F(TestHttpHandler, MalformedRequestTriggersError) {
 }
 
 TEST_F(TestHttpHandler, UnknownMethodIs501) {
-    Request req = makeRequest(
-        "PATCH / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("PATCH / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     EXPECT_NE(run(req, loc_).find("501"), std::string::npos);
 }
 
 TEST_F(TestHttpHandler, PutIsNotImplemented) {
-    Request req = makeRequest(
-        "PUT / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("PUT / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     EXPECT_NE(run(req, loc_).find("501"), std::string::npos);
 }
 
 TEST_F(TestHttpHandler, MethodNotInLocationIs405) {
-    Request req = makeRequest(
-        "DELETE / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("DELETE / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     LocationConfig loc;
     loc.setPath("/");
@@ -107,8 +105,7 @@ TEST_F(TestHttpHandler, MethodNotInLocationIs405) {
 }
 
 TEST_F(TestHttpHandler, MethodNotInMultipleAllowedMethodsIs405) {
-    Request req = makeRequest(
-        "DELETE / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("DELETE / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     LocationConfig loc;
     loc.setPath("/");
@@ -120,8 +117,7 @@ TEST_F(TestHttpHandler, MethodNotInMultipleAllowedMethodsIs405) {
 }
 
 TEST_F(TestHttpHandler, AmbiguousLocationBlockIs500) {
-    Request req = makeRequest(
-        "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     LocationConfig loc;
     std::vector<std::string> methods;
@@ -135,7 +131,8 @@ TEST_F(TestHttpHandler, AmbiguousLocationBlockIs500) {
 
 TEST_F(TestHttpHandler, PostOnStaticBlockIs500) {
     Request req = makeRequest(
-        "POST /hello.html HTTP/1.1\r\nHost: localhost\r\nContent-Length: 0\r\n\r\n");
+        "POST /hello.html HTTP/1.1\r\nHost: localhost\r\nContent-Length: "
+        "0\r\n\r\n");
     ASSERT_FALSE(req.isError());
     EXPECT_NE(run(req, loc_).find("500"), std::string::npos);
 }
@@ -143,8 +140,7 @@ TEST_F(TestHttpHandler, PostOnStaticBlockIs500) {
 // --- redirects ---
 
 TEST_F(TestHttpHandler, Redirect301HasLocationHeader) {
-    Request req = makeRequest(
-        "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     LocationConfig loc;
     std::vector<std::string> methods;
     methods.push_back("GET");
@@ -158,8 +154,7 @@ TEST_F(TestHttpHandler, Redirect301HasLocationHeader) {
 }
 
 TEST_F(TestHttpHandler, Redirect302HasLocationHeader) {
-    Request req = makeRequest(
-        "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     LocationConfig loc;
     std::vector<std::string> methods;
     methods.push_back("GET");
@@ -172,8 +167,7 @@ TEST_F(TestHttpHandler, Redirect302HasLocationHeader) {
 }
 
 TEST_F(TestHttpHandler, Redirect307HasLocationHeader) {
-    Request req = makeRequest(
-        "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     LocationConfig loc;
     std::vector<std::string> methods;
     methods.push_back("GET");
@@ -186,8 +180,7 @@ TEST_F(TestHttpHandler, Redirect307HasLocationHeader) {
 }
 
 TEST_F(TestHttpHandler, Redirect308HasLocationHeader) {
-    Request req = makeRequest(
-        "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     LocationConfig loc;
     std::vector<std::string> methods;
     methods.push_back("GET");
@@ -200,8 +193,7 @@ TEST_F(TestHttpHandler, Redirect308HasLocationHeader) {
 }
 
 TEST_F(TestHttpHandler, UnknownRedirectCodeHasFallbackReason) {
-    Request req = makeRequest(
-        "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req = makeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     LocationConfig loc;
     std::vector<std::string> methods;
     methods.push_back("GET");
@@ -223,8 +215,8 @@ TEST_F(TestHttpHandler, DirectoryTraversalIs403) {
 }
 
 TEST_F(TestHttpHandler, StaticFileServed200) {
-    Request req = makeRequest(
-        "GET /hello.html HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req =
+        makeRequest("GET /hello.html HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     std::string raw = run(req, loc_);
     EXPECT_NE(raw.find("200"), std::string::npos);
@@ -240,8 +232,8 @@ TEST_F(TestHttpHandler, StaticFileNotFoundIs404) {
 }
 
 TEST_F(TestHttpHandler, DirectoryWithIndexServed200) {
-    Request req = makeRequest(
-        "GET /subdir/ HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req =
+        makeRequest("GET /subdir/ HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     loc_.setIndex("index.html");
     std::string raw = run(req, loc_);
@@ -250,8 +242,8 @@ TEST_F(TestHttpHandler, DirectoryWithIndexServed200) {
 }
 
 TEST_F(TestHttpHandler, DirectoryWithoutTrailingSlashIs301) {
-    Request req = makeRequest(
-        "GET /emptydir HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req =
+        makeRequest("GET /emptydir HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     std::string raw = run(req, loc_);
     EXPECT_NE(raw.find("301"), std::string::npos);
@@ -259,15 +251,15 @@ TEST_F(TestHttpHandler, DirectoryWithoutTrailingSlashIs301) {
 }
 
 TEST_F(TestHttpHandler, DirectoryNoIndexListingOffIs403) {
-    Request req = makeRequest(
-        "GET /emptydir/ HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req =
+        makeRequest("GET /emptydir/ HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     EXPECT_NE(run(req, loc_).find("403"), std::string::npos);
 }
 
 TEST_F(TestHttpHandler, DirectoryNoIndexListingOnServes200) {
-    Request req = makeRequest(
-        "GET /emptydir/ HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Request req =
+        makeRequest("GET /emptydir/ HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     loc_.setDirectoryListing(true);
     std::string raw = run(req, loc_);
@@ -282,7 +274,7 @@ TEST_F(TestHttpHandler, CustomErrorPageServedWhenConfigured) {
         "GET /nonexistent.html HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
     server_.addErrorPage(404,
-        "../http_handler/static_test_files/custom_404.html");
+                         "../http_handler/static_test_files/custom_404.html");
     // rebuild client with updated server config
     ServerResources res2(server_);
     delete client;
@@ -294,8 +286,8 @@ TEST_F(TestHttpHandler, MissingCustomErrorPageFallsBackToHardcoded) {
     Request req = makeRequest(
         "GET /nonexistent.html HTTP/1.1\r\nHost: localhost\r\n\r\n");
     ASSERT_FALSE(req.isError());
-    server_.addErrorPage(404,
-        "../http_handler/static_test_files/does_not_exist.html");
+    server_.addErrorPage(
+        404, "../http_handler/static_test_files/does_not_exist.html");
     ServerResources res2(server_);
     delete client;
     client = new Client(fds[0], loop, res2, "127.0.0.1");
@@ -307,8 +299,7 @@ TEST_F(TestHttpHandler, MissingCustomErrorPageFallsBackToHardcoded) {
 // --- delete ---
 
 TEST_F(TestHttpHandler, DeleteFileReturns204AndRemovesFile) {
-    std::string path =
-        "../http_handler/static_test_files/delete_me.txt";
+    std::string path = "../http_handler/static_test_files/delete_me.txt";
     std::ofstream f(path.c_str());
     f << "delete me";
     f.close();
@@ -337,9 +328,10 @@ TEST_F(TestHttpHandler, HandleUploadSuccessIs201) {
     loc_.setUploadPath("../http_handler/static_test_files/uploads_test");
     EXPECT_NE(run(req, loc_).find("201"), std::string::npos);
     struct stat info;
-    EXPECT_EQ(stat(
-        "../http_handler/static_test_files/uploads_test/test_file.txt",
-        &info), 0);
+    EXPECT_EQ(
+        stat("../http_handler/static_test_files/uploads_test/test_file.txt",
+             &info),
+        0);
 }
 
 TEST_F(TestHttpHandler, HandleUploadInvalidPathIs500) {
@@ -350,7 +342,6 @@ TEST_F(TestHttpHandler, HandleUploadInvalidPathIs500) {
         "\r\n"
         "hello upload!");
     ASSERT_FALSE(req.isError());
-    loc_.setUploadPath(
-        "../http_handler/static_test_files/does_not_exist");
+    loc_.setUploadPath("../http_handler/static_test_files/does_not_exist");
     EXPECT_NE(run(req, loc_).find("500"), std::string::npos);
 }

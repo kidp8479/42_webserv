@@ -31,10 +31,10 @@ void CgiStdinWriter::handle(short revents) {
                       body_.size() - bytes_written_);
     LOG_DEBUG() << "[CGI] wrote " << n << " bytes";
     if (n <= 0) {
-		// POLLOUT means writable, failure means broken pipe
+        // POLLOUT means writable, failure means broken pipe
         LOG_WARNING() << "[CgiStdinWriter] write failed, child likely died";
         done_ = true;  // child died pipe broken
-		write_fd_.reset();
+        write_fd_.reset();
         return;
     }
     bytes_written_ += n;

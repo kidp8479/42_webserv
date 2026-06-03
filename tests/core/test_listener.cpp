@@ -81,11 +81,9 @@ TEST_F(ListenerTestFixture, BindsConfiguredPort) {
     sockaddr_in addr{};
     socklen_t len = sizeof(addr);
 
-    ASSERT_EQ(
-        getsockname(listener->getFd(),
-                    reinterpret_cast<sockaddr*>(&addr),
-                    &len),
-        0);
+    ASSERT_EQ(getsockname(listener->getFd(), reinterpret_cast<sockaddr*>(&addr),
+                          &len),
+              0);
 
     EXPECT_EQ(ntohs(addr.sin_port), port_os);
 }

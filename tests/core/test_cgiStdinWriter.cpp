@@ -1,8 +1,8 @@
+#include <fcntl.h>
 #include <gtest/gtest.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <signal.h>
 
 #include "../../core/CgiStdinWriter.hpp"
 #include "../../core/EventLoop.hpp"
@@ -66,10 +66,10 @@ TEST_F(CgiStdinWriterTest, CompleteWriteFinishesAndClosesFd) {
     char buf[1024];
     ssize_t n = read(fds[0], buf, sizeof(buf));
 
-    EXPECT_EQ(n, (ssize_t)body.size());  // all data written
+    EXPECT_EQ(n, (ssize_t)body.size());                    // all data written
     EXPECT_EQ(0, memcmp(buf, body.c_str(), body.size()));  // correct data
 
-	// now check EOF — fd should be closed, read returns 0
+    // now check EOF — fd should be closed, read returns 0
     n = read(fds[0], buf, sizeof(buf));
     EXPECT_EQ(n, 0);
 }
@@ -79,7 +79,7 @@ TEST_F(CgiStdinWriterTest, WriteFailureMarksDone) {
 
     CgiStdinWriter writer(fds[1], body, loop);
 
-    close(fds[0]); // break pipe
+    close(fds[0]);  // break pipe
 
     writer.handle(POLLOUT);
 

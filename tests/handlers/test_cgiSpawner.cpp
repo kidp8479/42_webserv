@@ -2,12 +2,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "../../handlers/CgiSpawner.hpp"
-#include "../../core/EventLoop.hpp"
-#include "../../core/Client.hpp"
-#include "../../core/ServerResources.hpp"
-#include "../../config/ServerConfig.hpp"
 #include "../../config/LocationConfig.hpp"
+#include "../../config/ServerConfig.hpp"
+#include "../../core/Client.hpp"
+#include "../../core/EventLoop.hpp"
+#include "../../core/ServerResources.hpp"
+#include "../../handlers/CgiSpawner.hpp"
 #include "../../http/Request.hpp"
 
 class CgiSpawnerTest : public ::testing::Test {
@@ -78,7 +78,5 @@ TEST_F(CgiSpawnerTest, SpawnDoesNotCrash) {
 
     CgiSpawner spawner(loop);
 
-    EXPECT_NO_THROW({
-        spawner.spawn(req, loc, client);
-    });
+    EXPECT_NO_THROW({ spawner.spawn(req, loc, client); });
 }
