@@ -5,16 +5,30 @@
 
 #include <string>
 
-#include "EventLoop.hpp"
 #include "Fd.hpp"
 #include "IEventHandler.hpp"
 #include "Timeout.hpp"
 
 class Client;
+class EventLoop;
 
+/**
+ * @class CgiProcess
+ * @brief Manages the lifecycle of a CGI subprocess.
+ *
+ * This class is responsible for:
+ * - Tracking a spawned CGI process (PID)
+ * - Reading output from the CGI pipe
+ * - Integrating CGI execution into the EventLoop
+ * - Notifying the Client when execution is complete
+ * - Handling timeout and cleanup logic
+ *
+ * It acts as an I/O event handler registered in the EventLoop,
+ * monitoring the CGI pipe for readability until completion.
+ */
 class CgiProcess : public IEventHandler {
 public:
-	static const size_t kBufferSize = 4096;
+    static const size_t kBufferSize = 4096;
 
     CgiProcess(pid_t pid, int read_fd, Client& client, EventLoop& loop);
     ~CgiProcess();
@@ -27,11 +41,10 @@ public:
     const char* name() const;
 
 private:
-    // canonical form, copy, assignment
     CgiProcess(const CgiProcess&);
     CgiProcess& operator=(const CgiProcess&);
 
-    void finish();  // parse output deliver to client, mark done
+    void finish();
 
     pid_t pid_;
     Fd read_fd_;
