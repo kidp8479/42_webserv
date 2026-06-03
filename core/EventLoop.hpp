@@ -9,6 +9,17 @@
 
 class IEventHandler;
 
+/**
+ * @brief Poll-based event dispatcher.
+ * Manages a collection of IEventHandler objects and monitors their
+ * file descriptors using poll(). Ready events are dispatched to the
+ * appropriate handlers, while completed or timed-out handlers are
+ * removed during cleanup.
+ *
+ * @note The EventLoop does not own active handlers by default. Handlers
+ * are registered and removed through addHandler(), modifyHandler(),
+ * and removeHandler().
+ */
 class EventLoop {
 public:
     EventLoop();

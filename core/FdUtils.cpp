@@ -7,6 +7,14 @@
 
 namespace FdUtils {
 
+/**
+ * @brief Configures a file descriptor for event-driven use.
+ *
+ * Enables non-blocking mode and sets the close-on-exec flag.
+ *
+ * @param fd File descriptor to configure.
+ * @throws std::runtime_error If any fcntl() call fails.
+ */
 void setNonBlocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) {

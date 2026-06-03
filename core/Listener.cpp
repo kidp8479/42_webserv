@@ -16,9 +16,16 @@
 #include "FdUtils.hpp"
 
 /**
- * we make a listen object that owns the Fd object
- * this class is now responsible for setting up the listen socket and
- * the lifetime of the fd
+ * @brief Creates and registers a listening socket.
+ *
+ * Initializes the server socket, enables address reuse,
+ * binds and listens through setupSocket(), configures the
+ * socket as non-blocking, and registers it with the EventLoop.
+ *
+ * @param loop Event loop that monitors the listener.
+ * @param resources Shared server configuration and resources.
+ *
+ * @throws std::runtime_error If socket creation or configuration fails.
  */
 Listener::Listener(EventLoop& loop, const ServerResources& resources)
     : fd_(socket(AF_INET, SOCK_STREAM, 0)), loop_(loop), resources_(resources) {
@@ -37,25 +44,37 @@ Listener::Listener(EventLoop& loop, const ServerResources& resources)
     loop_.addHandler(this, POLLIN);
 }
 
+/**
+ * @brief Destroys the listener.
+ * The underlying file descriptor is managed by Fd and will be
+ * released automatically.
+ */
 Listener::~Listener() {
 }
 
+/**
+ * @brief Binds and starts listening on the configured address.
+ * Resolves host/port using getaddrinfo(), binds the socket,
+ * and enables listening mode (SOMAXCONN).
+ *
+ * @note Uses ServerConfig from ServerResources for host/port
+ * resolution. All system errors are escalated as runtime exceptions.
+ *
+ * @throws std::runtime_error If getaddrinfo, bind, or listen fails.
+ */
 void Listener::setupSocket() {
     const ServerConfig& config = resources_.getServerConfig();
-
     struct addrinfo hints;
     struct addrinfo* res = NULL;
 
     std::memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-
     std::ostringstream port_stream;
     port_stream << config.getPort();
 
     int ret = getaddrinfo(config.getHost().c_str(), port_stream.str().c_str(),
                           &hints, &res);
-
     if (ret != 0 || !res) {
         std::ostringstream oss;
         oss << "[Listener] getaddrinfo() failed: " << gai_strerror(ret);
@@ -63,7 +82,6 @@ void Listener::setupSocket() {
         LOG_ERROR() << oss.str();
         throw std::runtime_error(oss.str());
     }
-
     if (bind(fd_.getFd(), res->ai_addr, res->ai_addrlen) < 0) {
         freeaddrinfo(res);
 
@@ -75,23 +93,44 @@ void Listener::setupSocket() {
         throw std::runtime_error(oss.str());
     }
     freeaddrinfo(res);
-
     if (listen(fd_.getFd(), SOMAXCONN) < 0) {
         LOG_ERROR() << "[Listener] listen() failed";
         throw std::runtime_error("[Listener] listen() failed");
     }
 }
 
+/**
+ * @brief Returns the listening socket file descriptor.
+ * @return The underlying socket fd.
+ */
 int Listener::getFd() const {
     return fd_.getFd();
 }
 
+/**
+ * @brief Handles incoming connection events.
+ * Accepts new client connections when the listening socket
+ * becomes readable (POLLIN).
+ */
 void Listener::handle(short revents) {
     if (revents & POLLIN) {
         acceptClients();
     }
 }
 
+/**
+ * @brief Accepts incoming client connections.
+ * Continuously accepts new connections until the socket is
+ * non-blocking exhausted (EAGAIN/EWOULDBLOCK). Each client
+ * is configured as non-blocking, wrapped in a Client handler,
+ * and registered with the EventLoop.
+ *
+ * @note Handles system limits (EMFILE/ENFILE) gracefully and
+ * logs errors without crashing the server.
+ *
+ * @note Each accepted client is immediately handed over to
+ * the EventLoop, which assumes ownership of the Client object.
+ */
 void Listener::acceptClients() {
     while (true) {
         struct sockaddr_in peer_addr;
@@ -99,10 +138,9 @@ void Listener::acceptClients() {
         int client_fd =
             accept(fd_.getFd(), (struct sockaddr*)&peer_addr, &peer_len);
 
-        // accept failed
         if (client_fd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                break;  // no more clients to accept
+                break;
             }
             if (errno == EMFILE || errno == ENFILE) {
                 LOG_ERROR()
@@ -110,9 +148,8 @@ void Listener::acceptClients() {
                 break;
             }
             LOG_ERROR() << "[Listener] accept failed: " << strerror(errno);
-            continue;  // try next iteration
+            continue;
         }
-        // accept succeed, we set up client
         try {
             FdUtils::setNonBlocking(client_fd);
             unsigned int ip = ntohl(peer_addr.sin_addr.s_addr);
@@ -129,16 +166,26 @@ void Listener::acceptClients() {
     }
 }
 
+/**
+ * @brief Indicates the listener is always active.
+ * @return Always false (listener never terminates).
+ */
 bool Listener::isDone() const {
     return false;
 }
 
+/**
+ * @brief Returns the handler name used for logging.
+ * @return "Listener"
+ */
 const char* Listener::name() const {
     return "Listener";
 }
 
-// listeners never time out but it's part of the IEventHandler interface
-// so we just set to false
+/**
+ * @brief Indicates whether the listener has timed out.
+ * @return Always false (listener does not timeout).
+ */
 bool Listener::isTimedOut() const {
     return false;
 }
