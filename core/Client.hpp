@@ -1,15 +1,38 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
+#include <string>
+
 #include "../http/Request.hpp"
 #include "../http/Response.hpp"
-#include "CgiProcess.hpp"
+#include "../utils/HttpConstants.hpp"
 #include "EventLoop.hpp"
 #include "Fd.hpp"
 #include "IEventHandler.hpp"
 #include "ServerResources.hpp"
 #include "Timeout.hpp"
 
+class Request;
+class Response;
+class CgiProcess;
+
+/**
+ * @brief Represents a single HTTP client connection.
+ *
+ * Handles request parsing, response generation, CGI execution,
+ * and non-blocking I/O through the event-driven EventLoop.
+ *
+ * Each Client owns its connection state (read/write/CGI lifecycle)
+ * while sharing ServerResources with other clients on the same server.
+ *
+ * @note ServerResources is shared across all clients to enable
+ * session persistence (e.g. cookies). It is guaranteed to outlive
+ * all Client instances via Listener ownership.
+ *
+ * @note CGI execution is asynchronous and delegated to CgiProcess.
+ * The client transitions through internal states (kReading,
+ * kWaitingCgi, kWriting, kDone) depending on I/O and CGI lifecycle.
+ */
 class Client : public IEventHandler {
 public:
     enum State { kReading, kWaitingCgi, kWriting, kDone };
@@ -25,7 +48,6 @@ public:
     bool isTimedOut() const;
     const char* name() const;
 
-    // new getters Handler and cgi need
     EventLoop& getLoop();
     Response& getResponse();
     const ServerResources& getResources() const;
@@ -35,11 +57,9 @@ public:
     const Router& getRouter() const;
     std::string getPeerIp() const;
 
-    // called by CgiProcess when it has a result
     void onCgiFinished(const std::string& raw_cgi_output);
     void onTimeout();
 
-    // called by CgiProcess on timeout or error
     void receiveError(HttpConstants::HttpError error);
     void setPendingCgi(CgiProcess* cgi);
 
@@ -53,7 +73,6 @@ private:
     void closeConnection(const std::string& reason, const char* level = "INFO");
 
     Fd fd_;
-    // reference to the server's loop_
     EventLoop& loop_;
     // reference to Listener's resources_ — all Clients on the same server share
     // the same ServerResources instance, which is required for cookie session
@@ -68,7 +87,7 @@ private:
     Response response_;
     bool keep_alive_;
     Timeout timeout_;
-    CgiProcess* pending_cgi_;  // non-owning ptr but Client controls lifetime
+    CgiProcess* pending_cgi_;
     std::string peer_ip_;
 };
 

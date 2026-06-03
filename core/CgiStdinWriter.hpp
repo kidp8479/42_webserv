@@ -8,6 +8,13 @@
 
 class EventLoop;
 
+/**
+ * @brief Writes CGI request body to CGI process stdin.
+ * Non-blocking event handler that streams the HTTP request body
+ * into the CGI process pipe using write events.
+ *
+ * Handles partial writes, completion detection, and timeout cleanup.
+ */
 class CgiStdinWriter : public IEventHandler {
 public:
     CgiStdinWriter(int write_fd, const std::string& body, EventLoop& loop);
