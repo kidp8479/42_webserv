@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>webserv - CGI demo</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
+<body>
+    <div class="framed primary">
+        <h2>webserv - CGI demo</h2>
+        <p class="message"><span>webserv:</span> 42 school project - HTTP/1.1 server in C++98</p>
+        <hr>
+
+        <h3>How CGI works</h3>
+        <p class="message">When the server receives a request targeting a CGI script, it does not serve a static file. Instead:</p>
+        <p class="message"><span>1.</span> the server forks a child process and executes the script via <code>execve()</code></p>
+        <p class="message"><span>2.</span> the request data (method, query string, headers) is passed to the script as environment variables</p>
+        <p class="message"><span>3.</span> the POST body (if any) is written to the script stdin</p>
+        <p class="message"><span>4.</span> the script writes its HTTP response to stdout, the server reads it and forwards it to the client</p>
+        <p class="message"><span>5.</span> if the script hangs, the server kills it after a timeout and returns 504</p>
+        <hr>
+
+        <h3>CGI test script (Python)</h3>
+        <p class="message">Runs a Python script that reads its environment variables and returns them as HTML. You can see exactly what the server passed to the script.</p>
+        <div><a href="/cgi-bin/cgi_working.py" class="button">Run CGI test script</a></div>
+        <hr>
+
+        <h3>File upload via CGI (browser form)</h3>
+        <p class="message">Browser forms send files as <code>multipart/form-data</code> - a format with boundaries and per-field headers that the C++ server does not parse natively.</p>
+        <p class="message">The Python upload script handles this using the <code>cgi</code> module (Python 3.11 stdlib, bundled here since it was removed in 3.13). The script parses the multipart body, extracts the file, and writes it to disk.</p>
+        <p class="message">This is why browser upload lives here on port 8086 (CGI) and not on port 8084 (raw C++ upload handler, curl only).</p>
+        <form action="/cgi-bin/upload.py" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".txt,.pdf,image/*">
+            <button type="submit">Upload via CGI</button>
+        </form>
+    </div>
+</body>
+</html>

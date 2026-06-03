@@ -20,10 +20,14 @@
 #include "../logger/Logger.hpp"
 #include "../utils/HttpConstants.hpp"
 
+class Client;
+class EventLoop;
+
 class Handler {
 public:
-    static void run(const Request& request, const LocationConfig& location,
-                    const ServerConfig& server, Response& response);
+    static bool run(const Request& request, const LocationConfig& location,
+                    Client& client);
+    static void applyCgiResponse(const std::string& raw, Response& response);
 
 private:
     Handler();
@@ -36,6 +40,8 @@ private:
         const LocationConfig& location;
         const ServerConfig& server;
         Response& response;
+        EventLoop& loop;
+        Client& client;
     };
 
     // helpers for run()
@@ -43,11 +49,11 @@ private:
     static bool methodNotImplementedCheck(HandlerContext& handler_context);
     static bool methodNotAllowedCheck(HandlerContext& handler_context);
     static bool locationBlockDiscriminantCheck(HandlerContext& handler_context);
-    static void dispatch(HandlerContext& handler_context);
+    static bool dispatch(HandlerContext& handler_context);
 
     // helpers for dispatch()
     static void handleReturn(HandlerContext& handler_context);
-    static void handleCgiInterpreters(HandlerContext& handler_context);
+    static bool handleCgiInterpreters(HandlerContext& handler_context);
     static void handleUpload(HandlerContext& handler_context);
     static void handleStatic(HandlerContext& handler_context);
 
@@ -74,6 +80,10 @@ private:
     static std::string toString(int code);
     static std::string toString(size_t n);
     static std::string getFileMimeType(const std::string& path);
+
+    // cookie utils
+    static std::string newSessionID();
+    static void handleCookieSession(HandlerContext& handler_context);
 };
 
 #endif

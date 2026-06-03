@@ -1,6 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
+#include <map>
 #include <sstream>
 #include <string>
 
@@ -26,6 +27,9 @@ public:
     void buildError(HttpConstants::HttpError error);
 
     const std::string& getRaw() const;
+    bool hasCookies() const;
+    const std::map<std::string, std::string>& getCookieList() const;
+
     void reset();
 
     void setStatus(int code, const std::string& reason);
@@ -41,7 +45,11 @@ private:
     std::string headers_;
     std::string body_;
 
+    bool has_cookies_;
+    std::map<std::string, std::string> cookie_jar_;
+
     void updateRaw();
+    void addToCookie(std::string cookie_str);
 };
 
 #endif

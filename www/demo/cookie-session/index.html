@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>webserv - cookie session demo</title>
+    <link rel="stylesheet" href="/css/css-pokemon-gameboy.css">
+    <link rel="stylesheet" href="/css/webserv.css">
+</head>
+<body>
+    <div class="framed primary">
+        <h2>webserv - cookie session demo</h2>
+        <div id="session-info">
+            <p class="message"><span>status:</span> checking your session...</p>
+        </div>
+        <hr>
+        <p class="message">Your cookies:</p>
+        <code id="cookie-display"></code>
+        <hr>
+        <p class="message">
+            Want to see your cookies sent to a CGI script?
+            <a href="/cgi-bin/cookie_info.sh" class="button">Open cookie_info.sh</a>
+        </p>
+    </div>
+
+    <script>
+        var cookieStr = document.cookie;
+        var visitCount = null;
+
+        // parse cookies to find visit_count - set server-side on each request
+        var pairs = cookieStr.split(';');
+        for (var i = 0; i < pairs.length; i++) {
+            var pair = pairs[i].trim().split('=');
+            if (pair[0] === 'visit_count') {
+                visitCount = parseInt(pair[1], 10);
+                break;
+            }
+        }
+
+        var infoDiv = document.getElementById('session-info');
+        var cookieDiv = document.getElementById('cookie-display');
+
+        if (visitCount === 1) {
+            // first visit: count was just set to 1 by the server
+            infoDiv.innerHTML = '<p class="message"><span>session:</span> hello stranger! this is your first visit.</p>';
+        } else if (visitCount > 1) {
+            // returning visitor: server incremented the count
+            infoDiv.innerHTML = '<p class="message"><span>session:</span> welcome back! visit #' + visitCount + '</p>';
+        } else {
+            infoDiv.innerHTML = '<p class="message"><span>session:</span> checking your session...</p>';
+        }
+
+        cookieDiv.textContent = cookieStr || '(no cookies yet)';
+    </script>
+</body>
+</html>

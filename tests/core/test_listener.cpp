@@ -1,8 +1,11 @@
+#include <assert.h>
 #include <fcntl.h>
 #include <gtest/gtest.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
+#include "../../config/LocationConfig.hpp"
 #include "../../config/ServerConfig.hpp"
 #include "../../core/EventLoop.hpp"
 #include "../../core/Listener.hpp"
@@ -32,12 +35,13 @@ int getFreePort() {
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
     assert(bind(fd, (sockaddr*)&addr, sizeof(addr)) == 0);
-    socklen_t len = sizeof(addr);
 
+    socklen_t len = sizeof(addr);
     getsockname(fd, (sockaddr*)&addr, &len);
+
     int port = ntohs(addr.sin_port);
 
-    close(fd);  // release it — server will bind to it next
+    close(fd);
     return port;
 }
 
@@ -56,16 +60,38 @@ protected:
     }
 };
 
-TEST_F(ListenerTestFixture, Constructor_CreatesValidSocket) {
+TEST_F(ListenerTestFixture, constructor_CreatesValidSocket) {
     Listener* listener = new Listener(loop, resources);
 
-    EXPECT_GT(listener->getFd(), 0);
-    EXPECT_STREQ(listener->name(), "Listener");
+    EXPECT_GE(listener->getFd(), 0);
 }
 
-TEST_F(ListenerTestFixture, Constructor_SetsSocketNonBlocking) {
+TEST_F(ListenerTestFixture, SocketIsNonBlocking) {
     Listener* listener = new Listener(loop, resources);
 
-    int flags = fcntl(listener->getFd(), F_GETFL, 0);
+    int flags = fcntl(listener->getFd(), F_GETFL);
+
+    ASSERT_NE(flags, -1);
     EXPECT_TRUE(flags & O_NONBLOCK);
+}
+
+TEST_F(ListenerTestFixture, BindsConfiguredPort) {
+    Listener* listener = new Listener(loop, resources);
+
+    sockaddr_in addr{};
+    socklen_t len = sizeof(addr);
+
+    ASSERT_EQ(
+        getsockname(listener->getFd(),
+                    reinterpret_cast<sockaddr*>(&addr),
+                    &len),
+        0);
+
+    EXPECT_EQ(ntohs(addr.sin_port), port_os);
+}
+
+TEST_F(ListenerTestFixture, ReturnsCorrectName) {
+    Listener* listener = new Listener(loop, resources);
+
+    EXPECT_STREQ("Listener", listener->name());
 }

@@ -1,5 +1,11 @@
 #include "Handler.hpp"
 
+#include <cstdlib>
+
+#include "../core/Client.hpp"
+#include "../core/EventLoop.hpp"
+#include "CgiSpawner.hpp"
+
 namespace {
 const size_t kReadBufferSize = 4096;
 // default fallback when mime type is unknown
@@ -24,35 +30,43 @@ const std::map<std::string, std::string> kMimeTypes = initMimeTypes();
 }  // namespace
 
 /**
- * @brief Entry point for request handling. Runs pre-dispatch checks in order,
- * then delegates to the appropriate handler based on the location block type.
+ * @brief Handles an HTTP request through validation and dispatch.
+ * Runs pre-dispatch checks (error, method, routing). If all pass,
+ * delegates processing to the appropriate handler.
+ * HEAD requests reuse GET response but strip the body after dispatch.
+ * @return true if a response is ready to be sent, false otherwise.
  */
-void Handler::run(const Request& request, const LocationConfig& location,
-                  const ServerConfig& server, Response& response) {
-    LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
-               << " - target: " << request.getTarget() << RESET;
-
-    HandlerContext handler_context = {request, location, server, response};
+bool Handler::run(const Request& request, const LocationConfig& location,
+                  Client& client) {
+    HandlerContext handler_context = {request,
+                                      location,
+                                      client.getServerConfig(),
+                                      client.getResponse(),
+                                      client.getLoop(),
+                                      client};
 
     if (requestIsError(handler_context)) {
-        return;
+        return true;
     }
+    LOG_INFO() << BR_CYN "[Handler] method: " << request.getMethod()
+               << " - target: " << request.getTarget() << RESET;
     if (methodNotImplementedCheck(handler_context)) {
-        return;
+        return true;
     }
     if (methodNotAllowedCheck(handler_context)) {
-        return;
+        return true;
     }
     if (locationBlockDiscriminantCheck(handler_context)) {
-        return;
+        return true;
     }
 
-    dispatch(handler_context);
+    bool response_ready = dispatch(handler_context);
 
     // HEAD: same response as GET but no body, Content-Length stays untouched.
-    if (handler_context.request.getMethod() == "HEAD") {
+    if (response_ready && handler_context.request.getMethod() == "HEAD") {
         handler_context.response.setBody("");
     }
+    return response_ready;
 }
 
 /**
@@ -155,28 +169,35 @@ bool Handler::locationBlockDiscriminantCheck(HandlerContext& handler_context) {
 }
 
 /**
- * @brief Routes to the appropriate handler based on the location block type.
- * @note Called only after all pre-dispatch checks pass, so exactly one
- *       discriminant is guaranteed to be set (or none, defaulting to static).
+ * @brief Dispatches request to the correct handler based on location config.
+ * Routing priority:
+ * - Return/redirect rule
+ * - CGI interpreter handling
+ * - Upload handling
+ * - Static file serving (default)
+ * @return true if response handling completed or is in progress.
  */
-void Handler::dispatch(HandlerContext& handler_context) {
+bool Handler::dispatch(HandlerContext& handler_context) {
     if (handler_context.location.getReturnCode() !=
         LocationConfig::kNoRedirect) {
         LOG_DEBUG() << BR_YEL "[Handler] return location block detected"
                     << RESET;
         handleReturn(handler_context);
+        return true;
     } else if (!handler_context.location.getCgiInterpreters().empty()) {
         LOG_DEBUG() << BR_YEL "[Handler] CGI location block detected" << RESET;
-        handleCgiInterpreters(handler_context);
+        return handleCgiInterpreters(handler_context);
     } else if (!handler_context.location.getUploadPath().empty()) {
         LOG_DEBUG() << BR_YEL "[Handler] upload location block detected"
                     << RESET;
         handleUpload(handler_context);
+        return true;
     } else {
         LOG_DEBUG() << BR_YEL
             "[Handler] serve static files location block detected"
                     << RESET;
         handleStatic(handler_context);
+        return true;
     }
 }
 
@@ -212,12 +233,100 @@ void Handler::handleReturn(HandlerContext& handler_context) {
 }
 
 /**
- * @brief Handles CGI location blocks. Forks and executes the CGI script.
- * @note TODO: implement fork/execve/pipe. Currently a stub.
+ * @brief Handles CGI location blocks.
+ * handleCgiInterpreters: forks, registers CgiProcess, returns false
+ * Handler's job ends here - CgiProcess takes over
  */
-void Handler::handleCgiInterpreters(HandlerContext& handler_context) {
-    // TODO: implement fork/execve/pipe
-    sendError(HttpConstants::kNotImplemented, handler_context);
+bool Handler::handleCgiInterpreters(HandlerContext& handler_context) {
+    try {
+        CgiSpawner spawner(handler_context.loop);
+
+        if (!spawner.spawn(handler_context.request, handler_context.location,
+                           handler_context.client)) {
+            LOG_WARNING() << "[Handler] CGI spawn failed";
+            return true;  // error response is ready
+        }
+        return false;
+    } catch (const std::exception& e) {
+        LOG_ERROR() << "[Handler] CGI exception: " << e.what();
+        sendError(HttpConstants::kInternalServerError, handler_context);
+        return true;
+    }
+}
+
+/**
+ * @brief Parses raw CGI output and populates the HTTP response.
+ * Splits the CGI output on the first blank line (CRLFCRLF or LFLF),
+ * parses headers from the block before it, and treats the rest as the body.
+ * Status code defaults to 200 unless the CGI emits a Status header.
+ */
+void Handler::applyCgiResponse(const std::string& raw, Response& response) {
+    LOG_DEBUG() << "[CGI] raw size=" << raw.size();
+    LOG_DEBUG() << "[CGI] raw preview:\n" << raw.substr(0, 200);
+
+    size_t separator = raw.find("\r\n\r\n");
+    size_t body_offset = 4;
+
+    if (separator == std::string::npos) {
+        separator = raw.find("\n\n");
+        body_offset = 2;
+    }
+    std::string header_block;
+    std::string body;
+
+    if (separator != std::string::npos) {
+        header_block = raw.substr(0, separator);
+        body = raw.substr(separator + body_offset);
+    } else {
+        body = raw;
+    }
+    int status_code = 200;
+    std::string reason = "OK";
+
+    response.reset();
+    LOG_DEBUG() << "[CGI] parsing headers...";
+
+    std::istringstream stream(header_block);
+    std::string line;
+
+    while (std::getline(stream, line)) {
+        if (!line.empty() && line[line.size() - 1] == '\r') {
+            line.erase(line.size() - 1);
+        }
+        LOG_DEBUG() << "[CGI] header line: " << line;
+
+        size_t colon = line.find(':');
+        if (colon == std::string::npos) {
+            continue;
+        }
+        std::string key = line.substr(0, colon);
+        std::string value = line.substr(colon + 1);
+        while (!value.empty() && value[0] == ' ') {
+            value.erase(0, 1);
+        }
+        LOG_DEBUG() << "[CGI] header key=" << key << " value=" << value;
+        if (key == "Status") {
+            std::istringstream status_stream(value);
+            status_stream >> status_code;
+            std::getline(status_stream, reason);
+            if (!reason.empty() && reason[0] == ' ') {
+                reason.erase(0, 1);
+            }
+            LOG_DEBUG() << "[CGI] parsed Status=" << status_code
+                        << " reason=" << reason;
+        } else {
+            response.setHeader(key, value);
+        }
+    }
+    response.setStatus(status_code, reason);
+    if (body.size() > 0) {
+        response.setHeader("Content-Length", Handler::toString(body.size()));
+    } else {
+        response.setHeader("Content-Length", "0");
+    }
+    response.setBody(body);
+    LOG_DEBUG() << "[CGI] FINAL RAW RESPONSE:\n"
+                << response.getRaw().substr(0, 300);
 }
 
 /**
@@ -331,6 +440,10 @@ void Handler::handleStatic(HandlerContext& handler_context) {
         }
         deleteFile(full_path, handler_context);
         return;
+    }
+
+    if (path.find("/cookie-session/") == 0) {
+        handleCookieSession(handler_context);
     }
 
     if (S_ISDIR(get_info.st_mode)) {
@@ -605,4 +718,78 @@ void Handler::generateDirectoryListing(const std::string& path,
     handler_context.response.setBody(body);
     LOG_INFO() << BR_CYN "[Handler] directory listing of " << path
                << " served successfully" << RESET;
+}
+
+/**
+ * @brief Generates a unique cookie session ID.
+ * @return Hex string combining current timestamp and a random value.
+ */
+std::string Handler::newSessionID() {
+    std::ostringstream ss;
+    ss << std::hex << time(NULL) << rand();
+    return ss.str();
+}
+
+/**
+ * @brief Manages cookie session lifecycle for the /cookie-session route
+ * (demo_cookies.conf).
+ *
+ * On each request: looks for a session_id cookie in the incoming request.
+ * If absent or unknown, generates a new session ID, registers it in
+ * ServerResources::sessions_, and sends Set-Cookie: session_id to the browser.
+ * Always increments the visit_count for this session and sends it back via
+ * Set-Cookie: visit_count so the page JS can read and display it.
+ *
+ * @note Only called for paths matching /cookie-session/ - see dispatch().
+ * @note visit_count is stored server-side in sessions_ and mirrored as a
+ *       cookie so static HTML can read it via document.cookie without CGI.
+ */
+void Handler::handleCookieSession(HandlerContext& handler_context) {
+    // read all cookies from the incoming request (returns empty map if no
+    // Cookie header)
+    const std::map<std::string, std::string> cookies =
+        handler_context.request.getCookieList();
+
+    std::string session_id;
+    std::map<std::string, std::string>::const_iterator it =
+        cookies.find("session_id");
+    if (it != cookies.end()) {
+        session_id = it->second;
+    }
+
+    // if no session_id cookie or session doesn't exist in the storage, create a
+    // new one and send it back to the browser via Set-Cookie so it is stored
+    // and returned on future requests
+    if (session_id.empty() ||
+        !handler_context.client.getResources().hasSession(session_id)) {
+        session_id = newSessionID();
+        handler_context.client.getResources().createSession(session_id);
+        // Set-Cookie tells the browser to store this ID and send it back on
+        // every subsequent request
+        // Path=/ ensures the browser replaces any existing session_id cookie
+        handler_context.response.setHeader(
+            "Set-Cookie", "session_id=" + session_id + "; Path=/");
+        LOG_INFO() << BR_CYN
+            "[Handler] cookie session created and sent to browser: "
+                   << session_id << RESET;
+    } else {
+        // session already exists, browser sent us a valid session_id, nothing
+        // to create
+        LOG_DEBUG() << BR_YEL "[Handler] cookie session resumed: " << session_id
+                    << RESET;
+    }
+
+    std::map<std::string, std::string>& session =
+        handler_context.client.getResources().getOrCreateSession(session_id);
+    int count = 0;
+    if (!session["visit_count"].empty()) {
+        count = std::atoi(session["visit_count"].c_str());
+    }
+    count++;
+    session["visit_count"] = toString(count);
+    // send visit_count as a cookie so the browser JS can read and display it
+    handler_context.response.setHeader(
+        "Set-Cookie", "visit_count=" + toString(count) + "; Path=/");
+    LOG_DEBUG() << BR_YEL "[Handler] cookie session visit count: " << count
+                << RESET;
 }

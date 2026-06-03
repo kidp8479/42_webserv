@@ -9,11 +9,21 @@
     <div class="framed primary">
         <h2>webserv - upload demo</h2>
         <p class="message"><span>webserv:</span> 42 school project - HTTP/1.1 server in C++98</p>
-        <p class="message">The server accepts raw file uploads via POST. Use curl to test:</p>
-        <p class="message"><code>curl -X POST http://127.0.0.1:8084/upload/filename.txt --data-binary @yourfile</code></p>
-        <p class="message">On success, the server returns <code>201 Created</code> and saves the file in <code>www/demo/upload/received/</code>.</p>
+        <h3>Static upload (C++ handler)</h3>
+        <p class="message">This uses the server's internal upload system.</p>
+        <p class="message">curl: <code>curl -X POST http://127.0.0.1:8084/upload --data-binary @yourfile.txt</code></p>
+        <p class="message">If successful, the server returns <code>201 Created</code> and stores the file in <code>www/demo/upload/received/</code></p>
+        <hr>
+        <h3>Browse uploaded files</h3>
         <div><a href="/received/" class="button">Browse uploaded files</a></div>
-        <p class="message">curl: <code>curl -L http://127.0.0.1:8084/received</code> (-L follows the trailing slash redirect)</p>
+        <p class="message">curl: <code>curl -L http://127.0.0.1:8084/received</code></p>
+        <hr>
+        <h3>Browser upload (CGI - Python)</h3>
+        <p class="message">This uses the CGI script <code>/cgi-bin/upload.py</code>.</p>
+        <form action="/cgi-bin/upload.py" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Upload via CGI</button>
+        </form>
     </div>
 </body>
 </html>

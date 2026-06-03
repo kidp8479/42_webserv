@@ -1,7 +1,7 @@
 #include "Listener.hpp"
 
 #include <fcntl.h>
-// #include <netinet/in.h>
+#include <netinet/in.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -13,6 +13,7 @@
 #include "../logger/Logger.hpp"
 #include "Client.hpp"
 #include "Fd.hpp"
+#include "FdUtils.hpp"
 
 /**
  * we make a listen object that owns the Fd object
@@ -32,7 +33,7 @@ Listener::Listener(EventLoop& loop, const ServerResources& resources)
         throw std::runtime_error("[listener] setsockopt() failed");
     }
     setupSocket();
-    setNonBlocking(fd_.getFd());
+	FdUtils::setNonBlocking(fd_.getFd());
     loop_.addHandler(this, POLLIN);
 }
 
@@ -93,7 +94,10 @@ void Listener::handle(short revents) {
 
 void Listener::acceptClients() {
     while (true) {
-        int client_fd = accept(fd_.getFd(), NULL, NULL);
+		struct sockaddr_in peer_addr;
+		socklen_t peer_len = sizeof(peer_addr);
+        int client_fd = accept(fd_.getFd(), (struct sockaddr*)&peer_addr,
+				&peer_len);
 
         // accept failed
         if (client_fd < 0) {
@@ -110,35 +114,19 @@ void Listener::acceptClients() {
         }
         // accept succeed, we set up client
         try {
-            setNonBlocking(client_fd);
-            Client* client = new Client(client_fd, loop_, resources_);
-
+			FdUtils::setNonBlocking(client_fd);
+			unsigned int ip = ntohl(peer_addr.sin_addr.s_addr);
+			std::ostringstream oss;
+            oss << ((ip >> 24) & 0xFF) << "."
+                << ((ip >> 16) & 0xFF) << "."
+                << ((ip >>  8) & 0xFF) << "."
+                << ((ip >>  0) & 0xFF);
+            Client* client = new Client(client_fd, loop_, resources_, oss.str());
             loop_.addHandler(client, POLLIN);
         } catch (const std::exception& e) {
             close(client_fd);
             LOG_ERROR() << "[Listener] client setup failed: " << e.what();
         }
-    }
-}
-
-void Listener::setNonBlocking(int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-
-    if (flags == -1) {
-        std::ostringstream oss;
-        oss << "[listener] fcntl(F_GETFL) failed for fd " << fd;
-        throw std::runtime_error(oss.str());
-    }
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        std::ostringstream oss;
-        oss << "[listener] fcntl(F_SETFL) failed for fd " << fd;
-        throw std::runtime_error(oss.str());
-    }
-    // prevent fd leaking into child process
-    if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
-        std::ostringstream oss;
-        oss << "[listener] fcntl(F_SETFD) failed for fd " << fd;
-        throw std::runtime_error(oss.str());
     }
 }
 
@@ -148,4 +136,10 @@ bool Listener::isDone() const {
 
 const char* Listener::name() const {
     return "Listener";
+}
+
+// listeners never time out but it's part of the IEventHandler interface
+// so we just set to false
+bool Listener::isTimedOut() const {
+    return false;
 }

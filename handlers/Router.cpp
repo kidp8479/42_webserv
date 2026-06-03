@@ -63,10 +63,7 @@ const LocationConfig& Router::resolve(const std::string& uri) const {
                 uri[path.size()] == '/') {
                 if (path.size() > best_path_len) {
                     best_path_len = path.size();
-                    best_path_match =
-                        &(*it);  // dereference it to obtain right
-                                 // LocationConfig + take its adress and asign
-                                 // to pointer (yes it's weird)
+                    best_path_match = &(*it);
                 }
             }
         }

@@ -1,6 +1,8 @@
 #include "Response.hpp"
 
+#include <cctype>
 #include <sstream>
+#include <vector>
 
 /*****************************************************************************
  *                                  RESPONSE                                 *
@@ -9,7 +11,7 @@
 /**
  * @brief Default Constructor.
  */
-Response::Response() {
+Response::Response() : has_cookies_(false) {
 }
 
 /**
@@ -36,8 +38,50 @@ Response& Response::operator=(const Response& other) {
         status_ = other.status_;
         headers_ = other.headers_;
         body_ = other.body_;
+        has_cookies_ = other.has_cookies_;
+        cookie_jar_ = other.cookie_jar_;
     }
     return (*this);
+}
+
+/********************************** Utils ***********************************/
+
+static std::string setToLower(std::string& s) {
+    for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
+        s_it[0] = static_cast<char>(
+            std::tolower(static_cast<unsigned char>(s_it[0])));
+    }
+    return (s);
+}
+
+static std::string trimL(std::string& s, const char* t = " \t\n\r\f\v") {
+    s.erase(0, s.find_first_not_of(t));
+    return (s);
+}
+
+static std::string trimR(std::string& s, const char* t = " \t\n\r\f\v") {
+    s.erase(s.find_last_not_of(t) + 1);
+    return (s);
+}
+
+static std::string trim(std::string& s, const char* t = " \t\n\r\f\v") {
+    trimL(s, t);
+    return (trimR(s, t));
+}
+
+static std::vector<std::string> listCookie(const std::string s) {
+    std::string val(s), element;
+    std::vector<std::string> val_vect;
+
+    while (!val.empty()) {
+        size_t comma_pos = val.find(";");
+        element = val.substr(0, comma_pos);
+        val_vect.push_back(trim(element));
+        val.erase(0, comma_pos);
+        if (comma_pos != std::string::npos)
+            val.erase(0, 1);
+    }
+    return (val_vect);
 }
 
 /********************************* Builders *********************************/
@@ -80,6 +124,22 @@ const std::string& Response::getRaw() const {
     return (raw_);
 }
 
+/**
+ * @brief Check if response contains valid Set-Cookie values.
+ * @return True if cookies exist, false otherwise
+ */
+bool Response::hasCookies() const {
+    return (has_cookies_);
+}
+
+/**
+ * @brief Creates a copy of the cookie map.
+ * @return Copy of cookie map
+ */
+const std::map<std::string, std::string>& Response::getCookieList() const {
+    return (cookie_jar_);
+}
+
 /********************************* Setters **********************************/
 
 /**
@@ -90,6 +150,8 @@ void Response::reset() {
     status_.clear();
     headers_.clear();
     body_.clear();
+    has_cookies_ = false;
+    cookie_jar_.clear();
 }
 
 /**
@@ -123,6 +185,9 @@ void Response::setStatus(HttpConstants::HttpError error) {
  * @brief Adds a header value to response's header string and updates raw.
  */
 void Response::setHeader(const std::string& key, const std::string& value) {
+    std::string low_key = key;
+    if (setToLower(low_key) == "set-cookie")
+        addToCookie(value);
     headers_ += key + ": " + value + "\r\n";
     updateRaw();
 }
@@ -140,4 +205,25 @@ void Response::setBody(const std::string& body) {
  */
 void Response::updateRaw() {
     raw_ = status_ + headers_ + "\r\n" + body_;
+}
+
+/**
+ * @brief Parses a set-cookie string for a valid "name=value"
+ */
+void Response::addToCookie(std::string cookie_str) {
+    std::vector<std::string> cookie_list = listCookie(cookie_str);
+    if (cookie_list.empty() || cookie_list[0].empty())
+        return;
+    size_t equals_pos = cookie_list[0].find("=");
+    if (equals_pos == std::string::npos)
+        return;
+    std::string name = cookie_list[0].substr(0, equals_pos);
+    std::string value = cookie_list[0].substr(equals_pos + 1);
+    trim(name);
+    trim(value);
+    if (name.empty())
+        return;
+
+    cookie_jar_[name] = value;
+    has_cookies_ = true;
 }
