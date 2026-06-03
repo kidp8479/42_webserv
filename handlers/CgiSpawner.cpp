@@ -7,12 +7,33 @@
 #include "../core/Client.hpp"
 #include "../core/FdUtils.hpp"
 
+/**
+ * @brief Constructs CGI spawner bound to event loop.
+ */
 CgiSpawner::CgiSpawner(EventLoop& loop) : loop_(loop) {
 }
 
+/**
+ * @brief Destructor.
+ */
 CgiSpawner::~CgiSpawner() {
 }
 
+/**
+ * @brief Validates CGI script before execution.
+ * Checks script path resolution and filesystem permissions.
+ *
+ * @param request Incoming HTTP request.
+ * @param location Matched location configuration.
+ * @param client Client to report HTTP errors on failure.
+ * @param out_script_path Resolved absolute script path.
+ *
+ * @return true if script exists and is executable, false otherwise.
+ * @note Returns HTTP errors directly to client:
+ *       - 404 if file not found
+ *       - 403 if permission denied
+ *       - 500 for resolution errors
+ */
 bool CgiSpawner::validateScript(const Request& request,
                                 const LocationConfig& location, Client& client,
                                 std::string& out_script_path) {
@@ -36,37 +57,57 @@ bool CgiSpawner::validateScript(const Request& request,
     return true;
 }
 
+/**
+ * @brief Spawns a CGI process for the given request.
+ *
+ * Prepares execution environment, creates pipes, forks a child process,
+ * and wires stdout/stdin through async event handlers.
+ *
+ * Flow:
+ * - Validate script and interpreter
+ * - Build CGI environment variables
+ * - Create stdin/stdout pipes
+ * - Fork process
+ * - Child:
+ *   - Redirects stdin/stdout
+ *   - Executes CGI script via execve
+ * - Parent:
+ *   - Registers CgiProcess (stdout reader)
+ *   - Optionally registers CgiStdinWriter (request body writer)
+ *
+ * @param request Incoming HTTP request.
+ * @param location Matched location configuration.
+ * @param client Client owning this CGI execution.
+ *
+ * @return true if CGI was successfully spawned, false otherwise.
+ *
+ * @note Client owns lifecycle coordination via setPendingCgi().
+ * @note Pipes must be correctly closed in both parent and child
+ *       to avoid FD leaks.
+ */
 bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
                        Client& client) {
-    // build script path
     std::string script_path;
     if (!validateScript(request, location, client, script_path)) {
         return false;
     }
-    // resolve interpreter
     std::string interpreter = resolveInterpreter(request, location);
     if (interpreter.empty()) {
         client.receiveError(HttpConstants::kInternalServerError);
         return false;
     }
-    // build env
     std::vector<std::string> env_strings =
         buildEnvStrings(request, script_path, client);
     std::vector<char*> envp = buildEnvp(env_strings);
-    // create pipes after validating everything so i dont have to close pipes
-    // if there is a failure
     int stdin_pipe[2];
     int stdout_pipe[2];
 
     bool has_body = !request.getBody().empty();
 
-    // create pipes
     if (!createPipes(stdin_pipe, stdout_pipe, has_body)) {
         client.receiveError(HttpConstants::kInternalServerError);
         return false;
     }
-
-    // fork
     pid_t pid = fork();
     if (pid < 0) {
         if (has_body) {
@@ -79,8 +120,6 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
         return false;
     }
     if (pid == 0) {
-        // child
-        // stdout — always
         dup2(stdout_pipe[1], STDOUT_FILENO);
         close(stdout_pipe[0]);
         close(stdout_pipe[1]);
@@ -96,87 +135,78 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
                 close(devnull);
             }
         }
-
         std::string dir = script_path.substr(0, script_path.rfind('/'));
         std::string filename = script_path.substr(script_path.rfind('/') + 1);
-
         if (chdir(dir.c_str()) == -1) {
             write(STDERR_FILENO, "[CgiSpawner] chdir failed\n", 26);
             _exit(1);
         }
-
         char* argv[] = {const_cast<char*>(interpreter.c_str()),
                         const_cast<char*>(filename.c_str()), NULL};
-        //  execve()
         execve(interpreter.c_str(), argv, &envp[0]);
         write(STDERR_FILENO, "[CgiSpawner] execve failed\n", 27);
         _exit(1);
     }
-    // parent:
     close(stdout_pipe[1]);  // parent doesnt write stdout pipe
     if (has_body) {
         close(stdin_pipe[0]);  // parent doesn read stdin pipe
         const std::string& body = request.getBody();
-        // write post body
         CgiStdinWriter* writer = new CgiStdinWriter(stdin_pipe[1], body, loop_);
         loop_.addHandler(writer, POLLOUT);
     }
-    // set non blocking flag on read end before we hand to CgiProcess
     FdUtils::setNonBlocking(stdout_pipe[0]);
-    // create Cgi Handler
     CgiProcess* cgi = new CgiProcess(pid, stdout_pipe[0], client, loop_);
-    // register with Client
     client.setPendingCgi(cgi);
-    // register in EventLoop
     loop_.addHandler(cgi, POLLIN);
     return true;
 }
 
-// during parsing/validation cgi paths should already be correct -
-// not empty and starting with '/'
-// ex: goal input: /cgi-bin/upload.py: output /usr/bin/python3
+/**
+ * @brief Resolves CGI interpreter from request extension.
+ * Maps file extension (e.g. ".py") to configured interpreter path.
+ * Example:
+ * - /cgi-bin/upload.py -> ".py" -> "/usr/bin/python3"
+ *
+ * @return Interpreter path if found, otherwise empty string.
+ * @note Request path is expected to be validated before reaching this step.
+ * @note Returns empty string if no matching CGI handler exists.
+ */
 std::string CgiSpawner::resolveInterpreter(const Request& request,
                                            const LocationConfig& location) {
     const std::string& uri = request.getPath();
-
-    // find extension from requested script
     size_t dot_pos = uri.rfind('.');
     if (dot_pos == std::string::npos) {
         return "";
     }
-
     std::string extension = uri.substr(dot_pos);
-
-    // determine interpreter from extension
     const std::map<std::string, std::string>& cgi_map =
         location.getCgiInterpreters();
-
     std::map<std::string, std::string>::const_iterator it =
         cgi_map.find(extension);
-
-    // no mathc found, return empty, well check against this later to
-    // return error
     if (it == cgi_map.end()) {
         return "";
     }
-    // return interpreter path (/usr/bin/python3 or /usr/bin/php-cgi)
     return it->second;
 }
 
-// stdin pipe: send POST body to CGI
-// stdout pipe: receive CGI output
-//
+/**
+ * @brief Creates pipes for CGI stdin/stdout redirection.
+ * If request has a body, a stdin pipe is created for streaming input
+ * to the CGI process. A stdout pipe is always created to capture output.
+ *
+ * @param stdin_pipe Pipe used to send request body to CGI (if needed).
+ * @param stdout_pipe Pipe used to read CGI output.
+ * @param has_body Whether request contains a body.
+ *
+ * @return true on success, false on failure.
+ * @note On failure, any allocated file descriptors are cleaned up.
+ */
 bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2],
                              bool has_body) {
-    // create the pipes
-    // stdin_pipe[0] = read end of child
-    // stdin_pipe[1] = write end parent
     if (has_body && pipe(stdin_pipe) == -1) {
         LOG_ERROR() << "[CgiSpawner] failed to create stdin pipe";
         return false;
     }
-    // stdout_pipe[0] = read end parent
-    // stdout_pipe[1] = write end child
     if (pipe(stdout_pipe) == -1) {
         LOG_ERROR() << "[CgiSpawner] failed to create stdout pipe";
         if (has_body) {
@@ -189,11 +219,11 @@ bool CgiSpawner::createPipes(int stdin_pipe[2], int stdout_pipe[2],
 }
 
 /**
- * turn root + uri into a valid filesystem path
- * example of a cgi request
- * GET /cgi-bin/hello.py HTTP/1.1
- * Host: location:8086
- * after GET it's followed by SPACE and then TARGET beginning with /
+ * @brief Builds filesystem path for CGI script execution.
+ * Converts request URI into an absolute script path using the location root.
+ *
+ * @throws std::runtime_error if root or URI is invalid.
+ * @note Strips location prefix if present before joining with root.
  */
 std::string CgiSpawner::buildScriptPath(const Request& request,
                                         const LocationConfig& location) {
@@ -203,46 +233,49 @@ std::string CgiSpawner::buildScriptPath(const Request& request,
 
     if (root.empty()) {
         LOG_ERROR() << "[CgiSpawner] missing root";
-        // is root empty checked at validation?
         throw std::runtime_error("[CGI] missing root");
     }
-    // TARGET must begin with '/'
     if (uri.empty() || uri[0] != '/') {
         LOG_ERROR() << "[CgiSpawner] invalid request uri";
         throw std::runtime_error("[CGI] invalid request uri");
     }
     std::string relative_uri = uri;
-    // strip location prefix
     if (uri.compare(0, prefix.size(), prefix) == 0) {
         relative_uri = uri.substr(prefix.size());
     }
-    // ensure leading '/'
     if (relative_uri.empty() || relative_uri[0] != '/') {
         relative_uri = "/" + relative_uri;
     }
-    // avoid double '/'
     if (!root.empty() && root[root.size() - 1] == '/') {
         return root.substr(0, root.size() - 1) + relative_uri;
     }
-
     return root + relative_uri;
 }
 
+/**
+ * @brief Builds CGI environment variables from request and client data.
+ * Populates a full CGI/1.1 compliant environment including:
+ * - Standard CGI fields (REQUEST_METHOD, QUERY_STRING, etc.)
+ * - Server metadata (host, port, software)
+ * - Request headers as HTTP_* variables
+ *
+ * @note CONTENT_LENGTH and CONTENT_TYPE are always derived from request body
+ *       and headers.
+ * @note Headers are forwarded as HTTP_* except Content-Type and Content-Length.
+ * @note Used directly by execve() in CGI child process.
+ */
 std::vector<std::string> CgiSpawner::buildEnvStrings(
     const Request& request, const std::string& script_path,
     const Client& client) {
     std::vector<std::string> env;
 
-    // mandatory
     env.push_back("AUTH_TYPE=");
     env.push_back("GATEWAY_INTERFACE=CGI/1.1");
     env.push_back("PATH_INFO=");
     env.push_back("PATH_TRANSLATED=");
     env.push_back("QUERY_STRING=" + request.getQuery());
     env.push_back("REMOTE_ADDR=" + client.getPeerIp());
-    // fall back to REMOTE_ADDR
     env.push_back("REMOTE_HOST=" + client.getPeerIp());
-    // REMOTE_IDENT - OPTIONAL
     env.push_back("REMOTE_USER=");
     env.push_back("REQUEST_METHOD=" + request.getMethod());
     env.push_back("SCRIPT_NAME=" + request.getPath());
@@ -259,7 +292,6 @@ std::vector<std::string> CgiSpawner::buildEnvStrings(
     port_oss << client.getServerConfig().getPort();
     env.push_back("SERVER_PORT=" + port_oss.str());
 
-    // local redirect
     env.push_back("REDIRECT_STATUS=200");
     env.push_back("REQUEST_URI=" + request.getTarget());
     env.push_back("SCRIPT_FILENAME=" + script_path);
@@ -283,12 +315,10 @@ std::vector<std::string> CgiSpawner::buildEnvStrings(
 }
 
 /**
- * example upload request:
- * POST /cgi-bin/upload.py HTTP/1.1
- * Content-Type: multipart/form-data; boundary=abc
- * Content-Length: 5120
- * Build environment that will be passed to execve() so CGI script can
- * learn about the HTTP request
+ * @brief Converts environment strings into execve-compatible envp array.
+ * Null-terminated array of char* pointers referencing input strings.
+ *
+ * @return envp array for execve.
  */
 std::vector<char*> CgiSpawner::buildEnvp(
     const std::vector<std::string>& env_strings) {
