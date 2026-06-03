@@ -15,7 +15,8 @@ public:
     enum State { kReading, kWaitingCgi, kWriting, kDone };
     static const size_t kBufferSize = 4096;
 
-    explicit Client(int fd, EventLoop& loop, ServerResources& resources);
+    explicit Client(int fd, EventLoop& loop, ServerResources& resources,
+			const std::string& peer_ip);
     ~Client();
 
     int getFd() const;
@@ -32,6 +33,7 @@ public:
     getResources();  // non-const overload for session management
     const ServerConfig& getServerConfig() const;
     const Router& getRouter() const;
+	std::string getPeerIp() const;
 
     // called by CgiProcess when it has a result
     void onCgiFinished(const std::string& raw_cgi_output);
@@ -67,6 +69,7 @@ private:
     bool keep_alive_;
     Timeout timeout_;
     CgiProcess* pending_cgi_;  // non-owning ptr but Client controls lifetime
+	std::string peer_ip_;
 };
 
 #endif

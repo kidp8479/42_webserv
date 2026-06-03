@@ -27,7 +27,8 @@ static const char* stateToStr(Client::State s) {
     }
 }
 
-Client::Client(int fd, EventLoop& loop, ServerResources& resources)
+Client::Client(int fd, EventLoop& loop, ServerResources& resources,
+		const std::string& peer_ip)
     : fd_(fd),
       loop_(loop),
       resources_(resources),
@@ -35,7 +36,8 @@ Client::Client(int fd, EventLoop& loop, ServerResources& resources)
       state_(kReading),
       keep_alive_(true),
       timeout_(TimeoutSeconds::kClient),
-      pending_cgi_(NULL) {
+      pending_cgi_(NULL),
+	  peer_ip_(peer_ip) {
     request_.setMaxBodySize(resources_.getServerConfig().getMaxBodySize());
 }
 
@@ -261,6 +263,10 @@ const ServerConfig& Client::getServerConfig() const {
 
 const Router& Client::getRouter() const {
     return resources_.getRouter();
+}
+
+std::string Client::getPeerIp() const {
+	return peer_ip_;
 }
 
 void Client::receiveError(HttpConstants::HttpError error) {
