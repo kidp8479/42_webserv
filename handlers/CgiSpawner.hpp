@@ -26,7 +26,8 @@ private:
                                    const LocationConfig& location);
     std::string buildScriptPath(const Request& request,
                                 const LocationConfig& config);
-    std::vector<std::string> buildEnvStrings(const Request& request);
+    std::vector<std::string> buildEnvStrings(const Request& request
+			const std::string& script_path, const Client& client);
     std::vector<char*> buildEnvp(const std::vector<std::string>& env_strings);
 
     EventLoop& loop_;
