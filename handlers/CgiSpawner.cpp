@@ -101,7 +101,7 @@ bool CgiSpawner::spawn(const Request& request, const LocationConfig& location,
         std::string filename = script_path.substr(script_path.rfind('/') + 1);
 
         if (chdir(dir.c_str()) == -1) {
-			LOG_ERROR() << "[CgiSpawner] chdir failed: " << dir;
+		    write(STDERR_FILENO, "[CgiSpawner] chdir failed\n", 26);
 			_exit(1);
 		}
 
