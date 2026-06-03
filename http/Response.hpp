@@ -45,6 +45,8 @@ private:
     std::string headers_;
     std::string body_;
 
+    std::map<std::string, std::string> header_map_;
+
     bool has_cookies_;
     std::map<std::string, std::string> cookie_jar_;
 

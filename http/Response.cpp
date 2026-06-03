@@ -46,7 +46,7 @@ Response& Response::operator=(const Response& other) {
 
 /********************************** Utils ***********************************/
 
-static std::string setToLower(std::string& s) {
+static std::string setToLower(std::string s) {
     for (std::string::iterator s_it = s.begin(); s_it != s.end(); s_it++) {
         s_it[0] = static_cast<char>(
             std::tolower(static_cast<unsigned char>(s_it[0])));
@@ -150,6 +150,7 @@ void Response::reset() {
     status_.clear();
     headers_.clear();
     body_.clear();
+    header_map_.clear();
     has_cookies_ = false;
     cookie_jar_.clear();
 }
@@ -185,10 +186,34 @@ void Response::setStatus(HttpConstants::HttpError error) {
  * @brief Adds a header value to response's header string and updates raw.
  */
 void Response::setHeader(const std::string& key, const std::string& value) {
-    std::string low_key = key;
-    if (setToLower(low_key) == "set-cookie")
+    std::string low_key = setToLower(key);
+    if (low_key == "set-cookie")
         addToCookie(value);
-    headers_ += key + ": " + value + "\r\n";
+    else {
+        bool key_match = false;
+        std::map<std::string, std::string>::iterator h_it;
+        h_it = header_map_.begin();
+        while (!key_match && h_it != header_map_.end()) {
+            if (setToLower(h_it->first) == low_key) {
+                h_it->second = value;
+                key_match = true;
+            }
+            h_it++;
+        }
+        if (!key_match)
+            header_map_[key] = value;
+    }
+
+    headers_.clear();
+    std::map<std::string, std::string>::iterator h_it;
+    for (h_it = header_map_.begin(); h_it != header_map_.end(); h_it++) {
+        headers_ += h_it->first + ": " + h_it->second + "\r\n";
+    }
+    std::map<std::string, std::string>::iterator c_it;
+    for (c_it = cookie_jar_.begin(); c_it != cookie_jar_.end(); c_it++) {
+        headers_ += "Set-Cookie: ";
+        headers_ += c_it->first + "=" + c_it->second + "\r\n";
+    }
     updateRaw();
 }
 

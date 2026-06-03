@@ -25,8 +25,8 @@ protected:
     // Full response example
     const char* full_response =
         "HTTP/1.1 200 OK\r\n"
-        "Server: Webserv\r\n"
         "Content-Length: 5\r\n"
+        "Server: Webserv\r\n"
         "\r\n"
         "Hello";
 
@@ -67,14 +67,21 @@ TEST_F(ResponseTestFixture, Set_Header) {
     EXPECT_EQ(resp.getRaw(), "Server: Webserv\r\n\r\n");
 }
 
+TEST_F(ResponseTestFixture, Set_HeaderDuplicates) {
+    resp.setHeader("Server", "Webserv");
+    resp.setHeader("serveR", "Servweb");
+    EXPECT_EQ(resp.getRaw(), "Server: Servweb\r\n\r\n");
+}
+
 TEST_F(ResponseTestFixture, Set_HeadersPlural) {
     resp.setHeader("Server", "Webserv");
     EXPECT_EQ(resp.getRaw(), "Server: Webserv\r\n\r\n");
     resp.setHeader("Content-Type", "text");
     resp.setHeader("Content-Length", "5");
     EXPECT_EQ(resp.getRaw(),
-              "Server: Webserv\r\nContent-Type: text\r\n"
-              "Content-Length: 5\r\n\r\n");
+              "Content-Length: 5\r\n"
+              "Content-Type: text\r\n"
+              "Server: Webserv\r\n\r\n");
 }
 
 TEST_F(ResponseTestFixture, Set_Body) {
