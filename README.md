@@ -20,6 +20,12 @@ The server is configured via a configuration file inspired by NGINX syntax. Mult
 
 ## Instructions
 
+### Initialize submodules (first time, required for tests)
+
+```bash
+git submodule update --init
+```
+
 ### Compile
 
 ```bash
