@@ -1,5 +1,6 @@
 #include "CgiSpawner.hpp"
 
+#include <ctype.h>
 #include <unistd.h>
 
 #include "../core/CgiProcess.hpp"
