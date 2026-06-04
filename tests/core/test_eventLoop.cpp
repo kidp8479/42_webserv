@@ -176,8 +176,7 @@ TEST_F(EventLoopTest, cleanup_RemovesDoneHandlers) {
 TEST_F(EventLoopTest, cleanup_CallsOnTimeoutForTimedOutHandlers) {
     bool timeout_called = false;
 
-    FakeHandler* handler =
-        new FakeHandler(sockets[0], &timeout_called);
+    FakeHandler* handler = new FakeHandler(sockets[0], &timeout_called);
 
     loop.addHandler(handler, POLLIN);
 

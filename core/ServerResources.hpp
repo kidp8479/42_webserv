@@ -8,6 +8,17 @@
 #include "../handlers/Router.hpp"
 #include "../logger/Logger.hpp"
 
+/**
+ * @brief Holds per-server runtime resources.
+ *
+ * Encapsulates routing logic and session storage for a single
+ * server configuration instance.
+ *
+ * @note Router is built from ServerConfig and is immutable
+ * after construction.
+ * @note Session storage is shared across all clients using
+ * this ServerResources instance.
+ */
 class ServerResources {
 public:
     ServerResources(const ServerConfig& server_config);

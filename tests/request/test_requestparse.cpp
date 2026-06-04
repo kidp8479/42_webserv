@@ -697,12 +697,12 @@ TEST_F(RequestTestFixture, KeepAlive_TransferEncodeCL) {
 /******************************** Get Cookies ********************************/
 
 TEST_F(RequestTestFixture, GetCookie_GetCookieList) {
-    //Using getHeaderList on a cookie header returns the values in a vector
+    // Using getHeaderList on a cookie header returns the values in a vector
     req.append(cookie_request, strlen(cookie_request));
     EXPECT_TRUE(req.isComplete());
     EXPECT_FALSE(req.isError());
     EXPECT_TRUE(req.shouldKeepAlive());
-    
+
     std::vector<std::string> cookieList = req.getHeaderList("Cookie");
     EXPECT_EQ(cookieList[0], "theme=dark");
     EXPECT_EQ(cookieList[1], "login=name");

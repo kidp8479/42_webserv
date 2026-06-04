@@ -1,6 +1,12 @@
 #ifndef IEVENTHANDLER_HPP
 #define IEVENTHANDLER_HPP
 
+/**
+ * @brief Interface for objects managed by the EventLoop.
+ * Implementations provide a file descriptor, handle poll events,
+ * report completion and timeout status, and optionally react to
+ * timeout expiration.
+ */
 class IEventHandler {
 public:
     virtual ~IEventHandler() {

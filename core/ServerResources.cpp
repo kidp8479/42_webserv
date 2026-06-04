@@ -1,22 +1,43 @@
 #include "ServerResources.hpp"
 
+/**
+ * @brief Initializes server-scoped resources.
+ * Builds routing configuration from the provided ServerConfig.
+ */
 ServerResources::ServerResources(const ServerConfig& server_config)
     : server_config_(server_config), router_(server_config_) {
 }
 
+/**
+ * @brief Copy-constructs server resources.
+ * Copies session data while rebuilding router from the same config.
+ *
+ * @note Router is not shallow-copied; it is re-initialized.
+ */
 ServerResources::ServerResources(const ServerResources& other)
     : server_config_(other.server_config_),
       router_(server_config_),
       sessions_(other.sessions_) {
 }
 
+/**
+ * @brief Destroys server resources.
+ */
 ServerResources::~ServerResources() {
 }
 
+/**
+ * @brief Retrieves the request router.
+ * @return Const reference to the router.
+ */
 const Router& ServerResources::getRouter() const {
     return router_;
 }
 
+/**
+ * @brief Retrieves the server configuration.
+ * @return Const reference to ServerConfig.
+ */
 const ServerConfig& ServerResources::getServerConfig() const {
     return server_config_;
 }

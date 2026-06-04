@@ -10,9 +10,18 @@
 #include "../utils/LogUtils.hpp"
 #include "IEventHandler.hpp"
 
+/**
+ * @brief Constructs an empty event loop.
+ */
 EventLoop::EventLoop() {
 }
 
+/**
+ * @brief Destroys the event loop and all remaining handlers.
+ *
+ * Removes any registered handlers and releases resources before
+ * shutdown.
+ */
 EventLoop::~EventLoop() {
     LOG_INFO() << BR_CYN "[EventLoop] shutting down, cleaning up "
                << handlers_.size() << " handlers" << RESET;
@@ -27,9 +36,15 @@ EventLoop::~EventLoop() {
 }
 
 /**
- * register an fd (can be client or listener) with the kernel with polling
- * associate that fd with a handler object
- * these two must always be kept in sync
+ * @brief Registers a handler with the event loop.
+ * Adds the handler's file descriptor to the poll set and associates
+ * it with the corresponding IEventHandler instance.
+ *
+ * @note poll_fds_ and handlers_ are parallel containers and must
+ * always remain synchronized by index.
+ *
+ * @param handler Handler to register.
+ * @param events Poll events to monitor.
  */
 void EventLoop::addHandler(IEventHandler* handler, short events) {
     pollfd p;
@@ -37,7 +52,6 @@ void EventLoop::addHandler(IEventHandler* handler, short events) {
     p.events = events;
     p.revents = 0;
 
-    // push into vector
     poll_fds_.push_back(p);
     handlers_.push_back(handler);
 
@@ -47,8 +61,15 @@ void EventLoop::addHandler(IEventHandler* handler, short events) {
 }
 
 /**
- * Updates the events monitored by poll for a given handler.
- * Used to switch between read/write readiness during runtime.
+ * @brief Updates the events monitored for a registered handler.
+ * Searches for the handler and modifies its corresponding poll
+ * registration.
+ *
+ * @note poll_fds_ and handlers_ are parallel containers and must
+ * always remain synchronized by index.
+ *
+ * @param handler Handler to update.
+ * @param events New poll events to monitor.
  */
 void EventLoop::modifyHandler(IEventHandler* handler, short events) {
     for (size_t i = 0; i < handlers_.size(); i++) {
@@ -62,24 +83,28 @@ void EventLoop::modifyHandler(IEventHandler* handler, short events) {
     }
 }
 
+/**
+ * @brief Removes and destroys a registered handler.
+ * Unregisters the handler from the poll set, keeps the internal
+ * containers compact, and deletes the handler object.
+ *
+ * @note poll_fds_ and handlers_ are parallel containers and must
+ * always remain synchronized by index.
+ *
+ * @param handler Handler to remove.
+ */
 void EventLoop::removeHandler(IEventHandler* handler) {
-    // Loop through all registered handlers to find the target
     for (size_t i = 0; i < handlers_.size(); i++) {
         if (handlers_[i] == handler) {
             LOG_INFO() << BR_CYN "[EventLoop] remove fd=" << poll_fds_[i].fd
                        << " handler=" << handler->name() << RESET;
-            // Index of last element in vectors
             size_t last = handlers_.size() - 1;
-            // If the element to remove is not the last one,
-            // we swap it with the last element to keep vectors compact
             if (i != last) {
                 handlers_[i] = handlers_[last];
                 poll_fds_[i] = poll_fds_[last];
             }
-            // remove the last element
             handlers_.pop_back();
             poll_fds_.pop_back();
-            // delete handler object
             delete handler;
             return;
         }
@@ -87,32 +112,26 @@ void EventLoop::removeHandler(IEventHandler* handler) {
 }
 
 /**
- * this is the core of where polling happens
- * we pass timeout:
- * -1 = sleep until 1 fd is ready (zero cpu usage while idle)
- *  0 = don't wait (non blocking)
- *  >0 = wait this many milliseconds
- * poll scans the entire array O(n) (using epoll/kqueue more efficient
- * but also more complex)
+ * @brief Waits for I/O events using poll().
+ * Blocks for up to the specified timeout and returns the number of
+ * ready file descriptors. Interrupted system calls are handled and
+ * treated as non-fatal.
+ *
+ * @param timeout Maximum time to wait in milliseconds.
+ * @return Number of ready descriptors, 0 on timeout/interruption,
+ * or -1 on poll failure.
  */
 int EventLoop::wait(int timeout) {
     if (poll_fds_.empty())
         return 0;
-    // poll expect a pointer to an array for first arg
-    // we give poll a list of fds, and it puts the thread to sleep
-    // until any of them becomes ready,timesout, or signal interrupted.
     int ret = poll((&poll_fds_[0]), poll_fds_.size(), timeout);
-    // under the hood when poll is called, the program jumps to the kernel
-    //  looks at each fd, and notes what we are waiting for (events)
-    //  checks are any of thes ready RIGHT NOW?, if yes it fills revents
-    //  the number returned is how many revents filled out
     if (ret == -1) {
         if (errno == EINTR) {
             LOG_WARNING() << "[EventLoop] system call interrupted";
-            return 0;  // normal interrupt
+            return 0;
         }
         LOG_ERROR() << "[EventLoop] poll() failed: " << strerror(errno);
-        return -1;  // real error
+        return -1;
     }
     LOG_DEBUG() << BR_YEL "[EventLoop] poll returned ready_fds=" << ret
                 << RESET;
@@ -120,11 +139,11 @@ int EventLoop::wait(int timeout) {
 }
 
 /**
- * here is our polymorphism in action: reactor pattern
- * reacts differently depending on which object it is
- * dispatch calls handle() so depending on what the object is:
- * listener* -> calls Listener::handle() -> acceptClients()
- * client* -> calls Client::handle() -> calls read() or write()
+ * @brief Dispatches ready events to registered handlers.
+ *
+ * Invokes handle() on each handler whose file descriptor has
+ * pending poll events. Exceptions thrown by handlers are caught
+ * and logged to prevent the event loop from terminating.
  */
 void EventLoop::dispatch() {
     for (size_t i = 0; i < poll_fds_.size(); i++) {
@@ -139,11 +158,13 @@ void EventLoop::dispatch() {
 }
 
 /**
- * we clean up any dead client fds here
- * listener isDone always returns false, as this stream needs to remain open
- * Client is created in Listener, but only EventLoop is allowed to delete
- * since it lives in handlers_ AND EventLoop knows the lifecycle of allowed
- * active Clients
+ * @brief Removes completed and timed-out handlers.
+ * Calls onTimeout() for handlers whose timeout has expired,
+ * then destroys and unregisters handlers marked as done or
+ * timed out.
+ *
+ * @note poll_fds_ and handlers_ are parallel containers and must
+ * always remain synchronized by index.
  */
 void EventLoop::cleanup() {
     for (size_t i = 0; i < handlers_.size();) {

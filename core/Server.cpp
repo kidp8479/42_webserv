@@ -7,16 +7,31 @@
 #include "Signal.hpp"
 #include "Timeout.hpp"
 
+/**
+ * @brief Constructs the server and initializes listeners.
+ * Builds an EventLoop and creates a Listener per configured
+ * server block.
+ */
 Server::Server(const Config& config) : config_(config), loop_() {
     setupListeners();
 }
 
+/**
+ * @brief Destroys the server.
+ * Listener lifetime is managed by the EventLoop; the local
+ * tracking vector is only cleared.
+ */
 Server::~Server() {
-    // EventLoop owns and deletes all handlers including Listeners
-    // just clear our tracking vector without deleting
     listeners_.clear();
 }
 
+/**
+ * @brief Runs the main event loop.
+ * Continuously polls for events, dispatches handlers, and
+ * performs cleanup until the global shutdown flag is set.
+ *
+ * @return true if shutdown completed cleanly, false on error.
+ */
 bool Server::start() {
     LOG_INFO() << BR_CYN "[Server] starting..." RESET;
     while (g_running) {
@@ -34,6 +49,12 @@ bool Server::start() {
     return true;
 }
 
+/**
+ * @brief Creates a listener for each server configuration.
+ * Each ServerConfig is wrapped into ServerResources and used
+ * to initialize a Listener registered in the EventLoop.
+ * Each listener is immediately owned by the EventLoop.
+ */
 void Server::setupListeners() {
     const std::vector<ServerConfig>& servers = config_.getServerBlock();
 

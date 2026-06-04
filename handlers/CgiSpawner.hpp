@@ -7,6 +7,14 @@
 #include "../core/EventLoop.hpp"
 #include "Handler.hpp"
 
+/**
+ * @brief CGI execution manager.
+ *
+ * Responsible for validating CGI requests, preparing execution
+ * environment, and spawning CGI processes with proper pipe setup.
+ *
+ * @note Uses EventLoop to register stdin/stdout handlers for async CGI.
+ */
 class CgiSpawner {
 public:
     explicit CgiSpawner(EventLoop& loop);

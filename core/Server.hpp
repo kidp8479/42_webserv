@@ -12,6 +12,14 @@
 #include "Listener.hpp"
 #include "ServerResources.hpp"
 
+/**
+ * @brief High-level server orchestrator.
+ *
+ * Manages the event loop and listener sockets for all configured
+ * server blocks. Responsible for initializing listeners and
+ * starting the main event-driven runtime.
+ * Owns Listener objects and drives the EventLoop lifecycle.
+ */
 class Server {
 public:
     Server(const Config& config);
@@ -27,7 +35,6 @@ private:
 
     const Config& config_;
     EventLoop loop_;
-
     std::vector<Listener*> listeners_;
 };
 
