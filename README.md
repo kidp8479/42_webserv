@@ -1,5 +1,7 @@
 *This project has been created as part of the 42 curriculum by diade-so, cpollock and pafroidu.*
 
+![webserv Cover](cover-webserv.png)
+
 ---
 
 # webserv
@@ -100,3 +102,7 @@ Claude was used throughout the project as a socratic tutor and technical assista
 - used as a personal teacher to understand concepts before implementing them, not to generate code directly 
 - Documentation: help format doxygen comments, drafting README/DEV doc
 - Testing: designing curl test sequences, analyzing siege stress test results
+
+---
+
+![webserv Badge](badge-webserv.png)
